@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+
+{% block title %}Borrar Cliente{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>Confirmar Borrado</h2>
+            <p>¿Estás seguro de que deseas eliminar al cliente "{{ cliente.user.username }}"?</p>
+            <p>RUT: {{ cliente.rut }}</p>
+            <p>Nombre: {{ cliente.user.first_name }}</p>
+            <p>Primer Apellido: {{ cliente.user.last_name }}</p>
+            <p>Segundo Apellido: {{ cliente.second_last_name }}</p>
+            <p>Fecha de Nacimiento: {{ cliente.fecha_nacimiento }}</p>
+            <p>Número de Teléfono: {{ cliente.numero_telefono }}</p>
+            <a href="{% url 'borrar_cliente' cliente.id %}" class="btn btn-danger">Confirmar Borrado</a>
+            <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Cancelar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

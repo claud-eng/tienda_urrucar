@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar empleado{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Agregar empleado</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            
+            <!-- Botón para mostrar/ocultar contraseña -->
+            <button type="submit" class="btn btn-primary">Agregar</button>
+            <button type="button" id="toggle-password" class="btn btn-info">Mostrar Contraseña</button>
+            {% if user.is_authenticated %}
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                    <a href="{% url 'listar_empleados' %}" class="btn btn-secondary">Volver atrás</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- JavaScript para alternar la visibilidad de la contraseña y habilitar Datepicker -->
+    <script>
+        const togglePassword = document.querySelector('#toggle-password');
+        const passwordField = document.querySelector('#id_password');
+
+        togglePassword.addEventListener('click', function () {
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                togglePassword.textContent = 'Ocultar Contraseña';
+            } else {
+                passwordField.type = 'password';
+                togglePassword.textContent = 'Mostrar Contraseña';
+            }
+        });
+
+    </script>
+{% endblock %}

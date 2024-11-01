@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    {% if user.is_authenticated %}
+        {% if user.empleado and user.empleado.rol == 'Administrador' %}
+            Agregar cliente
+        {% else %}
+            Registrarse
+        {% endif %}
+    {% else %}
+        Registrarse
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        {% if user.is_authenticated %}
+            {% if user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
+                <h2>Agregar cliente</h2>
+            {% else %}
+                <h2>Registrarse</h2>
+            {% endif %}
+        {% else %}
+            <h2>Registrarse</h2>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            
+            <!-- Si el usuario está logeado como empleado aparece el botón de agregar, en caso contrario Registrarse -->
+            <button type="submit" class="btn btn-primary">
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
+                    Agregar
+                {% else %}
+                    Registrarse
+                {% endif %}
+            </button>
+            <!-- Botón para mostrar/ocultar contraseña -->
+            <button type="button" id="toggle-password" class="btn btn-info">Mostrar Contraseña</button>
+            {% if user.is_authenticated %}
+                {% if user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
+                    <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Volver atrás</a>
+                {% else %}
+                    <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                {% endif %}
+            {% else %}
+                <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+            {% endif %}
+        </form>
+    </div>
+
+    <!-- JavaScript para alternar la visibilidad de la contraseña y habilitar Datepicker -->
+    <script>
+        const togglePassword = document.querySelector('#toggle-password');
+        const passwordField = document.querySelector('#id_password');
+
+        togglePassword.addEventListener('click', function () {
+            if (passwordField.type === 'password') {
+                passwordField.type = 'text';
+                togglePassword.textContent = 'Ocultar Contraseña';
+            } else {
+                passwordField.type = 'password';
+                togglePassword.textContent = 'Mostrar Contraseña';
+            }
+        });
+
+    </script>
+{% endblock %}

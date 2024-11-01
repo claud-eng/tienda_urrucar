@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Gestionar cuentas{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Servicio de administración de los clientes</h2>
+            <p>Aquí puedes gestionar las cuentas de los clientes.</p>
+            <a href="{% url 'listar_clientes' %}" class="btn btn-primary">Gestionar clientes</a>
+            <img class="img-fluid mt-5" src="{% static 'images/img/cliente.png' %}" alt="Cliente" style="width: 400px; height: 400px;">
+        </div>
+        <div class="col-md-6">
+            <h2>Servicio de administración de los empleados</h2>
+            <p>Aquí puedes gestionar las cuentas de los empleados.</p>
+            <a href="{% url 'listar_empleados' %}" class="btn btn-primary">Gestionar empleados</a>
+            <img class="img-fluid mt-5" src="{% static 'images/img/empleado.png' %}" alt="Empleado" style="width: 400px; height: 400px;">
+        </div>
+    </div>
+</div>
+{% endblock %}

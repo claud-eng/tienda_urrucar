@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de clientes{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Lista de clientes</h2>
+
+    <!-- Agregar mensajes de éxito -->
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+
+    <!-- Botón para agregar cliente -->
+    <a href="{% url 'agregar_cliente' %}" class="btn btn-success mb-2">Agregar Cliente</a>
+
+    <form method="GET" class="form-inline mb-2">
+        <div class="form-group">
+            <label for="search-username">Buscar por nombre de usuario:</label>
+            <input type="text" class="form-control mx-2" id="search-username" name="username" placeholder="usuario@gmail.com">
+        </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+    <form method="GET" class="form-inline mb-2">
+        <div class="form-group">
+            <label for="search-username">Buscar por RUT:</label>
+            <input type="text" class="form-control mx-2" id="search-rut" name="rut" placeholder="XX.XXX.XXX-X">
+        </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Usuario</th>
+                <th>RUT</th>
+                <th>Nombre</th>
+                <th>Primer Apellido</th>
+                <th>Segundo Apellido</th>
+                <th>Fecha de Nacimiento</th>
+                <th>Número de Teléfono</th>
+                <th>Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in clientes %}
+            <tr>
+                <td>{{ c.id }}</td>
+                <td>{{ c.user }}</td>
+                <td>{{ c.rut }}</td>
+                <td>{{ c.user.first_name }}</td>
+                <td>{{ c.user.last_name }}</td>
+                <td>{{ c.second_last_name }}</td>
+                <td>{{ c.fecha_nacimiento }}</td>
+                <td>{{ c.numero_telefono }}</td>
+                <td>
+                  <div class="d-flex align-items-center">
+                    <!-- Botones para editar y borrar cliente -->
+                      <a href="{% url 'editar_cliente' c.id %}" class="btn btn-primary btn-sm">Editar</a>
+                      <a href="{% url 'confirmar_borrar_cliente' c.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                  </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <nav aria-label="Paginación">
+        <ul class="pagination">
+          {% if clientes.has_previous %}
+            <li class="page-item">
+              <a class="page-link" href="?page=1">Primera</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ clientes.previous_page_number }}">Anterior</a>
+            </li>
+          {% endif %}
+      
+          {% for i in clientes.paginator.page_range %}
+            <li class="page-item{% if i == clientes.number %} active{% endif %}">
+              <a class="page-link" href="?page={{ i }}">{{ i }}{% if i == clientes.number %} <span class="sr-only">(current)</span>{% endif %}</a>
+            </li>
+          {% endfor %}
+      
+          {% if clientes.has_next %}
+            <li class="page-item">
+              <a class="page-link" href="?page={{ clientes.next_page_number }}">Siguiente</a>
+            </li>
+            <li class="page-item">
+              <a class="page-link" href="?page={{ clientes.paginator.num_pages }}">Última</a>
+            </li>
+          {% endif %}
+        </ul>
+      </nav>
+          <!-- "Volver atrás" con la clase btn btn-secondary -->
+          {% if has_search_query_username or has_search_query_rut %}
+
+        <a href="{% url 'listar_clientes' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+
+          {% endif %}
+          
+          <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
+          {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+
+        <a href="{% url 'gestionar_cuentas' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+
+          {% endif %}
+</div>
+{% endblock %}

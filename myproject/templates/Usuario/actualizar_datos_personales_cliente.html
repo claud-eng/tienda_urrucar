@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Actualizar Datos Personales{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Actualizar Datos Personales</h1>
+    {% if messages %}
+    <div class="alert alert-success mt-4">
+        {% for message in messages %}
+        {{ message }}
+        {% endfor %}
+    </div>
+    {% endif %}
+    <form method="post" class="mt-4" onsubmit="return confirm('¿Estás seguro de que deseas guardar los cambios?');">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="{{ form.username.id_for_label }}">Usuario:</label>
+            {{ form.username }}
+            {{ form.username.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.rut.id_for_label }}">RUT:</label>
+            {{ form.rut }}
+            {{ form.rut.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.first_name.id_for_label }}">Nombre:</label>
+            {{ form.first_name }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.last_name.id_for_label }}">Primer Apellido:</label>
+            {{ form.last_name }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.second_last_name.id_for_label }}">Segundo Apellido:</label>
+            {{ form.second_last_name }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.fecha_nacimiento.id_for_label }}">Fecha de Nacimiento:</label>
+            {{ form.fecha_nacimiento }}
+            {{ form.fecha_nacimiento.errors }}
+        </div>
+        <div class="form-group">
+            <label for="{{ form.numero_telefono.id_for_label }}">Número de Teléfono:</label>
+            {{ form.numero_telefono }}
+        </div>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="#" id="volverAtrasBtn" class="btn btn-secondary">Volver atrás</a>
+    </form>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var volverAtrasBtn = document.getElementById("volverAtrasBtn");
+    
+        if (volverAtrasBtn) {
+            volverAtrasBtn.addEventListener("click", function() {
+                window.history.back();
+            });
+        }
+    });
+</script>
+
+{% endblock %}
+

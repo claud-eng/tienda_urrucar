@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block title %}Editar cliente{% endblock %}
+
+{% block content %}
+    <div class="container mt-5">
+        <h2>Editar Cliente</h2>
+        <form method="post">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+            <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Volver atrás</a>
+        </form>
+    </div>
+{% endblock %}

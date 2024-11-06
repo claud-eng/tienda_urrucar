@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Sobre Nosotros{% endblock %}
+
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Preguntas Frecuentes</strong></div>
+      </div>
+    </div>
+  </div>  
+
+<section class="container my-5">
+    <h2>Preguntas Frecuentes</h2>
+    <div class="accordion" id="faqAccordion">
+        <!-- Pregunta 1 -->
+        <div class="card">
+            <div class="card-header" id="faqHeading1">
+                <h2 class="mb-0">
+                    <button class="btn btn-link" type="button" data-toggle="collapse" data-target="#faqCollapse1" aria-expanded="true" aria-controls="faqCollapse1">
+                        Lorem ipsum dolor sit amet?
+                    </button>
+                </h2>
+            </div>
+            <div id="faqCollapse1" class="collapse show" aria-labelledby="faqHeading1" data-parent="#faqAccordion">
+                <div class="card-body" style="text-align: justify;">
+                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum aliquet libero ut eros interdum, sed viverra justo venenatis. Duis auctor ex vel nisl consequat, eget sodales enim vehicula. Mauris eget diam velit.
+                </div>
+            </div>
+        </div>
+
+        <!-- Pregunta 2 -->
+        <div class="card">
+            <div class="card-header" id="faqHeading2">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#faqCollapse2" aria-expanded="false" aria-controls="faqCollapse2">
+                        Curabitur auctor enim ut arcu posuere?
+                    </button>
+                </h2>
+            </div>
+            <div id="faqCollapse2" class="collapse" aria-labelledby="faqHeading2" data-parent="#faqAccordion">
+                <div class="card-body" style="text-align: justify;">
+                    Curabitur auctor enim ut arcu posuere, at tincidunt massa sagittis. Cras at est fringilla, feugiat dui non, sollicitudin nunc. Sed vitae ante lectus. Proin consequat lorem id lacus malesuada, a interdum sem fermentum.
+                </div>
+            </div>
+        </div>
+
+        <!-- Pregunta 3 -->
+        <div class="card">
+            <div class="card-header" id="faqHeading3">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#faqCollapse3" aria-expanded="false" aria-controls="faqCollapse3">
+                        Vivamus efficitur mauris at varius gravida?
+                    </button>
+                </h2>
+            </div>
+            <div id="faqCollapse3" class="collapse" aria-labelledby="faqHeading3" data-parent="#faqAccordion">
+                <div class="card-body" style="text-align: justify;">
+                    Vivamus efficitur mauris at varius gravida. Fusce ut ligula lectus. Integer volutpat dolor in nulla pharetra, vel vestibulum risus sagittis. Etiam id ex velit. Pellentesque habitant morbi tristique senectus et netus et malesuada.
+                </div>
+            </div>
+        </div>
+
+        <!-- Pregunta 4 -->
+        <div class="card">
+            <div class="card-header" id="faqHeading4">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#faqCollapse4" aria-expanded="false" aria-controls="faqCollapse4">
+                        Pellentesque sit amet nisl ac sapien lacinia aliquet?
+                    </button>
+                </h2>
+            </div>
+            <div id="faqCollapse4" class="collapse" aria-labelledby="faqHeading4" data-parent="#faqAccordion">
+                <div class="card-body" style="text-align: justify;">
+                    Pellentesque sit amet nisl ac sapien lacinia aliquet. Nulla facilisi. Donec id felis sed metus euismod sollicitudin. Maecenas non metus risus. In lobortis quam id lectus malesuada, id accumsan nisi congue.
+                </div>
+            </div>
+        </div>
+
+        <!-- Pregunta 5 -->
+        <div class="card">
+            <div class="card-header" id="faqHeading5">
+                <h2 class="mb-0">
+                    <button class="btn btn-link collapsed" type="button" data-toggle="collapse" data-target="#faqCollapse5" aria-expanded="false" aria-controls="faqCollapse5">
+                        Quisque vehicula orci ut justo suscipit tincidunt?
+                    </button>
+                </h2>
+            </div>
+            <div id="faqCollapse5" class="collapse" aria-labelledby="faqHeading5" data-parent="#faqAccordion">
+                <div class="card-body" style="text-align: justify;">
+                    Quisque vehicula orci ut justo suscipit tincidunt. Sed eget tortor vel magna consequat suscipit vel ac odio. Integer vestibulum nisl sit amet nibh tristique, ac facilisis erat scelerisque.
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+{% endblock %}

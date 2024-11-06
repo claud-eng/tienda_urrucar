@@ -46,17 +46,19 @@
               <div class="site-top-icons">
                 <ul style="list-style: none; padding: 0; margin: 0; display: flex; justify-content: flex-end; align-items: center;">
                   
+                  {% if user.is_authenticated and user.cliente %}
                   <!-- Ícono del carro de compras a la izquierda -->
                   <li style="text-align: center; margin-right: 20px;">
-                    <a href="{% url 'carro' %}" class="site-cart">
-                      <div style="font-size: 1.5em; position: relative;">
-                        <span class="icon icon-shopping_cart"></span>
-                        <span class="count">2</span>
-                      </div>
-                      <span>Carro</span>
-                    </a>
+                      <a href="{% url 'carrito' %}" class="site-cart">
+                          <div style="font-size: 1.5em; position: relative;">
+                              <span class="icon icon-shopping_cart"></span>
+                              <span class="count">{{ carrito_count }}</span>
+                          </div>
+                          <span>Carrito</span>
+                      </a>
                   </li>
-            
+                  {% endif %}
+
                   {% if user.is_authenticated %}
                     <!-- Mensaje de bienvenida y enlace de cierre de sesión para usuarios autenticados -->
                     <li style="text-align: center; margin-right: 20px;">
@@ -90,19 +92,50 @@
             </div>
           </div>
         </div>
+
+        <!-- Menú especial para administradores -->
+        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+        <nav class="site-navigation text-right text-md-center" role="navigation">
+          <div class="container">
+            <ul class="site-menu js-clone-nav d-none d-md-block">
+              <li>
+                <a href="{% url 'gestionar_inventario' %}" style="color: black; font-weight: bold;">
+                    Gestionar Productos & Servicios
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'gestionar_transacciones' %}" style="color: black; font-weight: bold;">
+                    Gestionar Transacciones
+                </a>
+            </li>
+            <li>
+                <a href="{% url 'gestionar_cuentas' %}" style="color: black; font-weight: bold;">
+                    Gestionar Cuentas
+                </a>
+            </li>
+            <li>
+              <a href="{% url 'reportes_ventas' %}" style="color: black; font-weight: bold;">
+                  Reportes
+              </a>
+          </li>                 
+            </ul>
+          </div>
+        </nav>
+        {% endif %}
+
         <nav class="site-navigation text-right text-md-center" role="navigation">
           <div class="container">
             <ul class="site-menu js-clone-nav d-none d-md-block">
               <li class="active"><a href="{% url 'home' %}">Inicio</a></li>
               <li><a href="{% url 'sobre_nosotros' %}">Sobre Nosotros</a></li>
               <li class="has-children">
-                <a href="{% url 'tienda' %}">Tienda</a>
+                <a href="#">Tienda</a>
                 <ul class="dropdown">
-                  <li><a href="#">Productos</a></li>
+                  <li><a href="{% url 'catalogo_productos' %}">Productos</a></li>
                   <li><a href="#">Servicios</a></li>
                 </ul>
               </li>
-              <li><a href="#">Preguntas Frecuentes</a></li>
+              <li><a href="{% url 'preguntas_frecuentes' %}">Preguntas Frecuentes</a></li>
               <li><a href="{% url 'contactanos' %}">Contáctanos</a></li>
             </ul>
           </div>
@@ -128,6 +161,23 @@
   text-align: right;
 }
 
+/* Estilo uniforme para los iconos en la sección de redes sociales */
+.icon-contact {
+    font-size: 20px; /* Ajusta el tamaño del icono según lo necesario */
+    width: 20px;     /* Ancho uniforme */
+    height: 20px;    /* Altura uniforme */
+    display: inline-block;
+    text-align: center;
+    vertical-align: middle; /* Alinea el icono al centro vertical del texto */
+    margin-right: 8px; /* Espacio entre icono y texto */
+}
+
+/* Alineación de los elementos de redes sociales */
+.footer-social-icons ul li {
+    display: flex;
+    align-items: center; /* Alinea los íconos con el texto */
+}
+
 @media (max-width: 767.98px) {
   .site-navbar-top .new-site-logo,
   .site-navbar-top .site-search-icon,
@@ -151,24 +201,24 @@
         <div class="col-lg-6 mb-5 mb-lg-0">
           <div class="row">
             <div class="col-md-12">
-              <h3 class="footer-heading mb-4">Navigations</h3>
+              <h3 class="footer-heading mb-4">Síguenos</h3>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <!-- Sección de redes sociales -->
+            <div class="col-md-6 col-lg-4 footer-social-icons">
               <ul class="list-unstyled">
-                <li><a href="#">Sell online</a></li>
-                <li><a href="#">Features</a></li>
-                <li><a href="#">Shopping cart</a></li>
-                <li><a href="#">Store builder</a></li>
+                <li><a href="#"><span class="icon-facebook icon-contact"></span> Facebook</a></li>
+                <li><a href="#"><span class="icon-instagram icon-contact"></span> Instagram</a></li>
+                <li><a href="#"><span class="icon-twitter icon-contact"></span> Twitter</a></li>
               </ul>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-4" style="visibility: hidden;">
               <ul class="list-unstyled">
                 <li><a href="#">Mobile commerce</a></li>
                 <li><a href="#">Dropshipping</a></li>
                 <li><a href="#">Website development</a></li>
               </ul>
             </div>
-            <div class="col-md-6 col-lg-4">
+            <div class="col-md-6 col-lg-4" style="visibility: hidden;">
               <ul class="list-unstyled">
                 <li><a href="#">Point of sale</a></li>
                 <li><a href="#">Hardware</a></li>
@@ -187,15 +237,14 @@
       </div>      
         <div class="col-md-6 col-lg-3">
           <div class="block-5 mb-5">
-            <h3 class="footer-heading mb-4">Contact Info</h3>
+            <h3 class="footer-heading mb-4">Información de contacto</h3>
             <ul class="list-unstyled">
-              <li class="address">203 Fake St. Mountain View, San Francisco, California, USA</li>
               <li class="phone"><a href="tel://23923929210">+2 392 3929 210</a></li>
               <li class="email">emailaddress@domain.com</li>
             </ul>
           </div>
 
-          <div class="block-7 hidden-div">
+          <div class="block-7" style="visibility: hidden;">
             <form action="#" method="post">
               <label for="email_subscribe" class="footer-heading">Subscribe</label>
               <div class="form-group">
@@ -204,24 +253,13 @@
               </div>
             </form>
           </div>
-          <style>
-            .hidden-div {
-              visibility: hidden;
-            }
-            
-            @media (max-width: 768px) {
-              .hidden-div {
-                display: none;
-              }
-            }
-            </style>
         </div>
       </div>
-      <div class="row pt-5 mt-5 text-center">
+      <div class="row text-center">
         <div class="col-md-12">
           <p>
           <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-          Copyright &copy;<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>document.write(new Date().getFullYear());</script> All rights reserved | This template is made with <i class="icon-heart" aria-hidden="true"></i> by <a href="https://colorlib.com" target="_blank" class="text-primary">Colorlib</a>
+          Copyright &copy;<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>document.write(new Date().getFullYear());</script> Todos los derechos reservados | Sitio web desarrollado por <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
           <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
           </p>
         </div>

@@ -1,0 +1,51 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalles del Producto{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mt-4">
+        <h1>Detalles del Producto</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card mb-4">
+                <img src="{{ producto.imagen.url }}" class="card-img-top" alt="{{ producto.nombre }}" style="max-width: 100%; max-height: 100%;">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card-body">
+                <h5 class="card-title">{{ producto.nombre }}</h5>
+                <p class="card-text" style="text-align: justify;">{{ producto.descripcion }}</p>
+                <p class="card-text">Precio (IVA incluido): ${{ producto.precio_formateado }}</p>
+                <p class="card-text">Cantidad en Stock: {{ producto.cantidad_stock }}</p>
+                {% if user.is_authenticated and user.cliente %}
+                    <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
+                        {% csrf_token %}
+                        <label for="cantidad">Cantidad:</label>
+                        <input type="number" id="cantidad" name="cantidad" min="1" max="{{ producto.cantidad_stock }}" value="1">
+                        <button type="submit" class="btn btn-primary">Agregar al Carrito</button>
+                    </form>
+                {% else %}
+                    <p>Debes iniciar sesión para poder continuar con la compra.</p>
+                {% endif %}
+                <a href="#" id="volverAtrasBtn" class="btn btn-secondary mt-1">Volver atrás</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var volverAtrasBtn = document.getElementById("volverAtrasBtn");
+    
+        if (volverAtrasBtn) {
+            volverAtrasBtn.addEventListener("click", function() {
+                window.history.back();
+            });
+        }
+    });
+</script>
+
+{% endblock %}

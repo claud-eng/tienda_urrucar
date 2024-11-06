@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirmar Borrado de Servicio{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <h2>Confirmar Borrado</h2>
+            <p>¿Estás seguro de que deseas eliminar el servicio "{{ servicio.nombre }}" de la base de datos?</p>
+            <p><strong>Nombre:</strong> {{ servicio.nombre }}</p>
+            <p><strong>Descripción:</strong> {{ servicio.descripcion }}</p>
+            <p><strong>Precio:</strong> {{ servicio.precio }}</p>
+
+            <form method="post">
+                {% csrf_token %}
+                <a href="{% url 'borrar_servicio' servicio.id %}" class="btn btn-danger">Confirmar Borrado</a>
+                <a href="{% url 'listar_servicios' %}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

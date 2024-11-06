@@ -5,7 +5,16 @@ Iniciar sesión
 {% endblock %}
 
 {% block content %}
-<div class="container">
+
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Iniciar Sesión</strong></div>
+      </div>
+    </div>
+  </div>  
+
+<div class="container mt-5">
     <div class="row">
         <!-- Parte izquierda con opciones mejoradas -->
         <div class="col-md-6">

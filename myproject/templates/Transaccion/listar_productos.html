@@ -1,0 +1,171 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Productos{% endblock %}
+
+{% block content %}
+<style>
+    .estado-column {
+        min-width: 180px; /* Establece un ancho mínimo para la columna "Estado" */
+    }
+</style>
+<div class="container mt-5">
+    <h2>Lista de Productos</h2>
+
+    <!-- Agregar mensajes de éxito o error -->
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+    <!-- Botón para agregar un nuevo producto -->
+    <a href="{% url 'agregar_producto' %}" class="btn btn-success mb-2">Agregar Producto</a>
+    {% endif %}
+    <!-- Filtros de búsqueda -->
+    <form method="GET" class="form-control-file mb-2">
+        <div class="form-group">
+            <label for="search-nombre">Buscar por Nombre:</label>
+            <input type="text" class="form-control mx-2" id="search-nombre" name="nombre" placeholder="Nombre del Producto" value="{{ request.GET.nombre }}">
+        </div>
+
+        <!-- Filtro de marca -->
+        <div class="form-group">
+            <label for="filtro-marca">Filtrar por Marca:</label>
+            <input type="text" class="form-control mx-2" id="filtro-marca" name="marca" placeholder="Escribe la marca" value="{{ request.GET.marca }}">
+        </div>
+        <!-- Filtro de categoría -->
+        <div class="form-group">
+            <label for="filtro-categoria">Filtrar por Categoría:</label>
+            <select class="form-control mx-2" id="filtro-categoria" name="categoria">
+                <option value="" {% if not request.GET.categoria %}selected{% endif %}>Todas</option>
+                <option value="Auto" {% if request.GET.categoria == 'Auto' %}selected{% endif %}>Auto</option>
+                <!-- Agrega opciones para todas tus categorías -->
+                {% for categoria in categorias %}
+                    <option value="{{ categoria }}" {% if request.GET.categoria == categoria %}selected{% endif %}>{{ categoria }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    
+        <!-- Filtro de precio -->
+        <div class="form-group">
+            <label for="filtro-precio">Filtrar por Precio:</label>
+            <select class="form-control mx-2" id="filtro-precio" name="sort">
+                <option value="">Todos</option>
+                <option value="asc" {% if request.GET.sort == 'asc' %}selected{% endif %}>Menor a Mayor</option>
+                <option value="desc" {% if request.GET.sort == 'desc' %}selected{% endif %}>Mayor a Menor</option>
+            </select>
+        </div>
+
+        <!-- Filtro de stock -->
+        <div class="form-group">
+            <label for="filtro-stock">Filtrar por Stock:</label>
+            <select class="form-control mx-2" id="filtro-stock" name="stock">
+                <option value="">Todos</option>
+                <option value="asc" {% if request.GET.stock == 'asc' %}selected{% endif %}>Menor a Mayor</option>
+                <option value="desc" {% if request.GET.stock == 'desc' %}selected{% endif %}>Mayor a Menor</option>
+            </select>
+        </div>
+            
+        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+        <a href="{% url 'listar_productos' %}" class="btn btn-outline-danger ml-2">Quitar Filtros</a>
+    </form>
+
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Marca</th>
+                <th>Categoría</th>
+                <th>Descripción</th>
+                <th>Precio (IVA incluido)</th>
+                <th>Cantidad en Stock</th>
+                <th class="estado-column">Estado</th>  <!-- Agregamos la clase "estado-column" -->
+                <th>Imagen</th>
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for producto in productos %}
+                <tr>
+                    <td>{{ producto.id }}</td>
+                    <td>{{ producto.nombre }}</td>
+                    <td>{{ producto.marca }}</td>
+                    <td>{{ producto.categoria }}</td>
+                    <td style="text-align: justify;">{{ producto.descripcion }}</td>
+                    <td>${{ producto.precio_formateado }}</td>
+                    <td>{{ producto.cantidad_stock }}</td>
+                    <td class="estado-column">
+                        {% if producto.cantidad_stock >= 10 %}
+                            <span class="alert alert-success">Suficiente Stock</span>
+                        {% elif producto.cantidad_stock > 0 %}
+                            <span class="alert alert-warning">Bajo Stock</span>
+                        {% else %}
+                            <span class="alert alert-danger">No hay Stock</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if producto.imagen %}
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" width="100">
+                        {% else %}
+                            No hay imagen disponible
+                        {% endif %}
+                    </td>
+                    
+                    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <a href="{% url 'editar_producto' producto.id %}" class="btn btn-primary btn-sm">Editar</a>
+                            <a href="{% url 'confirmar_borrar_producto' producto.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <nav aria-label="Paginación">
+        <ul class="pagination">
+            {% if productos.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if request.GET.nombre %}&nombre={{ request.GET.nombre }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ productos.previous_page_number }}{% if request.GET.nombre %}&nombre={{ request.GET.nombre }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Anterior</a>
+                </li>
+            {% endif %}
+            
+            {% for i in productos.paginator.page_range %}
+                <li class="page-item{% if i == productos.number %} active{% endif %}">
+                    <a class="page-link" href="?page={{ i }}{% if request.GET.nombre %}&nombre={{ request.GET.nombre }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ i }}{% if i == productos.number %} <span class="sr-only">(current)</span>{% endif %}</a>
+                </li>
+            {% endfor %}
+            
+            {% if productos.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ productos.next_page_number }}{% if request.GET.nombre %}&nombre={{ request.GET.nombre }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ productos.paginator.num_pages }}{% if request.GET.nombre %}&nombre={{ request.GET.nombre }}{% endif %}{% if request.GET.categoria %}&categoria={{ request.GET.categoria }}{% endif %}{% if request.GET.stock %}&stock={{ request.GET.stock }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    
+    
+    <!-- "Volver atrás" con la clase btn btn-secondary -->
+    {% if has_search_query_username or has_search_query_rut %}
+    <a href="{% url 'listar_productos' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+    {% endif %}
+    
+    <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
+    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+    <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+    {% endif %}
+</div>
+{% endblock %}

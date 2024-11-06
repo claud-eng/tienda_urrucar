@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+
+{% block title %}Lista de Servicios{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Lista de Servicios</h2>
+
+    <!-- Agregar mensajes de éxito o error -->
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li{% if message.tags %} class="{{ message.tags }}"{% endif %}>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+    <!-- Botón para agregar un nuevo servicio -->
+    <a href="{% url 'agregar_servicio' %}" class="btn btn-success mb-2">Agregar Servicio</a>
+    {% endif %}
+    <!-- Filtros de búsqueda -->
+    <form method="GET" class="form-inline mb-2">
+        <div class="form-group">
+            <label for="search-nombre">Buscar por Nombre:</label>
+            <input type="text" class="form-control mx-2" id="search-nombre" name="nombre" placeholder="Nombre del Servicio">
+        </div>
+        <button type="submit" class="btn btn-primary">Buscar</button>
+    </form>
+
+    <table class="table table-responsive">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th>Precio (IVA incluido)</th>
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                <th>Acciones</th>
+                {% endif %}
+            </tr>
+        </thead>
+        <tbody>
+            {% for servicio in servicios %}
+                <tr>
+                    <td>{{ servicio.id }}</td>
+                    <td>{{ servicio.nombre }}</td>
+                    <td style="text-align: justify;">{{ servicio.descripcion }}</td>
+                    <td>${{ servicio.precio }}</td>
+                    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <a href="{% url 'editar_servicio' servicio.id %}" class="btn btn-primary btn-sm">Editar</a>
+                            <a href="{% url 'confirmar_borrar_servicio' servicio.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                        </div>
+                    </td>
+                    {% endif %}
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <nav aria-label="Paginación">
+        <ul class="pagination">
+            {% if servicios.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ servicios.previous_page_number }}">Anterior</a>
+                </li>
+            {% endif %}
+
+            {% for i in servicios.paginator.page_range %}
+                <li class="page-item{% if i == servicios.number %} active{% endif %}">
+                    <a class="page-link" href="?page={{ i }}">{{ i }}{% if i == servicios.number %} <span class="sr-only">(current)</span>{% endif %}</a>
+                </li>
+            {% endfor %}
+
+            {% if servicios.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ servicios.next_page_number }}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ servicios.paginator.num_pages }}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+          <!-- "Volver atrás" con la clase btn btn-secondary -->
+          {% if has_search_query_username or has_search_query_rut %}
+
+        <a href="{% url 'listar_servicios' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+
+          {% endif %}
+          
+          <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
+          {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+
+        <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+
+          {% endif %}
+</div>
+{% endblock %}

@@ -1,15 +1,12 @@
-from django.shortcuts import redirect, render  # Importa funciones para redirigir y renderizar plantillas HTML
 from apps.Usuario.models import Cliente, Empleado  # Importa los modelos Cliente y Empleado de la aplicación Usuario
-from .forms import ClienteForm, EmpleadoForm, EditarClienteForm, EditarEmpleadoForm  # Importa los formularios definidos en este directorio
 from django.contrib import messages  # Importa la clase para trabajar con mensajes de Django
-from django.contrib.auth.hashers import make_password  # Importa la función para crear contraseñas seguras
-from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage  # Importa clases y funciones para paginación
-from django.contrib.auth.decorators import login_required
-from django.contrib import messages
-from .forms import CustomClienteForm
-from .forms import CambiarContraseñaClienteForm
-from django.contrib.auth.models import User  # Importa el modelo User
 from django.contrib.auth import logout
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.hashers import make_password  # Importa la función para crear contraseñas seguras
+from django.contrib.auth.models import User  # Importa el modelo User
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator  # Importa clases y funciones para paginación
+from django.shortcuts import redirect, render  # Importa funciones para redirigir y renderizar plantillas HTML
+from .forms import CambiarContraseñaClienteForm, ClienteForm, CustomClienteForm, EditarClienteForm, EditarEmpleadoForm, EmpleadoForm  # Importa los formularios definidos en este directorio
 
 @login_required
 def listar_clientes(request):

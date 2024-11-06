@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if es_Administrador %}
+        Historial de Ventas Online
+    {% else %}
+        Historial de Compras Online
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>
+        {% if es_Administrador %}
+            Historial de Ventas Online
+        {% else %}
+            Historial de Compras Online
+        {% endif %}
+    </h2>
+
+    {% if es_Administrador %}
+    <!-- Formulario de búsqueda -->
+    <form method="GET" class="form-control-file mb-2">
+        <div class="form-group">
+            <label for="search-cliente">Buscar por Cliente:</label>
+            <input type="text" class="form-control mx-2" id="search-cliente" name="cliente" placeholder="Nombre del Cliente" value="{{ cliente_query }}">
+        </div>
+        <button type="submit" class="btn btn-outline-primary mb-2">Buscar</button>
+        <a href="{% url 'listar_ventas_online' %}" class="btn btn-outline-danger mb-2">Quitar filtro</a>
+    </form>
+    {% endif %}
+
+    <!-- Tabla de ventas online -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Número de Orden</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Detalle</th>
+                    <th>Tipo de Pago</th>
+                    <th>Monto de Cuotas</th>
+                    <th>Número de Cuotas</th>
+                    <th>Total (IVA incluido)</th>
+                    <th>Emitir Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for orden in ordenes_paginadas %}
+                <tr>
+                    <td>{{ orden.numero_orden }}</td>
+                    <td>{{ orden.cliente.user.username }}</td>
+                    <td>{{ orden.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% for detalle in orden.detalles_formateados %}
+                            {% if detalle.es_producto %}
+                                {{ detalle.nombre }} - Cantidad: {{ detalle.cantidad }} - Precio: ${{ detalle.precio_formateado }}<br>
+                            {% else %}
+                                {{ detalle.nombre }} - Valor: ${{ detalle.precio_formateado }}<br>
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if orden.tipo_pago == 'VD' %}
+                            Venta Débito
+                        {% elif orden.tipo_pago == 'VN' %}
+                            Venta Normal
+                        {% elif orden.tipo_pago == 'VC' %}
+                            Venta en Cuotas
+                        {% elif orden.tipo_pago == 'SI' %}
+                            3 Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'S2' %}
+                            2 Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'NC' %}
+                            Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'VP' %}
+                            Venta Prepago
+                        {% else %}
+                            {{ orden.tipo_pago }}
+                        {% endif %}
+                    </td>
+                    <td>${{ orden.monto_cuotas|default:'0' }}</td>
+                    <td>{{ orden.numero_cuotas }}</td>
+                    <td>${{ orden.total_formateado }}</td>
+                    <td>
+                        <a href="{% url 'generar_comprobante_online' orden.numero_orden %}" class="btn btn-primary">Descargar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Paginación -->
+    <nav aria-label="Paginación">
+        <ul class="pagination">
+            {% if ordenes_paginadas.has_previous %}
+                <li class="page-item">
+                    <a class="page-link" href="?page=1{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Primera</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ordenes_paginadas.previous_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Anterior</a>
+                </li>
+            {% endif %}
+            
+            {% for num in ordenes_paginadas.paginator.page_range %}
+                {% if ordenes_paginadas.number == num %}
+                    <li class="page-item active"><a class="page-link" href="#">{{ num }}</a></li>
+                {% else %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if ordenes_paginadas.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ordenes_paginadas.next_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Siguiente</a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="?page={{ ordenes_paginadas.paginator.num_pages }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Última</a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+
+    <!-- Botón Volver atrás para clientes -->
+    {% if user.cliente or user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+        <div class="mt-4">
+            <a href="{% url 'gestionar_transacciones' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+        </div>
+    {% endif %}
+    
+</div>
+{% endblock %}

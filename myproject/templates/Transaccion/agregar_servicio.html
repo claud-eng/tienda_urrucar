@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block title %}Agregar Servicio{% endblock %}
+
+{% block content %}
+<div class="container">
+  <h1>Agregar Servicio</h1>
+  <form method="post">
+    {% csrf_token %}
+    
+    <div class="form-group">
+      <label for="{{ form.nombre.id_for_label }}">Nombre</label>
+      <input type="text" class="form-control" id="{{ form.nombre.id_for_label }}" name="{{ form.nombre.name }}" value="{{ form.nombre.value|default:'' }}">
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
+      <textarea class="form-control" id="{{ form.descripcion.id_for_label }}" name="{{ form.descripcion.name }}" rows="4">{{ form.descripcion.value|default:'' }}</textarea>
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.precio.id_for_label }}">Precio</label>
+      <input type="number" class="form-control" id="{{ form.precio.id_for_label }}" name="{{ form.precio.name }}" value="{{ form.precio.value|default:'' }}">
+    </div>
+
+    <button type="submit" class="btn btn-primary">Agregar Servicio</button>
+    <a href="{% url 'listar_servicios' %}" class="btn btn-secondary">Volver atrás</a>
+  </form>
+</div>
+{% endblock %}

@@ -89,13 +89,13 @@ class ClienteForm(forms.ModelForm):
         max_length=30,
         required=True,
         label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Claudio'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Alejandra'}),
     )
     last_name = forms.CharField(
         max_length=30,
         required=True,
         label='Primer Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Zamorano'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
     )
 
     rut = forms.CharField(
@@ -116,7 +116,7 @@ class ClienteForm(forms.ModelForm):
         max_length=150,
         required=True,
         label='Segundo Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Capdeville'}),
     )
     fecha_nacimiento = forms.DateField(
         required=True,

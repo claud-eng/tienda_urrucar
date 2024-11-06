@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+        Historial de Ventas Presenciales
+    {% elif user.cliente %}
+        Historial de Compras Presenciales
+    {% else %}
+        Historial
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex flex-column mb-3">
+        {% if user.empleado and user.empleado.rol == 'Administrador' %}
+            <h2>Historial de Ventas Presenciales</h2>
+        {% elif user.cliente %}
+            <h2>Historial de Compras Presenciales</h2>
+        {% else %}
+            <h2>Historial</h2>
+        {% endif %}
+        {% if user.empleado and user.empleado.rol == 'Administrador' %}
+        <div class="d-flex justify-content-start">
+            <a href="{% url 'agregar_venta' %}?{{ request.GET.urlencode }}" class="btn btn-success mb-2">Registrar Venta</a>
+        </div>
+        {% endif %}
+    </div>
+    {% for message in messages %}
+    <div class="alert alert-{{ message.tags }}" role="alert">
+        {{ message }}
+    </div>
+    {% endfor %}
+    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+    <form method="GET" class="form-control-file mb-2">
+        <div class="form-group">
+            <label for="search-cliente">Buscar por Cliente:</label>
+            <input type="text" class="form-control mx-2" id="search-cliente" name="cliente" placeholder="Nombre del Cliente" value="{{ cliente_query }}">
+        </div>
+        <div class="form-group">
+            <button type="submit" class="btn btn-outline-primary">Buscar</button>
+        </div>
+        <div class="form-group">
+            <a href="{% url 'listar_ventas' %}" class="btn btn-outline-danger mb-2">Quitar filtro</a>
+        </div>
+    </form>
+    {% endif %}    
+    
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Número de Orden</th>
+                    <th>Cliente</th>
+                    <th>Fecha</th>
+                    <th>Detalle</th>
+                    <th>Total (IVA incluido)</th>
+                    <th>Pagó</th>
+                    <th>Vuelto</th>
+                    <th>Emitir Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta_info in ventas_list %}
+                <tr>
+                    <td>{{ venta_info.venta.id }}</td>
+                    <td>{{ venta_info.venta.cliente.user.username }}</td>
+                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% if venta_info.tiene_productos %}
+                            <strong>Productos:</strong>
+                            <ul>
+                                {% for detalle in venta_info.productos %}
+                                    <li>{{ detalle.producto.nombre }} - Cantidad: {{ detalle.cantidad }} - Precio Unitario: ${{ detalle.producto.precio }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+            
+                        {% if venta_info.tiene_servicios %}
+                            <strong>Servicios:</strong>
+                            <ul>
+                                {% for detalle in venta_info.servicios %}
+                                    <li>{{ detalle.servicio.nombre }} - Valor: ${{ detalle.servicio.precio }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </td>
+                    <td>${{ venta_info.venta.total }}</td>
+                    <td>${{ venta_info.venta.pago_cliente }}</td>
+                    <td>${{ venta_info.venta.cambio }}</td>
+                    <td>
+                        <a href="{% url 'generar_comprobante' venta_info.venta.id %}" class="btn btn-primary btn-sm">Descargar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <nav aria-label="Paginación">
+            <ul class="pagination">
+                {% if ventas_paginadas.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page=1{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Primera</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ ventas_paginadas.previous_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Anterior</a>
+                    </li>
+                {% endif %}
+                
+                {% for i in ventas_paginadas.paginator.page_range %}
+                    <li class="page-item{% if i == ventas_paginadas.number %} active{% endif %}">
+                        <a class="page-link" href="?page={{ i }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                
+                {% if ventas_paginadas.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ ventas_paginadas.next_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Siguiente</a>
+                    </li>
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ ventas_paginadas.paginator.num_pages }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Última</a>
+                    </li>
+                {% endif %}
+            </ul>
+        </nav>
+
+    <!-- Botón Volver atrás para clientes -->
+    {% if user.cliente or user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+        <div class="mt-4">
+            <a href="{% url 'gestionar_transacciones' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+        </div>
+    {% endif %}
+        
+    </div>
+</div>
+{% endblock %}

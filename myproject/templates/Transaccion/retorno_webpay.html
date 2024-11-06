@@ -1,0 +1,86 @@
+{% extends 'base.html' %}
+
+{% block title %}Resultado de la Transacción{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="text-center mt-4">
+        <h1>Resultado de la Transacción</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            {% if mensaje_error %}
+                <!-- Mostrar mensaje de error si existe -->
+                <div class="alert alert-danger">
+                    <h4 class="alert-heading">Transacción con Problemas</h4>
+                    <p>{{ mensaje_error }}</p>
+                </div>
+            {% elif transaccion_exitosa %}
+                <!-- Mostrar mensaje de éxito si la transacción fue exitosa y no hay mensaje de error -->
+                <div class="alert alert-success">
+                    <h4 class="alert-heading">¡Transacción Exitosa!</h4>
+                    <p>Gracias por tu compra. Tu orden ha sido procesada correctamente.</p>
+                    <hr>
+                    <p class="mb-0">Número de orden: {{ orden.numero_orden }}</p>
+                    <p class="mb-0">Tipo de pago: 
+                        {% if orden.tipo_pago == 'VD' %}
+                            Venta Débito
+                        {% elif orden.tipo_pago == 'VN' %}
+                            Venta Normal
+                        {% elif orden.tipo_pago == 'VC' %}
+                            Venta en Cuotas
+                        {% elif orden.tipo_pago == 'SI' %}
+                            3 Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'S2' %}
+                            2 Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'NC' %}
+                            Cuotas sin Interés
+                        {% elif orden.tipo_pago == 'VP' %}
+                            Venta Prepago
+                        {% else %}
+                            {{ orden.tipo_pago }}  <!-- Mostrar las siglas si no coincide con ninguno de los anteriores -->
+                        {% endif %}
+                    </p>
+            
+                    {% if orden.tipo_pago == 'VC' or orden.tipo_pago == 'SI' or orden.tipo_pago == 'S2' or orden.tipo_pago == 'NC' %}
+                        <p class="mb-0">Monto de cada cuota: ${{ orden.monto_cuotas }}</p>
+                        <p class="mb-0">Número de cuotas: {{ orden.numero_cuotas }}</p>
+                    {% endif %}
+                    <p class="mb-0">Monto total (IVA incluido): ${{ orden.total_formateado }}</p>
+
+                    <!-- Tabla de detalles de la compra -->
+                    <h3 class="mt-4">Detalles de la Compra:</h3>
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Cantidad</th>
+                                <th>Precio Unitario (IVA incluido)</th>
+                                <th>Precio Total (IVA incluido)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for detalle in detalles_compra %}
+                            <tr>
+                                <td>{{ detalle.nombre }}</td>
+                                <td>{{ detalle.cantidad }}</td>
+                                <td>${{ detalle.precio_unitario }}</td>
+                                <td>${{ detalle.precio_total }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <a href="{% url 'generar_comprobante_online' orden.numero_orden %}" class="btn btn-secondary">Descargar Comprobante</a>
+                </div>
+            {% else %}
+                <!-- Mensaje de transacción fallida, si no es exitosa y no hay mensaje de error específico -->
+                <div class="alert alert-danger">
+                    <h4 class="alert-heading">Transacción Fallida</h4>
+                    <p>Lo sentimos, tu transacción no se pudo completar.</p>
+                </div>
+            {% endif %}
+            <a href="{% url 'catalogo_productos' %}" class="btn btn-primary">Volver al Catálogo</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

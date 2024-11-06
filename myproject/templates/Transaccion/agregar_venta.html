@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+
+{% block title %}Registrar Venta{% endblock %}
+
+{% block content %}
+<div class="container mt-5">
+    <h2>Registrar Venta</h2>
+    <form method="post" id="ventaForm" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        {% for message in messages %}
+<div class="alert alert-{{ message.tags }}" role="alert">
+    {{ message }}
+</div>
+{% endfor %}
+
+        <div class="form-group">
+            {{ orden_venta_form.cliente.label_tag }}
+            {{ orden_venta_form.cliente|add_class:"form-control" }}
+            {% if orden_venta_form.cliente.errors %}
+                <div class="alert alert-danger">
+                    {{ orden_venta_form.cliente.errors.as_text }}
+                </div>
+            {% endif %}
+            <a href="{% url 'listar_clientes' %}" class="btn btn-primary mt-3" target="_blank">Ver listado de clientes</a>
+        </div>
+        
+        <h3>Productos</h3>
+        <div id="productos-form-container">
+            {{ detalle_formset.management_form }}
+            {% for form in detalle_formset %}
+                <div class="producto-form form-row align-items-end">
+                    <div class="form-group col-md-5">
+                        {{ form.producto.label_tag }}
+                        {{ form.producto|add_class:"form-control" }}
+                        {% if form.producto.errors %}
+                            <div class="alert alert-danger">
+                                {{ form.producto.errors.as_text }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="form-group col-md-5">
+                        {{ form.cantidad.label_tag }}
+                        {{ form.cantidad|add_class:"form-control" }}
+                    </div>
+                    {% if forloop.first %}
+                        <div class="form-group col-md-2">
+                            <!-- Espacio vacío para alinear con otros campos -->
+                        </div>
+                    {% else %}
+                        <div class="form-group col-md-2">
+                            <button type="button" class="btn btn-danger remove-producto">Quitar</button>
+                        </div>
+                    {% endif %}
+                </div>
+            {% endfor %}
+            <button type="button" id="add-more-productos" class="btn btn-info mb-3">Agregar otro producto</button>
+            <a href="{% url 'listar_productos' %}" class="btn btn-primary mb-3" target="_blank">Ver listado de productos</a>
+
+            <h3>Servicios</h3>
+            <div id="servicios-form-container">
+                {{ detalle_servicio_formset.management_form }}
+                {% for form in detalle_servicio_formset %}
+                    <div class="servicio-form form-row align-items-end">
+                        <div class="form-group col-md-10">
+                            {{ form.servicio.label_tag }}
+                            {{ form.servicio|add_class:"form-control" }}
+                            {% if form.servicio.errors %}
+                                <div class="alert alert-danger">
+                                    {{ form.servicio.errors.as_text }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        {% if forloop.first %}
+                            <div class="form-group col-md-2">
+                                <!-- Espacio vacío para alinear con otros campos -->
+                            </div>
+                        {% else %}
+                            <div class="form-group col-md-2">
+                                <button type="button" class="btn btn-danger remove-servicio">Quitar</button>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+                <button type="button" id="add-more-servicios" class="btn btn-info mb-3">Agregar otro servicio</button>
+                <a href="{% url 'listar_servicios' %}" class="btn btn-primary mb-3" target="_blank">Ver listado de servicios</a>
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ orden_venta_form.pago_cliente.label_tag }}
+            {{ orden_venta_form.pago_cliente|add_class:"form-control" }}
+        </div>
+        
+        <div class="form-group mb-5">
+            <input type="submit" value="Registrar Venta" class="btn btn-primary">
+            <a href="{% if query_string %}{% url 'listar_ventas' %}?{{ query_string }}{% else %}{% url 'listar_ventas' %}{% endif %}" class="btn btn-secondary">Volver atrás</a>
+        </div>        
+    </form>
+</div>
+
+<script type="text/javascript">
+    document.addEventListener('DOMContentLoaded', function() {
+        function updateElementIndex(el, prefix, index) {
+            var id_regex = new RegExp('(' + prefix + '-\\d+)');
+            var replacement = prefix + '-' + index;
+            if ($(el).attr("for")) $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
+            if (el.id) el.id = el.id.replace(id_regex, replacement);
+            if (el.name) el.name = el.name.replace(id_regex, replacement);
+        }
+        
+        function cloneMore(selector, prefix) {
+            var newElement = $(selector).clone(true);
+            var total = $('#id_' + prefix + '-TOTAL_FORMS').val();
+            newElement.find(':input').each(function() {
+                var name = $(this).attr('name').replace('-' + (total-1) + '-', '-' + total + '-');
+                var id = 'id_' + name;
+                $(this).attr({'name': name, 'id': id}).val('').removeAttr('checked');
+            });
+            newElement.find('label').each(function() {
+                var forValue = $(this).attr('for').replace('-' + (total-1) + '-', '-' + total + '-');
+                $(this).attr('for', forValue);
+            });
+            newElement.find('.remove-form-row').remove(); // Remove the remove button from the clone
+            newElement.append('<div class="form-group col-md-2"><button type="button" class="btn btn-danger remove-form-row">Quitar</button></div>'); // Add the remove button to the clone
+            total++;
+            $('#id_' + prefix + '-TOTAL_FORMS').val(total);
+            $(selector).after(newElement);
+        }
+        
+        $('#add-more-productos').click(function() {
+            cloneMore('.producto-form:last', 'productos');
+        });
+    
+        $('#add-more-servicios').click(function() {
+            cloneMore('.servicio-form:last', 'servicios');
+        });
+    
+        $(document).on('click', '.remove-form-row', function(e) {
+            e.preventDefault();
+            var formType = $(this).closest('.form-row').parent().attr('id'); // 'productos-form-container' or 'servicios-form-container'
+            var prefix = formType.replace('-form-container', ''); // 'productos' or 'servicios'
+            $(this).closest('.form-row').remove();
+            var totalForms = $('#id_' + prefix + '-TOTAL_FORMS');
+            var currentTotal = parseInt(totalForms.val(), 10);
+            totalForms.val(currentTotal - 1);
+        });
+    });
+    </script>
+{% endblock %}

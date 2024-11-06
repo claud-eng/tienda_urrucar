@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Gestionar Transacciones{% endblock %}
+
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Gestionar Transacciones</strong></div>
+      </div>
+    </div>
+  </div>  
+
+<div class="container mt-5">
+    <div class="row">
+        <div class="col-md-6">
+            <h2>Visualizar Ventas</h2>
+            <p>Aquí puedes visualizar el historial de ventas registradas de forma manual.</p>
+            <a href="{% url 'listar_ventas' %}" class="btn btn-primary">Ver historial de ventas</a>
+        </div>
+        <div class="col-md-6">
+            <h2>Visualizar Compras En Línea</h2>
+            <p>Aquí puedes visualizar el historial de compras en línea que se han hecho.</p>
+            <a href="{% url 'listar_ventas_online' %}" class="btn btn-primary">Ver historial de compras</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

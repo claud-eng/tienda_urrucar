@@ -1,0 +1,192 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Reporte de Ventas Presenciales
+{% endblock %}
+
+{% block content %}
+
+<style>
+    .header-background {
+        background-color: #f2f2f2;
+    }
+</style>
+
+<div class="container mt-4">
+    <h2>Reporte de Ventas Manuales</h2>
+
+    <!-- Formulario para seleccionar año y mes -->
+    <form action="{% url 'reportes_ventas' %}" method="get">
+        <div class="row">
+            <div class="col">
+                <label for="anio">Año:</label>
+                <select id="anio" name="anio" class="form-control">
+                    {% for anio in rango_anios %}
+                    <option value="{{ anio }}" {% if anio == anio_seleccionado %}selected{% endif %}>{{ anio }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="mes">Mes:</label>
+                <select id="mes" name="mes" class="form-control">
+                    {% for mes in rango_meses %}
+                    <option value="{{ mes }}" {% if mes == mes_seleccionado %}selected{% endif %}>{{ mes }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Mostrar Reporte</button>
+        <div>
+            <!-- Botón para exportar a PDF -->
+            <button type="submit" formaction="{% url 'exportar_pdf' %}" class="btn btn-primary mt-2">Exportar a PDF</button>
+        </div>
+    </form>
+
+    <div class="row mt-2">
+        <!-- Bloque para los productos -->
+        <div class="col-md-6">
+            <h3>Top 5 productos más vendidos del mes de {{ nombre_mes }}</h3>
+            {% if mensaje_productos %}
+                <p>{{ mensaje_productos }}</p>
+            {% else %}
+                <canvas id="graficoProductosMasVendidos"></canvas>
+            {% endif %}
+        </div>
+        <div class="col-md-6 mt-2">
+            {% if datos_productos_json %}
+                <table class="table" id="tablaProductos">
+                    <thead>
+                        <tr>
+                            <th class="header-background">Producto</th>
+                            <th class="header-background">Cantidad</th>
+                            <th class="header-background">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos de la tabla se llenarán con JavaScript -->
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+
+        <!-- Bloque para los servicios -->
+        <div class="col-md-6 mt-2">
+            <h3>Top 5 servicios más vendidos del mes de {{ nombre_mes }}</h3>
+            {% if mensaje_servicios %}
+                <p>{{ mensaje_servicios }}</p>
+            {% else %}
+                <canvas id="graficoServiciosMasVendidos"></canvas>
+            {% endif %}
+        </div>
+        <div class="col-md-6 mt-2">
+            {% if datos_servicios_json %}
+                <table class="table" id="tablaServicios">
+                    <thead>
+                        <tr>
+                            <th class="header-background">Servicio</th>
+                            <th class="header-background">Cantidad</th>
+                            <th class="header-background">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Los datos de la tabla se llenarán con JavaScript -->
+                    </tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Incluir Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const datosProductos = JSON.parse(`{% autoescape off %}{{ datos_productos_json }}{% endautoescape %}`);
+    const datosServicios = JSON.parse(`{% autoescape off %}{{ datos_servicios_json }}{% endautoescape %}`);
+
+    console.log("Datos de Productos:", datosProductos);
+    console.log("Datos de Servicios:", datosServicios);
+
+    const colores = [
+        'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+    ];
+
+    function crearGraficoTorta(ctx, datos) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    data: datos.data,
+                    backgroundColor: colores.slice(0, datos.data.length),
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                plugins: {
+                    legend: false,
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.label || '';
+                                if (label) label += ': ';
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const currentValue = context.parsed;
+                                const percentage = Math.round(((currentValue / total) * 100) + Number.EPSILON);
+                                label += `${currentValue} (${percentage}%)`;
+                                return label;
+                            }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    function calcularPorcentajes(datos) {
+        const total = datos.data.reduce((a, b) => a + b, 0);
+        return datos.labels.map((label, index) => {
+            const valor = datos.data[index];
+            const porcentaje = total ? ((valor / total) * 100).toFixed(2) : 0;
+            return {
+                nombre: label,
+                valor: valor,
+                porcentaje: porcentaje,
+                color: colores[index % colores.length]
+            };
+        });
+    }
+
+    function mostrarTabla(elementId, datos) {
+        const tablaHTML = datos.map(item => {
+            return `<tr style="background-color: ${item.color};">
+                        <td>${item.nombre}</td>
+                        <td>${item.valor}</td>
+                        <td>${item.porcentaje}%</td>
+                    </tr>`;
+        }).join('');
+        document.getElementById(elementId).querySelector('tbody').innerHTML = tablaHTML;
+    }
+
+    window.onload = function() {
+        if (datosProductos.labels.length > 0) {
+            const ctxProductos = document.getElementById('graficoProductosMasVendidos').getContext('2d');
+            crearGraficoTorta(ctxProductos, datosProductos);
+
+            const porcentajesProductos = calcularPorcentajes(datosProductos);
+            mostrarTabla('tablaProductos', porcentajesProductos);
+        }
+
+        if (datosServicios.labels.length > 0) {
+            const ctxServicios = document.getElementById('graficoServiciosMasVendidos').getContext('2d');
+            crearGraficoTorta(ctxServicios, datosServicios);
+
+            const porcentajesServicios = calcularPorcentajes(datosServicios);
+            mostrarTabla('tablaServicios', porcentajesServicios);
+        }
+    };
+</script>
+
+{% endblock %}

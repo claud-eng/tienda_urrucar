@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+
+{% block title %}Carrito de Compras{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Agregar mensajes de error -->
+    {% if messages %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+    <div class="text-center mt-4">
+        <h1>Carrito de Compras</h1>
+    </div>
+    <div class="row">
+        <div class="col-md-12">
+            <div class="table-responsive"> <!-- Agregamos el contenedor responsive -->
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Producto/Servicio</th>
+                            <th>Cantidad</th>
+                            <th>Precio Unitario (IVA incluido)</th>
+                            <th>Total (IVA incluido)</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in carrito_items %}
+                        <tr>
+                            <td>{{ item.item.nombre }}</td>
+                            <td>{{ item.cantidad }}</td>
+                            <td>${{ item.precio_formateado }}</td>
+                            <td>${{ item.precio_total_formateado }}</td>
+                            <td>
+                                {% if not item.es_servicio %}
+                                <form method="post" action="{% url 'aumentar_cantidad' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm">Aumentar cantidad</button>
+                                </form>
+                                    <form method="post" action="{% url 'disminuir_cantidad' item.id %}">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-secondary btn-sm mt-1">Disminuir cantidad</button>
+                                    </form>
+                                {% endif %}
+                                <form method="post" action="{% url 'eliminar_del_carrito' item.id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-danger btn-sm mt-1">Eliminar</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        <tr>
+                            <td colspan="3" class="text-right"><strong>Total:</strong></td>
+                            <td><strong>${{ total }}</strong></td>
+                            <td>
+                                <form method="post" action="{% url 'iniciar_transaccion' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-success">Pagar</button>
+                                </form>
+                                <form method="post" action="{% url 'vaciar_carrito' %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-warning mt-1">Vaciar Carrito</button>
+                                </form>
+                                <a href="#" id="volverAtrasBtn" class="btn btn-secondary mt-1">Volver atrás</a>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        var volverAtrasBtn = document.getElementById("volverAtrasBtn");
+    
+        if (volverAtrasBtn) {
+            volverAtrasBtn.addEventListener("click", function() {
+                window.history.back();
+            });
+        }
+    });
+</script>
+{% endblock %}
+

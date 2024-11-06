@@ -2,141 +2,163 @@
 {% load static %}
 {% block content %}
 
-    <div class="site-blocks-cover" id="auto_banner" data-aos="fade">
-      <div class="container">
-        <div class="row align-items-start align-items-md-center justify-content-end">
-          <div class="col-md-5 text-center text-md-left pt-5 pt-md-0">
-            <h1 class="mb-2" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
-              ¡Bienvenido a Automotriz Urrutia!
+  <div class="site-blocks-cover" id="auto_banner" data-aos="fade">
+    <div class="container">
+      <div class="row align-items-start align-items-md-center justify-content-end">
+        <div class="col-md-5 text-center text-md-left pt-5 pt-md-0">
+          <h1 class="mb-2" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
+            ¡Bienvenido a Automotriz Urrutia!
           </h1>
           <div class="intro-text text-center text-md-left">
-              <p class="mb-4" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
-                  Descubre la excelencia en servicios para tu automóvil.
-              </p>
-              <p>
-                <a href="{% url 'tienda' %}" class="btn btn-sm btn-primary">Ir a la tienda</a>
-              </p>
-            </div>
+            <p class="mb-4" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
+              Todo para tu vehículo en un solo lugar. Compra y venta de autos y repuestos, consignación, mecánica y más.
+            </p>
+            <p>
+              <a href="{% url 'catalogo_productos' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
+                Ir al catálogo de productos
+              </a>
+            </p>
+            <p>
+              <a href="{% url 'catalogo_servicios' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
+                Ir al catálogo de servicios
+              </a>
+            </p>
           </div>
         </div>
       </div>
     </div>
+  </div>
 
     <script>
       document.getElementById('auto_banner').style.backgroundImage = "url('{% static 'images/auto_banner.jpg' %}')";
     </script>
 
-    <div class="site-section site-blocks-2">
-      <div class="container">
-        <div class="row">
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0" data-aos="fade" data-aos-delay="">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/women.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Collections</span>
-                <h3>Women</h3>
-              </div>
-            </a>
-          </div>
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0" data-aos="fade" data-aos-delay="100">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/children.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Collections</span>
-                <h3>Children</h3>
-              </div>
-            </a>
-          </div>
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0" data-aos="fade" data-aos-delay="200">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/men.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Collections</span>
-                <h3>Men</h3>
-              </div>
-            </a>
-          </div>
-        </div>
+<div class="site-section block-3 site-blocks-2 bg-light">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-7 site-section-heading text-center pt-4">
+        <h2>Productos principales</h2>
       </div>
     </div>
+    <div class="row">
+      <div class="col-md-12">
+          <div class="nonloop-block-3 owl-carousel">
+              <div class="item">
+                  <div class="block-4 text-center">
+                      <figure class="block-4-image">
+                          <a href="{% url 'ver_detalles_producto' 1 %}">
+                              <img src="{% static 'images/productos/auto_1_O0eQpzb.jpg' %}" alt="Hyundai i30" class="img-fluid">
+                          </a>
+                      </figure>
+                      <div class="block-4-text p-4">
+                          <h3><a href="{% url 'ver_detalles_producto' 1 %}">Hyundai</a></h3>
+                          <p class="mb-0">i30 i30 gd gls 1.6 año 2014</p>
+                          <p class="text-primary font-weight-bold">$$11.180.000</p>
+                      </div>
+                  </div>
+              </div>
+              <div class="item">
+                  <div class="block-4 text-center">
+                      <figure class="block-4-image">
+                          <a href="{% url 'ver_detalles_producto' 2 %}">
+                              <img src="{% static 'images/productos/auto_2_ohvAJZN.jpg' %}" alt="Hyundai Santa Fe" class="img-fluid">
+                          </a>
+                      </figure>
+                      <div class="block-4-text p-4">
+                          <h3><a href="{% url 'ver_detalles_producto' 2 %}">Hyundai</a></h3>
+                          <p class="mb-0">Santa Fe GLS AWD año 2013</p>
+                          <p class="text-primary font-weight-bold">$$13.590.000</p>
+                      </div>
+                  </div>
+              </div>
+              <div class="item">
+                  <div class="block-4 text-center">
+                      <figure class="block-4-image">
+                          <a href="{% url 'ver_detalles_producto' 3 %}">
+                              <img src="{% static 'images/productos/auto_3_uxMaQ7p.jpg' %}" alt="Subaru Outback" class="img-fluid">
+                          </a>
+                      </figure>
+                      <div class="block-4-text p-4">
+                          <h3><a href="{% url 'ver_detalles_producto' 3 %}">Subaru</a></h3>
+                          <p class="mb-0">Outback Touring 2.5 AT 4x4 año 2022</p>
+                          <p class="text-primary font-weight-bold">$$25.900.000</p>
+                      </div>
+                  </div>
+              </div>
+              <div class="item">
+                  <div class="block-4 text-center">
+                      <figure class="block-4-image">
+                          <a href="{% url 'ver_detalles_producto' 4 %}">
+                              <img src="{% static 'images/productos/auto_4_nUMqeJx.jpg' %}" alt="Peugeot 3008" class="img-fluid">
+                          </a>
+                      </figure>
+                      <div class="block-4-text p-4">
+                          <h3><a href="{% url 'ver_detalles_producto' 4 %}">Peugeot</a></h3>
+                          <p class="mb-0">3008 GTLine BlueHDI 2.0 AT año 2021</p>
+                          <p class="text-primary font-weight-bold">$$21.900.000</p>
+                      </div>
+                  </div>
+              </div>
+              <div class="item">
+                  <div class="block-4 text-center">
+                      <figure class="block-4-image">
+                          <a href="{% url 'ver_detalles_producto' 5 %}">
+                              <img src="{% static 'images/productos/auto_5_vq7AsJg.jpg' %}" alt="Nissan X Trail" class="img-fluid">
+                          </a>
+                      </figure>
+                      <div class="block-4-text p-4">
+                          <h3><a href="{% url 'ver_detalles_producto' 5 %}">Nissan</a></h3>
+                          <p class="mb-0">X Trail Exclusive AWD año 2019</p>
+                          <p class="text-primary font-weight-bold">$$17.990.000</p>
+                      </div>
+                  </div>
+              </div>
+          </div>
+      </div>
+  </div>  
+  </div>
+</div>
 
-    <div class="site-section block-3 site-blocks-2 bg-light">
+    <div class="site-section site-blocks-2">
       <div class="container">
         <div class="row justify-content-center">
           <div class="col-md-7 site-section-heading text-center pt-4">
-            <h2>Featured Products</h2>
+            <h2>Servicios principales</h2>
           </div>
         </div>
         <div class="row">
-          <div class="col-md-12">
-            <div class="nonloop-block-3 owl-carousel">
-              <div class="item">
-                <div class="block-4 text-center">
-                  <figure class="block-4-image">
-                    <img src="{% static 'images/cloth_1.jpg' %}" alt="Image placeholder" class="img-fluid">
-                  </figure>
-                  <div class="block-4-text p-4">
-                    <h3><a href="#">Tank Top</a></h3>
-                    <p class="mb-0">Finding perfect t-shirt</p>
-                    <p class="text-primary font-weight-bold">$50</p>
-                  </div>
-                </div>
+          <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="">
+            <a class="block-2-item" href="#">
+              <figure class="image">
+                <img src="{% static 'images/Desabolladura.jpg' %}" alt="" class="img-fluid">
+              </figure>
+              <div class="text">
+                <span class="text-uppercase">Taller</span>
+                <h3>Desabolladura y Pintura</h3>
               </div>
-              <div class="item">
-                <div class="block-4 text-center">
-                  <figure class="block-4-image">
-                    <img src="{% static 'images/shoe_1.jpg' %}" alt="Image placeholder" class="img-fluid">
-                  </figure>
-                  <div class="block-4-text p-4">
-                    <h3><a href="#">Corater</a></h3>
-                    <p class="mb-0">Finding perfect products</p>
-                    <p class="text-primary font-weight-bold">$50</p>
-                  </div>
-                </div>
+            </a>
+          </div>
+          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="100">
+            <a class="block-2-item" href="#">
+              <figure class="image">
+                <img src="{% static 'images/Venta.jpg' %}" alt="" class="img-fluid">
+              </figure>
+              <div class="text">
+                <span class="text-uppercase">Quiero vender</span>
+                <h3>Mi Vehículo</h3>
               </div>
-              <div class="item">
-                <div class="block-4 text-center">
-                  <figure class="block-4-image">
-                    <img src="{% static 'images/cloth_2.jpg' %}" alt="Image placeholder" class="img-fluid">
-                  </figure>
-                  <div class="block-4-text p-4">
-                    <h3><a href="#">Polo Shirt</a></h3>
-                    <p class="mb-0">Finding perfect products</p>
-                    <p class="text-primary font-weight-bold">$50</p>
-                  </div>
-                </div>
+            </a>
+          </div>
+          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
+            <a class="block-2-item" href="#">
+              <figure class="image">
+                <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
+              </figure>
+              <div class="text">
+                <span class="text-uppercase">Taller</span>
+                <h3>Mecanico</h3>
               </div>
-              <div class="item">
-                <div class="block-4 text-center">
-                  <figure class="block-4-image">
-                    <img src="{% static 'images/cloth_3.jpg' %}" alt="Image placeholder" class="img-fluid">
-                  </figure>
-                  <div class="block-4-text p-4">
-                    <h3><a href="#">T-Shirt Mockup</a></h3>
-                    <p class="mb-0">Finding perfect products</p>
-                    <p class="text-primary font-weight-bold">$50</p>
-                  </div>
-                </div>
-              </div>
-              <div class="item">
-                <div class="block-4 text-center">
-                  <figure class="block-4-image">
-                    <img src="{% static 'images/shoe_1.jpg' %}" alt="Image placeholder" class="img-fluid">
-                  </figure>
-                  <div class="block-4-text p-4">
-                    <h3><a href="#">Corater</a></h3>
-                    <p class="mb-0">Finding perfect products</p>
-                    <p class="text-primary font-weight-bold">$50</p>
-                  </div>
-                </div>
-              </div>
-            </div>
+            </a>
           </div>
         </div>
       </div>

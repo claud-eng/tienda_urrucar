@@ -1,31 +1,12 @@
-# Importar la clase 'forms' de Django, que se utiliza para crear formularios.
-from django import forms
-
-# Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
-from apps.Usuario.models import Cliente
-from apps.Usuario.models import Empleado
-
-# Importar el modelo 'User' de Django, que se utiliza para gestionar usuarios.
-from django.contrib.auth.models import User
-
-# Importar las herramientas de validación de contraseñas proporcionadas por Django.
-from django.contrib.auth import password_validation
-
-# Importar la excepción 'ValidationError' de Django, que se utiliza para manejar errores de validación.
-from django.core.exceptions import ValidationError
-
-# Importar el módulo 're' (expresiones regulares), que se utiliza para realizar validaciones basadas en patrones.
-import re
-from django.contrib.auth.hashers import make_password  # Agrega esta importación en la parte superior
-
-from django.contrib.auth.forms import UserChangeForm
-
-from django.contrib.auth.forms import PasswordChangeForm
-
-from django.contrib.auth.models import User
-from django.contrib.auth.forms import (UserCreationForm, AuthenticationForm, PasswordResetForm, SetPasswordForm)
-
-from datetime import date
+import re  # Importar el módulo 're' (expresiones regulares), que se utiliza para realizar validaciones basadas en patrones.
+from datetime import date  # Importar el módulo 'date' desde 'datetime', que se usa para manipular fechas.
+from django import forms  # Importar la clase 'forms' de Django, que se utiliza para crear formularios.
+from apps.Usuario.models import Cliente, Empleado  # Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
+from django.contrib.auth import password_validation  # Importar herramientas de validación de contraseñas proporcionadas por Django.
+from django.contrib.auth.hashers import make_password  # Importar las herramientas para manejar contraseñas de Django.
+from django.core.exceptions import ValidationError  # Importar la excepción 'ValidationError' de Django, que se utiliza para manejar errores de validación.
+from django.contrib.auth.forms import (AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm, UserChangeForm, UserCreationForm)  # Importar formularios para autenticación, cambio y restablecimiento de contraseñas, y edición y creación de usuarios.
+from django.contrib.auth.models import User  # Importar el modelo 'User' de Django, que se utiliza para gestionar usuarios.
 
 def validate_username(value):
     """
@@ -33,6 +14,7 @@ def validate_username(value):
     Lanza una excepción forms.ValidationError si no cumple con el formato esperado.
     """
     if not value.endswith('@claudev.cl'):
+        # Si el correo no termina en el dominio especificado, lanza un error de validación.
         raise forms.ValidationError('El nombre de usuario debe ser un correo electrónico con el dominio @claudev.cl.')
 
 def validate_rut_chileno(value):
@@ -45,6 +27,7 @@ def validate_rut_chileno(value):
     rut_formato_valido = re.match(r'^[1-9]\d*\.\d{3}\.\d{3}-[0-9K]$', rut)
 
     if not rut_formato_valido:
+        # Si el formato no coincide con el esperado, lanza un error de validación.
         raise ValidationError('El Rut no es válido. El formato debe ser X.XXX.XXX-X o XX.XXX.XXX-X (donde X representa dígitos y el último carácter puede ser un dígito o "K").')
 
 class ClienteForm(forms.ModelForm):
@@ -125,6 +108,7 @@ class ClienteForm(forms.ModelForm):
     )
 
     def clean_fecha_nacimiento(self):
+        # Validación adicional para verificar que el usuario tenga al menos 18 años
         fecha_nacimiento = self.cleaned_data.get('fecha_nacimiento')
 
         if fecha_nacimiento:
@@ -142,6 +126,7 @@ class ClienteForm(forms.ModelForm):
     )
 
     class Meta:
+        # Define el modelo de base y los campos que aparecerán en el formulario
         model = Cliente
         fields = ['username', 'password', 'rut', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono',]
 
@@ -580,6 +565,7 @@ class EditarEmpleadoForm(forms.ModelForm):
 
 class ResetPasswordForm(PasswordResetForm):
     def __init__(self, *args, **kwargs):
+        # Inicializa el formulario de restablecimiento de contraseña
         super(ResetPasswordForm, self).__init__(*args, **kwargs)
 
     email = forms.EmailField(
@@ -591,6 +577,7 @@ class ResetPasswordForm(PasswordResetForm):
 
 class NewPasswordForm(SetPasswordForm):
     def __init__(self, *args, **kwargs):
+        # Inicializa el formulario de nueva contraseña
         super(NewPasswordForm, self).__init__(*args, **kwargs)
 
     new_password1 = forms.CharField(

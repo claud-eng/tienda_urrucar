@@ -1,5 +1,5 @@
-from django.contrib.contenttypes.models import ContentType
-from .models import *
+from django.contrib.contenttypes.models import ContentType  # Importa ContentType para trabajar con relaciones de contenido genéricas en Django.
+from .models import *  # Importa todos los modelos definidos en el módulo models de la aplicación actual.
 
 def carrito_count(request):
     if request.user.is_authenticated:

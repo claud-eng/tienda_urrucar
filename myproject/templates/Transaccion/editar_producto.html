@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
-
 {% block title %}Editar Producto{% endblock %}
-
 {% block content %}
+
 <div class="container mt-5">
     <h2>Editar Producto</h2>
     <form method="post" enctype="multipart/form-data">
@@ -47,4 +46,5 @@
         <a href="{% url 'listar_productos' %}" class="btn btn-secondary">Volver atrás</a>
     </form>
 </div>
+
 {% endblock %}

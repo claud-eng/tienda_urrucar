@@ -1,6 +1,5 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}
     {% if es_Administrador %}
         Historial de Ventas Online
@@ -8,8 +7,8 @@
         Historial de Compras Online
     {% endif %}
 {% endblock %}
-
 {% block content %}
+
 <div class="container mt-4">
     <h2>
         {% if es_Administrador %}
@@ -132,4 +131,5 @@
     {% endif %}
     
 </div>
+
 {% endblock %}

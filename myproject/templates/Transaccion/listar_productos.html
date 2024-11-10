@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
-
 {% block title %}Lista de Productos{% endblock %}
-
 {% block content %}
+
 <style>
     .estado-column {
         min-width: 180px; /* Establece un ancho mínimo para la columna "Estado" */
@@ -168,4 +167,5 @@
     <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
     {% endif %}
 </div>
+
 {% endblock %}

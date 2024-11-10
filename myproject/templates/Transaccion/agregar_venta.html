@@ -1,9 +1,8 @@
 {% extends 'base.html' %}
 {% load widget_tweaks %}
-
 {% block title %}Registrar Venta{% endblock %}
-
 {% block content %}
+
 <div class="container mt-5">
     <h2>Registrar Venta</h2>
     <form method="post" id="ventaForm" class="needs-validation" novalidate>
@@ -95,7 +94,7 @@
         
         <div class="form-group mb-5">
             <input type="submit" value="Registrar Venta" class="btn btn-primary">
-            <a href="{% if query_string %}{% url 'listar_ventas' %}?{{ query_string }}{% else %}{% url 'listar_ventas' %}{% endif %}" class="btn btn-secondary">Volver atrás</a>
+            <a href="{% if query_string %}{% url 'listar_ventas_manuales' %}?{{ query_string }}{% else %}{% url 'listar_ventas_manuales' %}{% endif %}" class="btn btn-secondary">Volver atrás</a>
         </div>        
     </form>
 </div>
@@ -148,4 +147,5 @@
         });
     });
     </script>
+    
 {% endblock %}

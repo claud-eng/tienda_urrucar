@@ -1,9 +1,7 @@
 {% extends 'base.html' %}
-
 {% block title %}
-    Reporte de Ventas Presenciales
+    Reporte de Ventas Manuales
 {% endblock %}
-
 {% block content %}
 
 <style>
@@ -16,7 +14,7 @@
     <h2>Reporte de Ventas Manuales</h2>
 
     <!-- Formulario para seleccionar año y mes -->
-    <form action="{% url 'reportes_ventas' %}" method="get">
+    <form action="{% url 'reportes_ventas_manuales' %}" method="get">
         <div class="row">
             <div class="col">
                 <label for="anio">Año:</label>

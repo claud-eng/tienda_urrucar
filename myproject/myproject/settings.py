@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-from pathlib import Path
-import os
-from dotenv import load_dotenv
+import os  # Módulo estándar de Python para operaciones relacionadas con el sistema operativo
+from dotenv import load_dotenv  # Función para cargar variables de entorno desde un archivo .env
+from pathlib import Path  # Módulo estándar de Python para manejar rutas de archivos y directorios
 
 # Carga las variables de entorno desde '.env'
 load_dotenv()

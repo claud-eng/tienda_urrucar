@@ -1,21 +1,20 @@
 {% extends 'base.html' %}
 {% load static %}
-
 {% block title %}
     {% if user.empleado and user.empleado.rol == 'Administrador' %}
-        Historial de Ventas Presenciales
+        Historial de Ventas Manuales
     {% elif user.cliente %}
         Historial de Compras Presenciales
     {% else %}
         Historial
     {% endif %}
 {% endblock %}
-
 {% block content %}
+
 <div class="container mt-4">
     <div class="d-flex flex-column mb-3">
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
-            <h2>Historial de Ventas Presenciales</h2>
+            <h2>Historial de Ventas Manuales</h2>
         {% elif user.cliente %}
             <h2>Historial de Compras Presenciales</h2>
         {% else %}
@@ -42,7 +41,7 @@
             <button type="submit" class="btn btn-outline-primary">Buscar</button>
         </div>
         <div class="form-group">
-            <a href="{% url 'listar_ventas' %}" class="btn btn-outline-danger mb-2">Quitar filtro</a>
+            <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-outline-danger mb-2">Quitar filtro</a>
         </div>
     </form>
     {% endif %}    
@@ -134,4 +133,5 @@
         
     </div>
 </div>
+
 {% endblock %}

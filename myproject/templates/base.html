@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Shoppers &mdash; Colorlib e-Commerce Template</title>
+    <title>Urrucar Automotriz</title>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Mukta:300,400,700"> 
@@ -27,7 +27,7 @@
         <div class="site-navbar-top">
           <div class="container">
             <div class="row align-items-center">
-      
+        
               <div class="col-12 mb-3 mb-md-0 col-md-4 order-1 order-md-1 text-center">
                 <div class="new-site-logo">
                   <a href="{% url 'home' %}" class="js-logo-clone">
@@ -35,42 +35,57 @@
                   </a>
                 </div>
               </div>
-      
+        
               <div class="col-6 col-md-4 order-2 order-md-2 site-search-icon text-left" style="visibility: hidden;">
                 <form action="" class="site-block-top-search">
-                    <span class="icon icon-search2"></span>
-                    <input type="text" class="form-control border-0" placeholder="Search">
+                  <span class="icon icon-search2"></span>
+                  <input type="text" class="form-control border-0" placeholder="Search">
                 </form>
-            </div>
+              </div>
               
-            <div class="col-6 col-md-4 order-3 order-md-3 text-right">
-              <div class="site-top-icons">
-                <ul style="list-style: none; padding: 0; margin: 0; display: flex; justify-content: flex-end; align-items: center;">
-                  
-                  {% if user.is_authenticated and user.cliente %}
-                  <!-- Ícono del carro de compras a la izquierda -->
-                  <li style="text-align: center; margin-right: 20px;">
+              <div class="col-6 col-md-4 order-3 order-md-3 text-right">
+                <div class="site-top-icons">
+                  <ul style="list-style: none; padding: 0; margin: 0; display: flex; justify-content: flex-end; align-items: center;">
+                    <style>
+                      .navbar-top a {
+                        color: inherit;
+                        text-decoration: none;
+                        transition: color 0.3s ease;
+                      }
+                      .navbar-top a:hover {
+                        color: #149ddd;
+                      }
+                      .navbar-top span {
+                        display: inline-block;
+                        margin-top: 5px;
+                        font-size: 0.9em;
+                      }
+                    </style>
+        
+                    {% if user.is_authenticated and user.cliente %}
+                    <!-- Ícono del carro de compras a la izquierda -->
+                    <li class="navbar-top" style="text-align: center; margin-right: 20px;">
                       <a href="{% url 'carrito' %}" class="site-cart">
-                          <div style="font-size: 1.5em; position: relative;">
-                              <span class="icon icon-shopping_cart"></span>
-                              <span class="count">{{ carrito_count }}</span>
-                          </div>
-                          <span>Carrito</span>
+                        <div style="font-size: 1.5em; position: relative;">
+                          <span class="icon icon-shopping_cart"></span>
+                          <span class="count">{{ carrito_count }}</span>
+                        </div>
+                        <span>Carrito</span>
                       </a>
-                  </li>
-                  {% endif %}
-
-                  {% if user.is_authenticated %}
+                    </li>
+                    {% endif %}
+        
+                    {% if user.is_authenticated %}
                     <!-- Mensaje de bienvenida y enlace de cierre de sesión para usuarios autenticados -->
-                    <li style="text-align: center; margin-right: 20px;">
+                    <li class="navbar-top" style="text-align: center; margin-right: 20px;">
                       <div style="font-size: 1.5em;">
                         <span class="icon icon-person"></span>
                       </div>
                       <span>¡Bienvenido, {{ user.first_name }}! | <a href="{% url 'logout' %}">Cerrar sesión</a></span>
                     </li>
-                  {% else %}
+                    {% else %}
                     <!-- Opción de inicio de sesión/registro para usuarios no autenticados -->
-                    <li style="text-align: center; margin-right: 20px;">
+                    <li class="navbar-top" style="text-align: center; margin-right: 20px;">
                       <a href="{% url 'login' %}">
                         <div style="font-size: 1.5em;">
                           <span class="icon icon-person"></span>
@@ -78,47 +93,57 @@
                         <span>Inicia sesión o regístrate</span>
                       </a>
                     </li>
-                  {% endif %}
-            
-                  <!-- Menú toggle para dispositivos móviles -->
-                  <li class="d-inline-block d-md-none ml-md-0">
-                    <a href="#" class="site-menu-toggle js-menu-toggle">
-                      <span class="icon-menu"></span>
-                    </a>
-                  </li>
-                </ul>
-              </div>
-            </div>            
-      
+                    {% endif %}
+        
+                    <!-- Menú toggle para dispositivos móviles -->
+                    <li class="d-inline-block d-md-none ml-md-0">
+                      <a href="#" class="site-menu-toggle js-menu-toggle">
+                        <span class="icon-menu"></span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>            
+        
             </div>
           </div>
         </div>
-
+        
         <!-- Menú especial para administradores -->
         {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
         <nav class="site-navigation text-right text-md-center" role="navigation">
           <div class="container">
             <ul class="site-menu js-clone-nav d-none d-md-block">
-              <li>
-                <a href="{% url 'gestionar_inventario' %}" style="color: black; font-weight: bold;">
+              <style>
+                .admin-menu a {
+                  color: black;
+                  font-weight: bold;
+                  text-decoration: none;
+                }
+                .admin-menu a:hover {
+                  color: #149ddd;
+                }
+              </style>
+              <li class="admin-menu">
+                <a href="{% url 'gestionar_inventario' %}">
                     Gestionar Productos & Servicios
                 </a>
-            </li>
-            <li>
-                <a href="{% url 'gestionar_transacciones' %}" style="color: black; font-weight: bold;">
+              </li>
+              <li class="admin-menu">
+                <a href="{% url 'gestionar_transacciones' %}">
                     Gestionar Transacciones
                 </a>
-            </li>
-            <li>
-                <a href="{% url 'gestionar_cuentas' %}" style="color: black; font-weight: bold;">
+              </li>
+              <li class="admin-menu">
+                <a href="{% url 'gestionar_cuentas' %}">
                     Gestionar Cuentas
                 </a>
-            </li>
-            <li>
-              <a href="{% url 'reportes_ventas_manuales' %}" style="color: black; font-weight: bold;">
-                  Reportes
-              </a>
-          </li>                 
+              </li>
+              <li class="admin-menu">
+                <a href="{% url 'reportes_ventas_manuales' %}">
+                    Reportes
+                </a>
+              </li>
             </ul>
           </div>
         </nav>
@@ -256,16 +281,14 @@
           </div>
         </div>
       </div>
-      <div class="row text-center">
-        <div class="col-md-12">
-          <p>
-          <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-          Copyright &copy;<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>document.write(new Date().getFullYear());</script> Todos los derechos reservados | Sitio web desarrollado por <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
-          <!-- Link back to Colorlib can't be removed. Template is licensed under CC BY 3.0. -->
-          </p>
+      <div class="row justify-content-center">
+        <div class="col-md-12 text-center">
+            <p>
+                Copyright ©2024 Todos los derechos reservados | Sitio web desarrollado por 
+                <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
+            </p>
         </div>
-        
-      </div>
+    </div>    
     </div>
     <!-- Botón Flotante de WhatsApp -->
     <a href="https://wa.me/56940635844" class="whatsapp-button" target="_blank">

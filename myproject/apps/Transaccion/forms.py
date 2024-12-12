@@ -1,32 +1,62 @@
+import datetime
 from django import forms  # Importa el módulo forms de Django para crear formularios.
 from django.core.exceptions import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.forms import inlineformset_factory  # Importa inlineformset_factory para crear formularios en línea para modelos relacionados.
-from .models import Cliente, DetalleVentaManual, VentaManual, Producto, Servicio  # Importa los modelos Cliente, DetalleVentaManual, VentaManual, Producto y Servicio de la aplicación actual.
+from .models import Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, Servicio  # Importa los modelos Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto y Servicio de la aplicación actual.
 
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto  # Especifica el modelo asociado
-        fields = ['nombre', 'marca', 'categoria', 'descripcion', 'precio', 'cantidad_stock', 'imagen']  # Campos incluidos en el formulario
-        # Define los widgets y atributos de clase según tus necesidades
+        fields = [
+            'nombre', 'marca', 'modelo', 'version', 'anio',
+            'categoria', 'descripcion', 'precio', 'precio_reserva',
+            'cantidad_stock', 'imagen'
+        ]
+        widgets = {
+            'categoria': forms.Select(attrs={'class': 'form-control'}),  # Usa un select con clases Bootstrap
+        }
+
+    def __init__(self, *args, **kwargs):
+        # Inicializa el formulario
+        super().__init__(*args, **kwargs)
+
+    def clean_categoria(self):
+        """
+        Valida que la categoría no sea 'Sin categoría'.
+        """
+        categoria = self.cleaned_data.get('categoria')
+        if categoria == "Sin categoría":
+            raise forms.ValidationError("Debe seleccionar una categoría válida.")
+        return categoria
 
     def clean(self):
         # Método para limpiar y formatear los datos ingresados
         cleaned_data = super().clean()  # Llama a la limpieza predeterminada del formulario
+        
+        # Obtener datos
         nombre = cleaned_data.get('nombre')
         marca = cleaned_data.get('marca')
-        categoria = cleaned_data.get('categoria')
+        modelo = cleaned_data.get('modelo')
+        version = cleaned_data.get('version')
+        anio = cleaned_data.get('anio')
         descripcion = cleaned_data.get('descripcion')
-
+        
         # Capitaliza los campos de texto para consistencia en el formato
         if nombre:
             cleaned_data['nombre'] = nombre.capitalize()
         if marca:
             cleaned_data['marca'] = marca.capitalize()
-        if categoria:
-            cleaned_data['categoria'] = categoria.capitalize()
+        if modelo:
+            cleaned_data['modelo'] = modelo.capitalize()
+        if version:
+            cleaned_data['version'] = version.capitalize()
         if descripcion:
             cleaned_data['descripcion'] = descripcion.capitalize()
+
+        # Validar que el año sea razonable
+        if anio and (anio < 1900 or anio > datetime.date.today().year + 1):
+            self.add_error('anio', "El año debe estar entre 1900 y el próximo año.")
 
         return cleaned_data  # Retorna los datos limpios y formateados
 
@@ -50,6 +80,16 @@ class ServicioForm(forms.ModelForm):
             cleaned_data['descripcion'] = descripcion.capitalize()
 
         return cleaned_data
+
+class VentaOnlineForm(forms.ModelForm):
+    class Meta:
+        model = VentaOnline
+        fields = ['cliente', 'total', 'estado', 'tipo_pago', 'numero_cuotas', 'monto_cuotas']
+
+class DetalleVentaOnlineForm(forms.ModelForm):
+    class Meta:
+        model = DetalleVentaOnline
+        fields = ['producto', 'cantidad', 'precio', 'estado_reserva']
 
 # Formulario para registrar una venta manual, incluye el ID del cliente
 class VentaManualForm(forms.ModelForm):
@@ -104,6 +144,15 @@ class DetalleVentaManualServicioForm(forms.ModelForm):
             return Servicio.objects.get(id=id_servicio)  # Retorna el servicio si existe
         except Servicio.DoesNotExist:
             raise ValidationError("Servicio no encontrado.")  # Error si el servicio no existe
+
+DetalleVentaOnlineFormset = inlineformset_factory(
+    VentaOnline,  # Modelo padre
+    DetalleVentaOnline,  # Modelo hijo
+    form=DetalleVentaOnlineForm,
+    fields=('producto', 'cantidad', 'precio', 'estado_reserva'),
+    extra=1,  # Número de formularios adicionales
+    can_delete=True,  # Permitir eliminar ítems
+)
 
 # Formset para gestionar múltiples detalles de productos en una venta manual
 DetalleVentaManualFormset = inlineformset_factory(

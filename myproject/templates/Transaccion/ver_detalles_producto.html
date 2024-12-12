@@ -18,6 +18,11 @@
                 <h5 class="card-title">{{ producto.nombre }}</h5>
                 <p class="card-text" style="text-align: justify;">{{ producto.descripcion }}</p>
                 <p class="card-text">Precio (IVA incluido): ${{ producto.precio_formateado }}</p>
+                <p class="card-text">
+                    {% if producto.precio_reserva_formateado %}
+                        Precio de Reserva: ${{ producto.precio_reserva_formateado }}
+                    {% endif %}
+                </p>
                 <p class="card-text">Cantidad en Stock: {{ producto.cantidad_stock }}</p>
                 {% if user.is_authenticated and user.cliente %}
                     <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
@@ -31,7 +36,7 @@
                 {% endif %}
                 <a href="#" id="volverAtrasBtn" class="btn btn-secondary mt-1">Volver atrás</a>
             </div>
-        </div>
+        </div>        
     </div>
 </div>
 

@@ -4,6 +4,7 @@
 
 <div class="container mt-5">
     <h2>Editar Producto</h2>
+    
     <form method="post" enctype="multipart/form-data">
         {% csrf_token %}
         
@@ -18,10 +19,30 @@
         </div>
 
         <div class="form-group">
-          <label for="{{ form.marca.id_for_label }}">Categoría</label>
-          <input type="text" class="form-control" id="{{ form.categoria.id_for_label }}" name="{{ form.categoria.name }}" value="{{ form.categoria.value|default:'' }}">
+          <label for="{{ form.modelo.id_for_label }}">Modelo</label>
+          <input type="text" class="form-control" id="{{ form.modelo.id_for_label }}" name="{{ form.modelo.name }}" value="{{ form.modelo.value|default:'' }}">
         </div>
 
+        <div class="form-group">
+          <label for="{{ form.version.id_for_label }}">Versión</label>
+          <input type="text" class="form-control" id="{{ form.version.id_for_label }}" name="{{ form.version.name }}" value="{{ form.version.value|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.anio.id_for_label }}">Año</label>
+          <input type="number" class="form-control" id="{{ form.anio.id_for_label }}" name="{{ form.anio.name }}" value="{{ form.anio.value|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.categoria.id_for_label }}">Categoría</label>
+          {{ form.categoria }}
+          {% if form.categoria.errors %}
+            <div class="text-danger">
+              {{ form.categoria.errors }}
+            </div>
+          {% endif %}
+        </div>
+        
         <div class="form-group">
           <label for="{{ form.descripcion.id_for_label }}">Descripción</label>
           <textarea class="form-control" id="{{ form.descripcion.id_for_label }}" name="{{ form.descripcion.name }}" rows="4">{{ form.descripcion.value|default:'' }}</textarea>
@@ -30,6 +51,11 @@
         <div class="form-group">
           <label for="{{ form.precio.id_for_label }}">Precio</label>
           <input type="number" class="form-control" id="{{ form.precio.id_for_label }}" name="{{ form.precio.name }}" value="{{ form.precio.value|default:'' }}">
+        </div>
+
+        <div class="form-group">
+          <label for="{{ form.precio_reserva.id_for_label }}">Precio de Reserva</label>
+          <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'' }}">
         </div>
 
         <div class="form-group">
@@ -48,3 +74,4 @@
 </div>
 
 {% endblock %}
+

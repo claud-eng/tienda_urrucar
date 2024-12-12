@@ -39,7 +39,8 @@
             <label for="filtro-categoria">Filtrar por Categoría:</label>
             <select class="form-control mx-2" id="filtro-categoria" name="categoria">
                 <option value="" {% if not request.GET.categoria %}selected{% endif %}>Todas</option>
-                <option value="Auto" {% if request.GET.categoria == 'Auto' %}selected{% endif %}>Auto</option>
+                <option value="Vehículo" {% if request.GET.categoria == 'Vehículo' %}selected{% endif %}>Vehículo</option>
+                <option value="Otro" {% if request.GET.categoria == 'Otro' %}selected{% endif %}>Otro</option>
                 <!-- Agrega opciones para todas tus categorías -->
                 {% for categoria in categorias %}
                     <option value="{{ categoria }}" {% if request.GET.categoria == categoria %}selected{% endif %}>{{ categoria }}</option>
@@ -77,11 +78,15 @@
                 <th>ID</th>
                 <th>Nombre</th>
                 <th>Marca</th>
+                <th>Modelo</th>
+                <th>Versión</th>
+                <th>Año</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
-                <th>Precio (IVA incluido)</th>
+                <th>Precio Normal</th>
+                <th>Precio de Reserva</th>
                 <th>Cantidad en Stock</th>
-                <th class="estado-column">Estado</th>  <!-- Agregamos la clase "estado-column" -->
+                <th class="estado-column">Estado</th>
                 <th>Imagen</th>
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
                 <th>Acciones</th>
@@ -94,9 +99,13 @@
                     <td>{{ producto.id }}</td>
                     <td>{{ producto.nombre }}</td>
                     <td>{{ producto.marca }}</td>
+                    <td>{% if producto.modelo %}{{ producto.modelo }}{% endif %}</td>
+                    <td>{% if producto.version %}{{ producto.version }}{% endif %}</td>
+                    <td>{% if producto.anio %}{{ producto.anio }}{% endif %}</td>
                     <td>{{ producto.categoria }}</td>
                     <td style="text-align: justify;">{{ producto.descripcion }}</td>
                     <td>${{ producto.precio_formateado }}</td>
+                    <td>{% if producto.precio_reserva_formateado %}${{ producto.precio_reserva_formateado }}{% endif %}</td>
                     <td>{{ producto.cantidad_stock }}</td>
                     <td class="estado-column">
                         {% if producto.cantidad_stock >= 10 %}
@@ -114,7 +123,6 @@
                             No hay imagen disponible
                         {% endif %}
                     </td>
-                    
                     {% if user.empleado and user.empleado.rol == 'Administrador' %}
                     <td>
                         <div class="d-flex align-items-center">
@@ -155,7 +163,6 @@
             {% endif %}
         </ul>
     </nav>
-    
     
     <!-- "Volver atrás" con la clase btn btn-secondary -->
     {% if has_search_query_username or has_search_query_rut %}

@@ -7,7 +7,7 @@
       <div class="row align-items-start align-items-md-center justify-content-end">
         <div class="col-md-5 text-center text-md-left pt-5 pt-md-0">
           <h1 class="mb-2" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
-            ¡Bienvenido a Automotriz Urrutia!
+            ¡Bienvenido a Urrucar Automotriz!
           </h1>
           <div class="intro-text text-center text-md-left">
             <p class="mb-4" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
@@ -29,87 +29,83 @@
     </div>
   </div>
 
-    <script>
-      document.getElementById('auto_banner').style.backgroundImage = "url('{% static 'images/auto_banner.jpg' %}')";
-    </script>
-
-<div class="site-section block-3 site-blocks-2 bg-light">
+<div class="site-section block-3 site-blocks-2 bg-light" style="margin-top: -0.5rem" id="productos_principales">
   <div class="container">
     <div class="row justify-content-center">
       <div class="col-md-7 site-section-heading text-center pt-4">
-        <h2>Productos principales</h2>
+        <h2 class="neon-blue" style="font-family: 'Poppins', sans-serif; font-weight: 700;">Productos principales</h2>
       </div>
     </div>
     <div class="row">
       <div class="col-md-12">
           <div class="nonloop-block-3 owl-carousel">
-              <div class="item">
-                  <div class="block-4 text-center">
+              <div class="item neon-box-blue">
+                  <div class="block-4 text-center bg-dark">
                       <figure class="block-4-image">
                           <a href="{% url 'ver_detalles_producto' 1 %}">
                               <img src="{% static 'images/productos/auto_1_O0eQpzb_wB1C1RB.jpg' %}" alt="Hyundai i30" class="img-fluid">
                           </a>
                       </figure>
-                      <div class="block-4-text p-4">
-                          <h3><a href="{% url 'ver_detalles_producto' 1 %}">Hyundai</a></h3>
-                          <p class="mb-0">i30 i30 gd gls 1.6 año 2014</p>
-                          <p class="text-primary font-weight-bold">$11.180.000</p>
+                      <div class="block-4-text p-4 bg-dark" style="color: white;">
+                        <h3><a href="{% url 'ver_detalles_producto' 1 %}" style="color: white !important;">Hyundai</a></h3>
+                        <p class="mb-0">i30 i30 gd gls 1.6 año 2014</p>
+                        <p class="text-primary font-weight-bold" style="color: white !important;">$11.180.000</p>
                       </div>
                   </div>
               </div>
-              <div class="item">
-                  <div class="block-4 text-center">
+              <div class="item neon-box-blue">
+                <div class="block-4 text-center bg-dark">
                       <figure class="block-4-image">
                           <a href="{% url 'ver_detalles_producto' 2 %}">
                               <img src="{% static 'images/productos/auto_2_ohvAJZN_9pbJxrt.jpg' %}" alt="Hyundai Santa Fe" class="img-fluid">
                           </a>
                       </figure>
-                      <div class="block-4-text p-4">
-                          <h3><a href="{% url 'ver_detalles_producto' 2 %}">Hyundai</a></h3>
+                      <div class="block-4-text p-4 bg-dark" style="color: white;">
+                          <h3><a href="{% url 'ver_detalles_producto' 2 %}" style="color: white !important;">Hyundai</a></h3>
                           <p class="mb-0">Santa Fe GLS AWD año 2013</p>
-                          <p class="text-primary font-weight-bold">$13.590.000</p>
+                          <p class="text-primary font-weight-bold" style="color: white !important;">$13.590.000</p>
                       </div>
                   </div>
               </div>
-              <div class="item">
-                  <div class="block-4 text-center">
+              <div class="item neon-box-blue">
+                <div class="block-4 text-center bg-dark">
                       <figure class="block-4-image">
                           <a href="{% url 'ver_detalles_producto' 3 %}">
                               <img src="{% static 'images/productos/auto_3_uxMaQ7p_ViouFKA.jpg' %}" alt="Subaru Outback" class="img-fluid">
                           </a>
                       </figure>
-                      <div class="block-4-text p-4">
-                          <h3><a href="{% url 'ver_detalles_producto' 3 %}">Subaru</a></h3>
+                      <div class="block-4-text p-4 bg-dark" style="color: white;">
+                          <h3><a href="{% url 'ver_detalles_producto' 3 %}" style="color: white !important;">Subaru</a></h3>
                           <p class="mb-0">Outback Touring 2.5 AT 4x4 año 2022</p>
-                          <p class="text-primary font-weight-bold">$25.900.000</p>
+                          <p class="text-primary font-weight-bold" style="color: white !important;">$25.900.000</p>
                       </div>
                   </div>
               </div>
-              <div class="item">
-                  <div class="block-4 text-center">
+              <div class="item neon-box-blue">
+                <div class="block-4 text-center bg-dark">
                       <figure class="block-4-image">
                           <a href="{% url 'ver_detalles_producto' 4 %}">
                               <img src="{% static 'images/productos/auto_4_nUMqeJx_dwbxKLb.jpg' %}" alt="Peugeot 3008" class="img-fluid">
                           </a>
                       </figure>
-                      <div class="block-4-text p-4">
-                          <h3><a href="{% url 'ver_detalles_producto' 4 %}">Peugeot</a></h3>
+                      <div class="block-4-text p-4 bg-dark" style="color: white;">
+                          <h3><a href="{% url 'ver_detalles_producto' 4 %}" style="color: white !important;">Peugeot</a></h3>
                           <p class="mb-0">3008 GTLine BlueHDI 2.0 AT año 2021</p>
-                          <p class="text-primary font-weight-bold">$21.900.000</p>
+                          <p class="text-primary font-weight-bold" style="color: white !important;">$21.900.000</p>
                       </div>
                   </div>
               </div>
-              <div class="item">
-                  <div class="block-4 text-center">
+              <div class="item neon-box-blue">
+                <div class="block-4 text-center bg-dark">
                       <figure class="block-4-image">
                           <a href="{% url 'ver_detalles_producto' 5 %}">
                               <img src="{% static 'images/productos/auto_5_vq7AsJg_0Re97v2.jpg' %}" alt="Nissan X Trail" class="img-fluid">
                           </a>
                       </figure>
-                      <div class="block-4-text p-4">
-                          <h3><a href="{% url 'ver_detalles_producto' 5 %}">Nissan</a></h3>
+                      <div class="block-4-text p-4 bg-dark" style="color: white;">
+                          <h3><a href="{% url 'ver_detalles_producto' 5 %}" style="color: white !important;">Nissan</a></h3>
                           <p class="mb-0">X Trail Exclusive AWD año 2019</p>
-                          <p class="text-primary font-weight-bold">$17.990.000</p>
+                          <p class="text-primary font-weight-bold" style="color: white !important;">$17.990.000</p>
                       </div>
                   </div>
               </div>
@@ -119,50 +115,135 @@
   </div>
 </div>
 
-    <div class="site-section site-blocks-2">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-md-7 site-section-heading text-center pt-4">
-            <h2>Servicios principales</h2>
-          </div>
-        </div>
-        <div class="row">
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/Desabolladura.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Taller</span>
-                <h3>Desabolladura y Pintura</h3>
-              </div>
-            </a>
-          </div>
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="100">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/Venta.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Quiero vender</span>
-                <h3>Mi Vehículo</h3>
-              </div>
-            </a>
-          </div>
-          <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
-            <a class="block-2-item" href="#">
-              <figure class="image">
-                <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
-              </figure>
-              <div class="text">
-                <span class="text-uppercase">Taller</span>
-                <h3>Mecanico</h3>
-              </div>
-            </a>
-          </div>
-        </div>
+<div class="site-section site-blocks-2" id="servicios_principales">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-7 site-section-heading text-center pt-4">
+        <h2 class="neon-orange" style="font-family: 'Poppins', sans-serif; font-weight: 700;">Servicios principales</h2>
       </div>
     </div>
+    <div class="row">
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="">
+        <a class="block-2-item neon-box" href="#">
+          <figure class="image">
+            <img src="{% static 'images/Desabolladura.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Taller</span>
+            <h2 class="neon-orange">Desabolladura & <br> Pintura</h2>
+          </div>
+        </a>
+      </div>
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="100">
+        <a class="block-2-item neon-box" href="#">
+          <figure class="image">
+            <img src="{% static 'images/Venta.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Quiero vender mi vehículo</span>
+            <h2 class="neon-orange">Consignación <br> Virtual</h2>
+          </div>
+        </a>
+      </div>
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
+        <a class="block-2-item neon-box" href="#">
+          <figure class="image">
+            <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Taller</span>
+            <h2 class="neon-orange">Mecánico <br> Automotriz</h2>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  #productos_principales {
+      background-image: url('{% static "images/auto_banner3.jpg" %}');
+      background-size: cover;
+      background-position: center;
+      padding: 40px 0;
+      margin-top: 0
+    }
+
+  #servicios_principales {
+    background-image: url('{% static "images/auto_banner2.jpg" %}');
+    background-size: cover;
+    background-position: center;
+    padding: 40px 0;
+  }
+  /* Efecto de neón rojo para el título */
+  .neon-red {
+    color: white;
+    text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;
+  }
+
+  /* Efecto de neón naranjo para el título */
+  .neon-orange {
+    color: white;
+    text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f, 0 0 20px #ed913f, 0 0 25px #ed913f, 0 0 30px #ed913f;
+  }
+
+  /* Efecto de neón azul para los textos */
+  .neon-blue {
+    color: white;
+    text-shadow: 0 0 5px #149ddd, 0 0 10px #149ddd, 0 0 15px #149ddd, 0 0 20px #149ddd, 0 0 25px #149ddd, 0 0 30px #149ddd;
+  }
+
+  /* Efecto de neón naranja para el borde de las cajas */
+  .neon-box {
+    display: block;
+    border: 2px solid transparent;
+    border-image: linear-gradient(45deg, #ed913f, #ed913f) 1;
+    box-shadow: 0 0 10px #ed913f, 0 0 20px #ed913f, 0 0 30px #ed913f;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Hover para las cajas con efecto más brillante */
+  .neon-box:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px #ed913f, 0 0 25px #ed913f, 0 0 35px #ed913f;
+  }
+
+  /* Efecto de neón naranja para el borde de las cajas */
+  .neon-box-blue {
+    display: block;
+    border: 2px solid transparent;
+    border-image: linear-gradient(45deg, #149ddd, #149ddd) 1;
+    box-shadow: 0 0 10px white, 0 0 20px white, 0 0 30px white;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Hover para las cajas con efecto más brillante */
+  .neon-box-blue:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 15px #149ddd, 0 0 25px #149ddd, 0 0 35px #149ddd;
+  }
+
+  #productos_principales .owl-nav .owl-prev,
+  #productos_principales .owl-nav .owl-next {
+    color: white; /* Cambia el color de las flechas */
+}
+  /* Aumenta el espacio entre productos */
+  #productos_principales .owl-carousel .item {
+    margin-right: 10px; /* Espacio a la derecha entre productos */
+  }
+
+  /* Ajuste adicional para servicios (si se requiere coherencia) */
+  #servicios_principales .block-2-item {
+    margin-bottom: 20px; /* Espacio vertical entre servicios */
+  }
+  #servicios_principales .site-section-heading:before {
+    background: #ed913f; /* Cambia el color de fondo a naranja */
+  }
+</style>
+
+<script>
+  document.getElementById('auto_banner').style.backgroundImage = "url('{% static 'images/auto_banner.jpg' %}')";
+</script>
 
 {% endblock %}
 

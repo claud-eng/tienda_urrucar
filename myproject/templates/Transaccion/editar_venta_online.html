@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% block title %}Editar Estado de Reserva{% endblock %}
+{% block content %}
+
+<div class="container mt-5">
+    <h2>Editar Estado de Reserva</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        <table class="table table-bordered mt-3">
+            <thead>
+                <tr>
+                    <th>Producto</th>
+                    <th>Estado Actual</th>
+                    <th>Actualizar Estado</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in detalles %}
+                <tr>
+                    <td>{{ detalle.producto_nombre }}</td>
+                    <td>{% if detalle.estado_reserva %}{{ detalle.estado_reserva }}{% endif %}</td>
+                    <td>
+                        <select name="estado_reserva_{{ detalle.detalle_id }}" class="form-control">
+                            <option value="En proceso" {% if detalle.estado_reserva == "En proceso" %}selected{% endif %}>En proceso</option>
+                            <option value="Vendida" {% if detalle.estado_reserva == "Vendida" %}selected{% endif %}>Vendida</option>
+                            <option value="Desistida" {% if detalle.estado_reserva == "Desistida" %}selected{% endif %}>Desistida</option>
+                        </select>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        <button type="submit" class="btn btn-primary">Guardar Cambios</button>
+        <a href="{% url 'listar_ventas_online' %}" class="btn btn-secondary">Volver atrás</a>
+    </form>
+</div>
+
+{% endblock %}
+

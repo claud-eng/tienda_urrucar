@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}
-    {% if es_Administrador %}
+{% if user.empleado and user.empleado.rol == 'Administrador' %}
         Historial de Ventas Online
     {% else %}
         Historial de Compras Online
@@ -11,7 +11,7 @@
 
 <div class="container mt-4">
     <h2>
-        {% if es_Administrador %}
+        {% if user.empleado and user.empleado.rol == 'Administrador' %}
             Historial de Ventas Online
         {% else %}
             Historial de Compras Online
@@ -43,7 +43,8 @@
                     <th>Monto de Cuotas</th>
                     <th>Número de Cuotas</th>
                     <th>Total (IVA incluido)</th>
-                    <th>Emitir Comprobante</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -84,7 +85,21 @@
                     <td>{{ orden.numero_cuotas }}</td>
                     <td>${{ orden.total_formateado }}</td>
                     <td>
-                        <a href="{% url 'generar_comprobante_online' orden.numero_orden %}" class="btn btn-primary">Descargar</a>
+                        <!-- Columna Estado -->
+                        {% for detalle in orden.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                                {% if detalle.estado_reserva %}
+                                    {{ detalle.estado_reserva }}
+                                {% else %}
+                                    <!-- Deja vacío si no hay valor -->
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    
+                    <td>
+                        <!-- Columna Acciones -->
+                        <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
                     </td>
                 </tr>
                 {% endfor %}

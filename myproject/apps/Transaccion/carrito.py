@@ -10,16 +10,23 @@ from .views import formato_precio  # Importa la función de formato de precio de
 def ver_detalles_producto(request, producto_id):
     """
     Muestra los detalles de un producto y permite agregarlo al carrito.
-    Si se realiza una solicitud POST, se agrega la cantidad especificada al carrito,
-    validando que no exceda el stock disponible.
+    Si se realiza una solicitud POST, se agrega al carrito con lógica especial
+    para productos de categoría 'Vehículo'.
     """
     producto = get_object_or_404(Producto, id=producto_id)
     producto.precio_formateado = formato_precio(producto.precio)
+    if producto.precio_reserva:
+        producto.precio_reserva_formateado = formato_precio(producto.precio_reserva)
+    else:
+        producto.precio_reserva_formateado = None
 
     if request.method == 'POST':
         cantidad = int(request.POST.get('cantidad', 1))
 
-        if cantidad <= 0 or cantidad > producto.cantidad_stock:
+        # Validar cantidad para productos que no son vehículos
+        if producto.categoria == "Vehículo":
+            cantidad = 1  # Cantidad fija para vehículos
+        elif cantidad <= 0 or cantidad > producto.cantidad_stock:
             return render(request, 'Transaccion/ver_detalles_producto.html', {
                 'producto': producto,
                 'error_message': 'Cantidad no válida',
@@ -28,14 +35,24 @@ def ver_detalles_producto(request, producto_id):
         # Obtiene la instancia del cliente
         cliente = Cliente.objects.get(user=request.user)
 
-        carrito_item = Carrito.objects.filter(cliente=cliente, content_type=ContentType.objects.get_for_model(Producto), object_id=producto.id, carrito=1).first()
+        # Verifica si el producto ya está en el carrito
+        carrito_item = Carrito.objects.filter(
+            cliente=cliente,
+            content_type=ContentType.objects.get_for_model(Producto),
+            object_id=producto.id,
+            carrito=1
+        ).first()
 
         if carrito_item:
-            # Si el producto ya está en el carrito, se actualiza la cantidad
-            carrito_item.cantidad += cantidad
-            carrito_item.save()
+            if producto.categoria == "Vehículo":
+                # No permitir modificar la cantidad de vehículos
+                messages.warning(request, 'El vehículo ya está en el carrito y no se puede modificar la cantidad.')
+            else:
+                # Si no es vehículo, actualizar cantidad
+                carrito_item.cantidad += cantidad
+                carrito_item.save()
         else:
-            # Si no está en el carrito, crea un nuevo registro
+            # Crear un nuevo ítem en el carrito
             carrito_item = Carrito(
                 cliente=cliente,
                 content_type=ContentType.objects.get_for_model(Producto),
@@ -44,16 +61,15 @@ def ver_detalles_producto(request, producto_id):
                 carrito=1
             )
             carrito_item.save()
-        
+
         return redirect('carrito')
 
     return render(request, 'Transaccion/ver_detalles_producto.html', {'producto': producto})
 
 def agregar_al_carrito(request, id, tipo):
     """
-    Agrega un producto o servicio al carrito, dependiendo del tipo especificado.
-    Si el producto ya está en el carrito, se incrementa su cantidad; si es un servicio,
-    se muestra un mensaje de error.
+    Agrega un producto o servicio al carrito. Si el producto pertenece a la categoría
+    'Vehículo', utiliza el precio de reserva y establece la cantidad en 1.
     """
     cantidad = int(request.POST.get('cantidad', 1))
     cliente = Cliente.objects.get(user=request.user)
@@ -61,25 +77,34 @@ def agregar_al_carrito(request, id, tipo):
     if tipo == 'producto':
         item = get_object_or_404(Producto, id=id)
         content_type = ContentType.objects.get_for_model(Producto)
+
+        # Verificar si es un producto de la categoría 'Vehículo'
+        if item.categoria == "Vehículo":
+            cantidad = 1  # La cantidad de vehículos siempre será 1
+            precio = item.precio_reserva  # Usar el precio de reserva
+        else:
+            precio = item.precio
+
     elif tipo == 'servicio':
         item = get_object_or_404(Servicio, id=id)
         content_type = ContentType.objects.get_for_model(Servicio)
+        precio = item.precio
     else:
-        # Manejar error o redirigir a una página de error
-        pass
+        raise Http404("Tipo no válido")
 
+    # Buscar el ítem en el carrito
     carrito_item = Carrito.objects.filter(cliente=cliente, content_type=content_type, object_id=id, carrito=1).first()
 
     if carrito_item:
-        if tipo == 'servicio':
-            # Si es un servicio y ya está en el carrito, muestra un mensaje de error
-            messages.error(request, 'El servicio ya se encuentra en el carrito.')
+        if tipo == 'producto' and item.categoria == "Vehículo":
+            # No permitir modificar la cantidad de vehículos en el carrito
+            messages.warning(request, 'El vehículo ya está en el carrito y no se puede modificar la cantidad.')
         else:
-            # Si es un producto, actualiza la cantidad
+            # Incrementar la cantidad si no es un vehículo
             carrito_item.cantidad += cantidad
             carrito_item.save()
     else:
-        # Si no está en el carrito, crea un nuevo registro
+        # Crear un nuevo ítem en el carrito
         carrito_item = Carrito(
             cliente=cliente,
             content_type=content_type,
@@ -108,6 +133,12 @@ def carrito(request):
         item.precio_formateado = formato_precio(item.item.precio)
         item.precio_total_formateado = formato_precio(item.obtener_precio_total())
         item.es_servicio = isinstance(item.item, Servicio)
+        
+        # Formatear el precio de reserva si aplica
+        if isinstance(item.item, Producto) and item.item.precio_reserva:
+            item.item.precio_reserva_formateado = formato_precio(item.item.precio_reserva)
+        else:
+            item.item.precio_reserva_formateado = None
 
     return render(request, 'Transaccion/carrito.html', {
         'carrito_items': carrito_items,
@@ -148,28 +179,35 @@ def vaciar_carrito(request):
 
 def aumentar_cantidad(request, item_id):
     """
-    Aumenta la cantidad de un elemento en el carrito en uno, según el `item_id`.
+    Aumenta la cantidad de un elemento en el carrito, excepto si el producto pertenece
+    a la categoría 'Vehículo'.
     """
     cliente = Cliente.objects.get(user=request.user)
     carrito_item = Carrito.objects.filter(id=item_id, cliente=cliente, carrito=1).first()
 
     if carrito_item:
-        carrito_item.cantidad += 1
-        carrito_item.save()
+        if isinstance(carrito_item.item, Producto) and carrito_item.item.categoria == "Vehículo":
+            messages.warning(request, 'No se puede aumentar la cantidad de un vehículo en el carrito.')
+        else:
+            carrito_item.cantidad += 1
+            carrito_item.save()
 
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 
 def disminuir_cantidad(request, item_id):
     """
-    Disminuye la cantidad de un elemento en el carrito en uno, solo si la cantidad
-    actual es mayor a uno, para evitar cantidades negativas.
+    Disminuye la cantidad de un elemento en el carrito, excepto si el producto pertenece
+    a la categoría 'Vehículo'.
     """
     cliente = Cliente.objects.get(user=request.user)
     carrito_item = Carrito.objects.filter(id=item_id, cliente=cliente, carrito=1).first()
 
-    if carrito_item and carrito_item.cantidad > 1:
-        carrito_item.cantidad -= 1
-        carrito_item.save()
+    if carrito_item:
+        if isinstance(carrito_item.item, Producto) and carrito_item.item.categoria == "Vehículo":
+            messages.warning(request, 'No se puede disminuir la cantidad de un vehículo en el carrito.')
+        elif carrito_item.cantidad > 1:
+            carrito_item.cantidad -= 1
+            carrito_item.save()
 
     return HttpResponseRedirect(request.META.get('HTTP_REFERER'))
 

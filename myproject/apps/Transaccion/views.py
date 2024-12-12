@@ -15,7 +15,7 @@ from django.db import transaction  # Importa 'transaction' para manejar transacc
 from django.db.models import Q, Count  # Importa 'Q' y 'Count' para construir consultas complejas.
 from email.headerregistry import ContentTypeHeader  # Importa 'ContentTypeHeader' para manipular encabezados de correo electrónico.
 from .context_processors import formato_precio  # Importa 'formato_precio' para formatear precios en contextos de plantilla.
-from .forms import ProductoForm, ServicioForm, VentaManualForm, DetalleVentaManualFormset, DetalleVentaManualServicioFormset  # Importa formularios para gestionar productos, servicios y ventas.
+from .forms import ProductoForm, ServicioForm, DetalleVentaOnline, VentaOnlineForm, VentaManualForm, DetalleVentaOnlineFormset, DetalleVentaManualFormset, DetalleVentaManualServicioFormset  # Importa formularios para gestionar productos, servicios y ventas.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
 
 @login_required
@@ -65,6 +65,10 @@ def listar_productos(request):
 
     for producto in productos:
         producto.precio_formateado = formato_precio(producto.precio)
+        if producto.precio_reserva:  # Solo formatea si el precio de reserva no es nulo
+            producto.precio_reserva_formateado = formato_precio(producto.precio_reserva)
+        else:
+            producto.precio_reserva_formateado = None
 
     has_search_query_nombre = bool(nombre_query)
 
@@ -322,6 +326,40 @@ def listar_ventas_online(request):
     }
 
     return render(request, 'Transaccion/listar_ventas_online.html', context)
+
+@login_required
+def editar_venta_online(request, venta_id):
+    """
+    Permite editar únicamente el estado de la reserva de los productos de la categoría 'Vehículo'
+    en una venta online específica.
+    """
+    venta = get_object_or_404(VentaOnline, id=venta_id)
+
+    if request.method == "POST":
+        # Iterar por cada detalle de la venta
+        for detalle in venta.detalleventaonline_set.all():
+            if detalle.producto and detalle.producto.categoria == "Vehículo":
+                nuevo_estado = request.POST.get(f"estado_reserva_{detalle.id}")
+                if nuevo_estado in ['En proceso', 'Vendida', 'Desistida']:
+                    detalle.estado_reserva = nuevo_estado
+                    detalle.save()
+        messages.success(request, "Estado de la reserva actualizado correctamente.")
+        return redirect("listar_ventas_online")
+
+    # Renderizar formulario de edición
+    detalles = []
+    for detalle in venta.detalleventaonline_set.all():
+        if detalle.producto and detalle.producto.categoria == "Vehículo":
+            detalles.append({
+                'detalle_id': detalle.id,
+                'producto_nombre': detalle.producto.nombre,
+                'estado_reserva': detalle.estado_reserva
+            })
+
+    return render(request, "Transaccion/editar_venta_online.html", {
+        'venta': venta,
+        'detalles': detalles
+    })
 
 def agregar_venta(request):
     """

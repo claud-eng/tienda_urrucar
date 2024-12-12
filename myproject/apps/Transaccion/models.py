@@ -6,11 +6,26 @@ from apps.Usuario.models import Cliente, Empleado  # Importa las clases Cliente 
 
 # Clase para almacenar información de productos
 class Producto(models.Model):
+    # Opciones de categoría para el producto
+    CATEGORIA_CHOICES = [
+        ('Vehículo', 'Vehículo'),  # Categoría Vehículo
+        ('Otro', 'Otro'),  # Categoría Otro
+        ('Sin categoría', 'Sin categoría'),  # Nueva opción predeterminada
+    ]
+
     nombre = models.CharField(max_length=100)  # Nombre del producto
     marca = models.CharField(max_length=100)  # Marca del producto
-    categoria = models.CharField(max_length=100, null=True)  # Categoría a la que pertenece el producto
+    modelo = models.CharField(max_length=100, null=True, blank=True)  # Modelo del producto
+    version = models.CharField(max_length=50, null=True, blank=True)  # Versión del producto
+    anio = models.PositiveIntegerField(null=True, blank=True)  # Año del producto
+    categoria = models.CharField(
+        max_length=100,
+        choices=CATEGORIA_CHOICES,
+        default='Sin categoría'  # Predeterminado: Sin categoría
+    )  # Categoría a la que pertenece el producto
     descripcion = models.TextField()  # Descripción del producto
-    precio = models.PositiveIntegerField()  # Precio del producto
+    precio = models.PositiveIntegerField()  # Precio normal del producto
+    precio_reserva = models.PositiveIntegerField(null=True, blank=True)  # Precio de reserva del producto
     cantidad_stock = models.PositiveIntegerField()  # Cantidad disponible en stock
     imagen = models.ImageField(upload_to='productos/', null=True, blank=True)  # Imagen del producto
 
@@ -39,7 +54,9 @@ class Carrito(models.Model):
         return f'{self.cliente.username} - {self.item}'  # Retorna el cliente y el ítem en el carrito
 
     def obtener_precio_total(self):
-        return self.item.precio * self.cantidad  # Calcula el precio total para este ítem en el carrito
+        if isinstance(self.item, Producto) and self.item.categoria == "Vehículo":
+            return self.item.precio_reserva * self.cantidad # Calcula el precio total para este ítem en el carrito
+        return self.item.precio * self.cantidad 
 
 # Clase para agregar relaciones inversas con Carrito
 class ContenidoCarrito(models.Model):
@@ -66,6 +83,15 @@ class DetalleVentaOnline(models.Model):
     servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True)  # Servicio en el detalle
     precio = models.DecimalField(max_digits=10, decimal_places=2)  # Precio del ítem
     cantidad = models.PositiveIntegerField()  # Cantidad del ítem
+    estado_reserva = models.CharField(
+        max_length=20,
+        choices=[('En proceso', 'En proceso'), ('Vendida', 'Vendida'), ('Desistida', 'Desistida')],
+        null=True,
+        blank=True
+    )  # Estado de la reserva
+
+    def __str__(self):
+        return f"Detalle de {self.orden_compra.numero_orden}"
 
 # Clase para almacenar ventas realizadas manualmente
 class VentaManual(models.Model):

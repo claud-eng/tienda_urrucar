@@ -25,6 +25,7 @@
                             <th>Producto/Servicio</th>
                             <th>Cantidad</th>
                             <th>Precio Unitario (IVA incluido)</th>
+                            <th>Precio de Reserva</th>
                             <th>Total (IVA incluido)</th>
                             <th>Acciones</th>
                         </tr>
@@ -35,17 +36,24 @@
                             <td>{{ item.item.nombre }}</td>
                             <td>{{ item.cantidad }}</td>
                             <td>${{ item.precio_formateado }}</td>
+                            <td>
+                                {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %}
+                                    ${{ item.item.precio_reserva_formateado }}
+                                {% endif %}
+                            </td>
                             <td>${{ item.precio_total_formateado }}</td>
                             <td>
                                 {% if not item.es_servicio %}
-                                <form method="post" action="{% url 'aumentar_cantidad' item.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-secondary btn-sm">Aumentar cantidad</button>
-                                </form>
-                                    <form method="post" action="{% url 'disminuir_cantidad' item.id %}">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-secondary btn-sm mt-1">Disminuir cantidad</button>
-                                    </form>
+                                    {% if item.item.categoria != "Vehículo" %}
+                                        <form method="post" action="{% url 'aumentar_cantidad' item.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary btn-sm">Aumentar cantidad</button>
+                                        </form>
+                                        <form method="post" action="{% url 'disminuir_cantidad' item.id %}">
+                                            {% csrf_token %}
+                                            <button type="submit" class="btn btn-secondary btn-sm mt-1">Disminuir cantidad</button>
+                                        </form>
+                                    {% endif %}
                                 {% endif %}
                                 <form method="post" action="{% url 'eliminar_del_carrito' item.id %}">
                                     {% csrf_token %}
@@ -54,19 +62,20 @@
                             </td>
                         </tr>
                         {% endfor %}
+                        <!-- Fila para el Total y Botones -->
                         <tr>
-                            <td colspan="3" class="text-right"><strong>Total:</strong></td>
-                            <td><strong>${{ total }}</strong></td>
+                            <td colspan="4"></td>
+                            <td><strong>Total: ${{ total }}</strong></td>
                             <td>
                                 <form method="post" action="{% url 'iniciar_transaccion' %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-success">Pagar</button>
+                                    <button type="submit" class="btn btn-success mb-1">Pagar</button>
                                 </form>
                                 <form method="post" action="{% url 'vaciar_carrito' %}">
                                     {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning mt-1">Vaciar Carrito</button>
+                                    <button type="submit" class="btn btn-warning mb-1">Vaciar Carrito</button>
                                 </form>
-                                <a href="#" id="volverAtrasBtn" class="btn btn-secondary mt-1">Volver atrás</a>
+                                <a href="#" id="volverAtrasBtn" class="btn btn-secondary">Volver atrás</a>
                             </td>
                         </tr>
                     </tbody>

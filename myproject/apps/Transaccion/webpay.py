@@ -137,13 +137,29 @@ def transaccion_finalizada(request):
                         producto.cantidad_stock -= item.cantidad
                         producto.save()
 
-                    DetalleVentaOnline.objects.create(
-                        orden_compra=orden,
-                        producto=item.item if isinstance(item.item, Producto) else None,
-                        servicio=item.item if isinstance(item.item, Servicio) else None,
-                        precio=item.obtener_precio_total(),
-                        cantidad=item.cantidad
-                    )
+                        # Verifica si el producto pertenece a la categoría 'Vehículo'
+                        if producto.categoria == "Vehículo":
+                            DetalleVentaOnline.objects.create(
+                                orden_compra=orden,
+                                producto=producto,
+                                precio=item.obtener_precio_total(),
+                                cantidad=item.cantidad,
+                                estado_reserva="En proceso"  # Establece automáticamente el estado de la reserva
+                            )
+                        else:
+                            DetalleVentaOnline.objects.create(
+                                orden_compra=orden,
+                                producto=producto,
+                                precio=item.obtener_precio_total(),
+                                cantidad=item.cantidad
+                            )
+                    else:
+                        DetalleVentaOnline.objects.create(
+                            orden_compra=orden,
+                            servicio=item.item,
+                            precio=item.obtener_precio_total(),
+                            cantidad=item.cantidad
+                        )
 
                 # Marca los ítems en el carrito como comprados
                 carrito_items.update(carrito=0)
@@ -180,4 +196,13 @@ def transaccion_finalizada(request):
         return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
     except TransbankError as e:
-        return HttpResponse(f"Error al procesar la transacción: {e.message}")
+        # Verifica si el mensaje del error es específico
+        if str(e.message) == "'token' can't be null or white space":
+            contexto = {
+                'mensaje_error': "Se ha anulado la compra. Por favor, inténtalo nuevamente."
+            }
+        else:
+            contexto = {
+                'mensaje_error': f"Error al procesar la transacción: {e.message}"
+            }
+        return render(request, 'Transaccion/retorno_webpay.html', contexto)

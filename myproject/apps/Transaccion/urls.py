@@ -21,6 +21,7 @@ urlpatterns = [
     path('disminuir_cantidad/<int:item_id>/', disminuir_cantidad, name='disminuir_cantidad'),  # Disminuir cantidad de un ítem en el carrito
     path('editar_producto/<int:producto_id>', views.editar_producto, name="editar_producto"),  # Editar un producto
     path('editar_servicio/<int:servicio_id>', views.editar_servicio, name="editar_servicio"),  # Editar un servicio
+    path('editar-venta-online/<int:venta_id>/', views.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
     path('exportar-pdf/', views.exportar_pdf, name='exportar_pdf'),  # Exportar a PDF
     path('gestionar_inventario', views.gestionar_inventario, name='gestionar_inventario'),  # Gestionar inventario (administrador)

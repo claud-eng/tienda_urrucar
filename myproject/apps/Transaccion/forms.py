@@ -1,8 +1,8 @@
-import datetime
+import datetime # Importa 'datetime' para trabajar con fechas y horas.
 from django import forms  # Importa el módulo forms de Django para crear formularios.
 from django.core.exceptions import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.forms import inlineformset_factory  # Importa inlineformset_factory para crear formularios en línea para modelos relacionados.
-from .models import Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, Servicio  # Importa los modelos Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto y Servicio de la aplicación actual.
+from .models import Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto, Servicio  # Importa los modelos Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto y Servicio de la aplicación actual.
 
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
@@ -59,6 +59,14 @@ class ProductoForm(forms.ModelForm):
             self.add_error('anio', "El año debe estar entre 1900 y el próximo año.")
 
         return cleaned_data  # Retorna los datos limpios y formateados
+
+class ImagenProductoForm(forms.ModelForm):
+    class Meta:
+        model = ImagenProducto
+        fields = ['imagen']
+        widgets = {
+            'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),  # Sin `multiple`
+        }
 
 # Formulario para gestionar la creación y actualización de servicios
 class ServicioForm(forms.ModelForm):

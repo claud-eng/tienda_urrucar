@@ -17,6 +17,8 @@ from email.headerregistry import ContentTypeHeader  # Importa 'ContentTypeHeader
 from .context_processors import formato_precio  # Importa 'formato_precio' para formatear precios en contextos de plantilla.
 from .forms import ProductoForm, ServicioForm, DetalleVentaOnline, VentaOnlineForm, VentaManualForm, DetalleVentaOnlineFormset, DetalleVentaManualFormset, DetalleVentaManualServicioFormset  # Importa formularios para gestionar productos, servicios y ventas.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
+from .models import * # Importa la función ImagenProducto para gestionar la lógica de imágenes adicionales en la galería de productos.
+from collections import Counter
 
 @login_required
 def listar_productos(request):
@@ -79,43 +81,87 @@ def listar_productos(request):
 
 @login_required
 def agregar_producto(request):
-    """
-    Agrega un nuevo producto a la base de datos mediante un formulario.
-    Permite cargar una imagen para el producto.
-    """
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
-            producto = form.save(commit=False)
-            producto.imagen = form.cleaned_data['imagen']
-            producto.save()
-            messages.success(request, 'Producto agregado con éxito.')
+            producto = form.save()
+
+            # Procesar imágenes adicionales
+            for imagen in request.FILES.getlist('imagenes'):
+                ImagenProducto.objects.create(producto=producto, imagen=imagen)
+
+            messages.success(request, 'Producto y galería de imágenes agregados con éxito.')
             return redirect('listar_productos')
     else:
         form = ProductoForm()
+
     return render(request, "Transaccion/agregar_producto.html", {'form': form})
 
-@login_required
 def editar_producto(request, producto_id):
-    """
-    Edita la información de un producto existente, permitiendo actualizar
-    sus datos e imagen.
-    """
-    instancia = Producto.objects.get(id=producto_id)
+    producto = get_object_or_404(Producto, id=producto_id)
+    imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtén las imágenes adicionales
 
     if request.method == "POST":
-        form = ProductoForm(request.POST, request.FILES, instance=instancia)
+        form = ProductoForm(request.POST, request.FILES, instance=producto)
         if form.is_valid():
-            producto = form.save(commit=False)
-            if 'imagen' in request.FILES:
-                producto.imagen = form.cleaned_data['imagen']
-            producto.save()
-            messages.success(request, 'Producto editado con éxito.')
-            return redirect('listar_productos')
-    else:
-        form = ProductoForm(instance=instancia)
+            producto = form.save()
 
-    return render(request, "Transaccion/editar_producto.html", {'form': form})
+            # Eliminar imagen principal si está marcada para eliminación
+            imagen_principal_id = request.POST.get("imagen_principal_a_eliminar")
+            if imagen_principal_id and producto.imagen:
+                # Eliminar la imagen principal
+                if os.path.exists(producto.imagen.path):
+                    os.remove(producto.imagen.path)  # Elimina físicamente el archivo
+                producto.imagen.delete(save=False)
+                producto.imagen = None
+                producto.save()
+
+            imagenes_a_eliminar = request.POST.get("imagenes_a_eliminar", "").split(",")
+            for imagen_id in imagenes_a_eliminar:
+                if imagen_id.isdigit():
+                    try:
+                        imagen_obj = ImagenProducto.objects.get(id=imagen_id)
+                        if os.path.exists(imagen_obj.imagen.path):
+                            os.remove(imagen_obj.imagen.path)  # Elimina físicamente el archivo
+                        imagen_obj.delete()  # Elimina de la base de datos
+                    except ImagenProducto.DoesNotExist:
+                        pass
+
+            # Procesar nuevas imágenes adicionales
+            for imagen in request.FILES.getlist("imagenes"):
+                ImagenProducto.objects.create(producto=producto, imagen=imagen)
+
+            messages.success(request, "Producto actualizado con éxito.")
+            return redirect("listar_productos")
+    else:
+        form = ProductoForm(instance=producto)
+
+    return render(request, "Transaccion/editar_producto.html", {
+        "form": form,
+        "producto": producto,
+        "imagenes_adicionales": imagenes_adicionales,  # Pasa las imágenes adicionales al contexto
+    })
+
+# Eliminar imagen principal
+def eliminar_imagen_principal(request, producto_id):
+    producto = get_object_or_404(Producto, id=producto_id)
+    if producto.imagen:
+        # Elimina el archivo físicamente
+        if os.path.exists(producto.imagen.path):
+            os.remove(producto.imagen.path)
+        producto.imagen.delete()  # Elimina la referencia de la base de datos
+        producto.save()
+        messages.success(request, 'La imagen principal fue eliminada con éxito.')
+    return redirect('editar_producto', producto_id=producto.id)
+
+# Eliminar imagen adicional
+def eliminar_imagen_adicional(request, imagen_id):
+    imagen = get_object_or_404(ImagenProducto, id=imagen_id)
+    if os.path.exists(imagen.imagen.path):
+        os.remove(imagen.imagen.path)  # Elimina el archivo físicamente
+    imagen.delete()  # Elimina la referencia de la base de datos
+    messages.success(request, 'La imagen adicional fue eliminada con éxito.')
+    return redirect('editar_producto', producto_id=imagen.producto.id)
 
 @login_required
 def confirmar_borrar_producto(request, producto_id):
@@ -232,25 +278,30 @@ def gestionar_inventario(request):
 
 def catalogo_productos(request):
     """
-    Muestra un catálogo de productos, permitiendo ordenar por precio y
-    filtrar por categoría. La vista también incluye paginación.
+    Muestra un catálogo de productos permitiendo filtrar por marca y ordenar por precio.
     """
+    # Obtener parámetros de filtro y orden
     sort_order = request.GET.get('sort', '')
-    categoria_filter = request.GET.get('categoria', '')
+    marca_filter = request.GET.get('marca', '')
 
+    # Base queryset
     productos = Producto.objects.all()
 
-    if categoria_filter:
-        productos = productos.filter(categoria=categoria_filter)
+    # Filtrar por marca
+    if marca_filter:
+        productos = productos.filter(marca=marca_filter)
 
+    # Ordenar por precio
     if sort_order == 'asc':
         productos = productos.order_by('precio')
     elif sort_order == 'desc':
         productos = productos.order_by('-precio')
+    else:
+        productos = productos.order_by('id')  # Orden predeterminado
 
+    # Paginación
     paginator = Paginator(productos, 10)
     page = request.GET.get('page')
-
     try:
         productos = paginator.page(page)
     except PageNotAnInteger:
@@ -258,10 +309,17 @@ def catalogo_productos(request):
     except EmptyPage:
         productos = paginator.page(paginator.num_pages)
 
+    # Preparar los datos finales para la plantilla
+    marcas = Producto.objects.values_list('marca', flat=True).distinct()
+
     for producto in productos:
         producto.precio_formateado = formato_precio(producto.precio)
 
-    return render(request, 'Transaccion/catalogo_productos.html', {'productos': productos})
+    return render(request, 'Transaccion/catalogo_productos.html', {
+        'productos': productos,
+        'marcas': marcas,
+        'marca_count': dict(Counter(Producto.objects.values_list('marca', flat=True))),
+    })
 
 def catalogo_servicios(request):
     """

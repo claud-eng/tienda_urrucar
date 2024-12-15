@@ -63,15 +63,73 @@
           <input type="number" class="form-control" id="{{ form.cantidad_stock.id_for_label }}" name="{{ form.cantidad_stock.name }}" value="{{ form.cantidad_stock.value|default:'' }}">
         </div>
 
+        <!-- Imagen Principal -->
         <div class="form-group">
-          <label for="{{ form.imagen.id_for_label }}">Imagen</label>
+          <label>Imagen Principal</label>
+          {% if form.instance.imagen %}
+            <div>
+                <img src="{{ form.instance.imagen.url }}" alt="Imagen Principal" style="max-width: 200px; max-height: 150px; margin-bottom: 10px;">
+                <button type="button" class="btn btn-danger btn-sm eliminar-imagen-principal" data-imagen-id="{{ form.instance.id }}">Marcar para eliminar</button>
+            </div>
+          {% endif %}
           <input type="file" class="form-control" id="{{ form.imagen.id_for_label }}" name="{{ form.imagen.name }}">
-      </div>
-      
+        </div>
+
+        <!-- Galería de imágenes adicionales -->
+        <div class="form-group">
+          <label>Imágenes Adicionales</label>
+          <div class="d-flex flex-wrap">
+            {% for imagen in imagenes_adicionales %}
+              <div class="me-2 mb-2" id="imagen-adicional-{{ imagen.id }}">
+                  <img src="{{ imagen.imagen.url }}" alt="Imagen Adicional" style="max-width: 100px; max-height: 100px;">
+                  <button type="button" class="btn btn-danger btn-sm eliminar-imagen-adicional" data-imagen-id="{{ imagen.id }}">Marcar para eliminar</button>
+              </div>
+            {% endfor %}
+          </div>
+          <input type="file" class="form-control" id="imagenes" name="imagenes" multiple>
+        </div>
+
+        <!-- Campo oculto para almacenar IDs de imágenes a eliminar -->
+        <input type="hidden" name="imagenes_a_eliminar" id="imagenes_a_eliminar" value="">
+        <input type="hidden" name="imagen_principal_a_eliminar" id="imagen_principal_a_eliminar" value="">
+    
         <button type="submit" class="btn btn-primary">Guardar Cambios</button>
         <a href="{% url 'listar_productos' %}" class="btn btn-secondary">Volver atrás</a>
     </form>
+    
 </div>
 
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      const imagenesAEliminar = [];
+      const imagenPrincipalInput = document.getElementById("imagen_principal_a_eliminar");
+      const imagenesAEliminarInput = document.getElementById("imagenes_a_eliminar");
+
+      // Marcar imagen principal para eliminar
+      document.querySelectorAll(".eliminar-imagen-principal").forEach((button) => {
+          button.addEventListener("click", function () {
+              const imagenId = this.dataset.imagenId;
+              if (imagenId) {
+                  imagenPrincipalInput.value = imagenId;
+                  this.closest("div").style.display = "none"; // Ocultar la imagen marcada
+              }
+          });
+      });
+
+      // Marcar imágenes adicionales para eliminar
+      document.querySelectorAll(".eliminar-imagen-adicional").forEach((button) => {
+          button.addEventListener("click", function () {
+              const imagenId = this.dataset.imagenId;
+              if (imagenId && !imagenesAEliminar.includes(imagenId)) {
+                  imagenesAEliminar.push(imagenId);
+                  imagenesAEliminarInput.value = imagenesAEliminar.join(",");
+                  document.getElementById(`imagen-adicional-${imagenId}`).style.display = "none"; // Ocultar la imagen marcada
+              }
+          });
+      });
+  });
+</script>
+
 {% endblock %}
+
 

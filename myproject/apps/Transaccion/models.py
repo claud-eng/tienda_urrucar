@@ -1,8 +1,11 @@
+import os  # Importa el módulo 'os' para manejar operaciones relacionadas con el sistema de archivos y variables de entorno.
 from django.contrib.auth.models import User  # Importa el modelo User de Django para la gestión de usuarios.
+from django.utils.deconstruct import deconstructible  # Importa el decorador 'deconstructible' para serialización en migraciones.
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation  # Importa campos genéricos para relaciones en modelos.
 from django.contrib.contenttypes.models import ContentType  # Importa el modelo ContentType para gestionar tipos de contenido genéricos.
 from django.db import models  # Importa la biblioteca models de Django para definir modelos.
-from apps.Usuario.models import Cliente, Empleado  # Importa las clases Cliente y Empleado de la aplicación Usuario.
+from django.forms import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
+from apps.Usuario.models import Cliente, Empleado  # Importa las clases Cliente y Empleado desde la aplicación Usuario.
 
 # Clase para almacenar información de productos
 class Producto(models.Model):
@@ -31,6 +34,34 @@ class Producto(models.Model):
 
     def __str__(self):
         return self.nombre  # Retorna el nombre del producto como representación en cadena
+    
+# Valida que el tamaño de la imagen no supere los 3 MB.
+def validar_tamano_imagen(image):
+    if image.size > 3 * 1024 * 1024:  # 3 MB
+        raise ValidationError("La imagen no puede superar los 3 MB.")
+
+# Clase que representa una imagen adicional asociada a un producto
+class ImagenProducto(models.Model):
+    producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='imagenes')
+    imagen = models.ImageField(upload_to='galeria_productos/', validators=[validar_tamano_imagen])
+
+    def save(self, *args, **kwargs):
+        # Si ya existe una imagen, genera un nombre personalizado
+        if self.imagen and not self.id:  # Evitar renombrar en actualizaciones
+            # Obtén el nombre original y extensión del archivo
+            nombre_original, extension = os.path.splitext(self.imagen.name)
+            
+            # Genera un nuevo nombre basado en el ID del producto
+            nuevo_nombre = f"{nombre_original}_{self.producto.id}{extension}"
+            
+            # Asigna el nuevo nombre al campo 'imagen'
+            self.imagen.name = nuevo_nombre
+        
+        # Llama al método save original
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Imagen de {self.producto.nombre}"
 
 # Clase para almacenar información de servicios
 class Servicio(models.Model):

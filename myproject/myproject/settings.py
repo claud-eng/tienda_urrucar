@@ -72,6 +72,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'apps.Transaccion.context_processors.carrito_count',
+                'apps.Transaccion.context_processors.agregar_filtros_catalogo',
                 'apps.Transaccion.context_processors.agregar_formato_precio',
             ],
         },
@@ -139,7 +140,9 @@ STATICFILES_DIRS = [
 
 # Media files (uploaded images)
 MEDIA_URL = '/media/'
-MEDIA_ROOT = BASE_DIR / 'static/images'
+MEDIA_ROOT = BASE_DIR / 'media'
+
+SERVE_MEDIA_IN_PRODUCTION = True
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

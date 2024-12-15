@@ -1,7 +1,6 @@
 from django.urls import include, path  # Importa 'path' para definir rutas de URL y 'include' para incluir otras configuraciones de URL.
 from . import views  # Importa las vistas definidas en el directorio actual.
-from .carrito import agregar_al_carrito, aumentar_cantidad, carrito, disminuir_cantidad, eliminar_del_carrito, realizar_compra, vaciar_carrito, ver_detalles_producto  # Importa funciones relacionadas con la gestión del carrito de compras.
-from .views import generar_comprobante, generar_comprobante_online  # Importa funciones para generar comprobantes en las vistas.
+from .carrito import *  # Importa todas las funciones relacionadas con la gestión del carrito de compras.
 from .webpay import iniciar_transaccion, transaccion_finalizada  # Importa funciones para iniciar y finalizar transacciones con Webpay.
 
 urlpatterns = [
@@ -20,6 +19,8 @@ urlpatterns = [
     path('confirmar-borrar-servicio/<int:servicio_id>/', views.confirmar_borrar_servicio, name='confirmar_borrar_servicio'),  # Confirmar borrado de servicio
     path('disminuir_cantidad/<int:item_id>/', disminuir_cantidad, name='disminuir_cantidad'),  # Disminuir cantidad de un ítem en el carrito
     path('editar_producto/<int:producto_id>', views.editar_producto, name="editar_producto"),  # Editar un producto
+    path('eliminar_imagen_principal/<int:producto_id>/', views.eliminar_imagen_principal, name='eliminar_imagen_principal'),
+    path('eliminar_imagen_adicional/<int:imagen_id>/', views.eliminar_imagen_adicional, name='eliminar_imagen_adicional'),
     path('editar_servicio/<int:servicio_id>', views.editar_servicio, name="editar_servicio"),  # Editar un servicio
     path('editar-venta-online/<int:venta_id>/', views.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
@@ -35,7 +36,7 @@ urlpatterns = [
     path('reportes_ventas_manuales', views.reportes_ventas_manuales, name='reportes_ventas_manuales'),  # Reportes de ventas manuales
     path('transaccion_finalizada/', transaccion_finalizada, name='transaccion_finalizada'),  # Finalización de transacción de pago
     path('vaciar_carrito/', vaciar_carrito, name='vaciar_carrito'),  # Vaciar el carrito
-    path('ventas/comprobante/<int:id_venta>/', generar_comprobante, name='generar_comprobante'),  # Generar comprobante de venta
-    path('ventas_online/comprobante/<str:numero_orden>/', generar_comprobante_online, name='generar_comprobante_online'),  # Comprobante de ventas online
+    path('ventas/comprobante/<int:id_venta>/', views.generar_comprobante, name='generar_comprobante'),  # Generar comprobante de venta
+    path('ventas_online/comprobante/<str:numero_orden>/', views.generar_comprobante_online, name='generar_comprobante_online'),  # Comprobante de ventas online
     path('ver_detalles_producto/<int:producto_id>/', ver_detalles_producto, name='ver_detalles_producto'),  # Ver detalles del producto
 ]

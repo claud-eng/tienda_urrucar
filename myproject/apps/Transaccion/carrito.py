@@ -20,6 +20,9 @@ def ver_detalles_producto(request, producto_id):
     else:
         producto.precio_reserva_formateado = None
 
+    # Recuperar imágenes adicionales relacionadas
+    imagenes_adicionales = producto.imagenes.all()
+
     if request.method == 'POST':
         cantidad = int(request.POST.get('cantidad', 1))
 
@@ -29,6 +32,7 @@ def ver_detalles_producto(request, producto_id):
         elif cantidad <= 0 or cantidad > producto.cantidad_stock:
             return render(request, 'Transaccion/ver_detalles_producto.html', {
                 'producto': producto,
+                'imagenes_adicionales': imagenes_adicionales,
                 'error_message': 'Cantidad no válida',
             })
 
@@ -64,7 +68,10 @@ def ver_detalles_producto(request, producto_id):
 
         return redirect('carrito')
 
-    return render(request, 'Transaccion/ver_detalles_producto.html', {'producto': producto})
+    return render(request, 'Transaccion/ver_detalles_producto.html', {
+        'producto': producto,
+        'imagenes_adicionales': imagenes_adicionales
+    })
 
 def agregar_al_carrito(request, id, tipo):
     """

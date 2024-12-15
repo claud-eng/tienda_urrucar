@@ -29,7 +29,7 @@
             {{ form.as_p }}
             
             <!-- Si el usuario está logeado como empleado aparece el botón de agregar, en caso contrario Registrarse -->
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="btn btn-success">
                 {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
                     Agregar
                 {% else %}

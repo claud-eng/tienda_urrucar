@@ -22,7 +22,7 @@
         {% endif %}
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
         <div class="d-flex justify-content-start">
-            <a href="{% url 'agregar_venta' %}?{{ request.GET.urlencode }}" class="btn btn-success mb-2">Registrar Venta</a>
+            <a href="{% url 'agregar_venta_manual' %}?{{ request.GET.urlencode }}" class="btn btn-success mb-2">Registrar Venta</a>
         </div>
         {% endif %}
     </div>

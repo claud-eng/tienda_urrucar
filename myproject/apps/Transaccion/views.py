@@ -5,6 +5,7 @@ import os  # Importa 'os' para interactuar con el sistema operativo.
 import requests  # Importa 'requests' para realizar solicitudes HTTP.
 from apps.Usuario.models import Cliente  # Importa el modelo 'Cliente' desde la aplicación 'Usuario'.
 from calendar import monthrange  # Importa 'monthrange' para obtener el rango de días en un mes.
+from collections import Counter
 from django.conf import settings  # Importa el módulo de configuración de Django.
 from django.contrib import messages  # Importa 'messages' para mostrar mensajes a los usuarios en Django.
 from django.contrib.auth.decorators import login_required  # Importa 'login_required' para proteger vistas que requieren autenticación.
@@ -18,7 +19,6 @@ from .context_processors import formato_precio  # Importa 'formato_precio' para 
 from .forms import ProductoForm, ServicioForm, DetalleVentaOnline, VentaOnlineForm, VentaManualForm, DetalleVentaOnlineFormset, DetalleVentaManualFormset, DetalleVentaManualServicioFormset  # Importa formularios para gestionar productos, servicios y ventas.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
 from .models import * # Importa la función ImagenProducto para gestionar la lógica de imágenes adicionales en la galería de productos.
-from collections import Counter
 
 @login_required
 def listar_productos(request):
@@ -97,6 +97,7 @@ def agregar_producto(request):
 
     return render(request, "Transaccion/agregar_producto.html", {'form': form})
 
+@login_required
 def editar_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtén las imágenes adicionales
@@ -142,18 +143,7 @@ def editar_producto(request, producto_id):
         "imagenes_adicionales": imagenes_adicionales,  # Pasa las imágenes adicionales al contexto
     })
 
-# Eliminar imagen principal
-def eliminar_imagen_principal(request, producto_id):
-    producto = get_object_or_404(Producto, id=producto_id)
-    if producto.imagen:
-        # Elimina el archivo físicamente
-        if os.path.exists(producto.imagen.path):
-            os.remove(producto.imagen.path)
-        producto.imagen.delete()  # Elimina la referencia de la base de datos
-        producto.save()
-        messages.success(request, 'La imagen principal fue eliminada con éxito.')
-    return redirect('editar_producto', producto_id=producto.id)
-
+@login_required
 # Eliminar imagen adicional
 def eliminar_imagen_adicional(request, imagen_id):
     imagen = get_object_or_404(ImagenProducto, id=imagen_id)
@@ -173,17 +163,25 @@ def confirmar_borrar_producto(request, producto_id):
 
 @login_required
 def borrar_producto(request, producto_id):
-    """
-    Elimina un producto de la base de datos y redirige a la lista de productos.
-    """
     try:
-        instancia = Producto.objects.get(id=producto_id)
-        instancia.delete()
-        messages.success(request, 'Producto eliminado con éxito.')
-    except Producto.DoesNotExist:
-        pass
+        producto = Producto.objects.get(id=producto_id)
+        
+        # Eliminar imagen principal si existe
+        if producto.imagen and os.path.exists(producto.imagen.path):
+            os.remove(producto.imagen.path)
+        
+        # Eliminar imágenes adicionales
+        for imagen in producto.imagenes.all():
+            if os.path.exists(imagen.imagen.path):
+                os.remove(imagen.imagen.path)
+            imagen.delete()  # Eliminar referencia en la base de datos
 
-    return redirect('listar_productos')
+        producto.delete()  # Eliminar el producto
+        messages.success(request, "Producto eliminado con éxito.")
+    except Producto.DoesNotExist:
+        messages.error(request, "El producto no existe.")
+
+    return redirect("listar_productos")
 
 @login_required
 def listar_servicios(request):
@@ -191,7 +189,7 @@ def listar_servicios(request):
     Lista todos los servicios en la base de datos con opciones de búsqueda
     y paginación.
     """
-    servicios = Servicio.objects.all()
+    servicios = Servicio.objects.all().order_by('id')  # Agrega un orden explícito
     nombre_query = request.GET.get('nombre')
 
     if nombre_query:
@@ -207,6 +205,10 @@ def listar_servicios(request):
     except EmptyPage:
         servicios = paginator.page(paginator.num_pages)
 
+    # Formatear el precio de cada servicio
+    for servicio in servicios:
+        servicio.precio_formateado = formato_precio(servicio.precio)
+
     has_search_query_nombre = bool(nombre_query)
 
     return render(request, 'Transaccion/listar_servicios.html', {
@@ -216,36 +218,40 @@ def listar_servicios(request):
 
 @login_required
 def agregar_servicio(request):
-    """
-    Agrega un nuevo servicio a la base de datos mediante un formulario.
-    """
     if request.method == "POST":
-        form = ServicioForm(request.POST)
+        form = ServicioForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
-            messages.success(request, 'Servicio agregado con éxito.')
-            return redirect('listar_servicios')
+            servicio = form.save()
+            messages.success(request, "Servicio agregado con éxito.")
+            return redirect("listar_servicios")
     else:
         form = ServicioForm()
-    return render(request, "Transaccion/agregar_servicio.html", {'form': form})
+    return render(request, "Transaccion/agregar_servicio.html", {"form": form})
 
 @login_required
 def editar_servicio(request, servicio_id):
-    """
-    Edita la información de un servicio existente en la base de datos.
-    """
-    instancia = Servicio.objects.get(id=servicio_id)
+    servicio = get_object_or_404(Servicio, id=servicio_id)
 
     if request.method == "POST":
-        form = ServicioForm(request.POST, instance=instancia)
+        form = ServicioForm(request.POST, request.FILES, instance=servicio)
+
+        # Verificar si se marcó la imagen para eliminación
+        imagen_a_eliminar = request.POST.get("imagen_a_eliminar")
+        if imagen_a_eliminar and servicio.imagen:
+            # Eliminar el archivo físicamente
+            if os.path.exists(servicio.imagen.path):
+                os.remove(servicio.imagen.path)
+            # Eliminar referencia en la base de datos
+            servicio.imagen.delete(save=False)
+
         if form.is_valid():
             form.save()
-            messages.success(request, 'Servicio editado con éxito.')
-            return redirect('listar_servicios')
+            messages.success(request, "Servicio actualizado con éxito.")
+            return redirect("listar_servicios")
     else:
-        form = ServicioForm(instance=instancia)
+        form = ServicioForm(instance=servicio)
 
-    return render(request, "Transaccion/editar_servicio.html", {'form': form})
+    return render(request, "Transaccion/editar_servicio.html", {"form": form, "servicio": servicio})
 
 @login_required
 def confirmar_borrar_servicio(request, servicio_id):
@@ -257,17 +263,19 @@ def confirmar_borrar_servicio(request, servicio_id):
 
 @login_required
 def borrar_servicio(request, servicio_id):
-    """
-    Elimina un servicio de la base de datos y redirige a la lista de servicios.
-    """
     try:
-        instancia = Servicio.objects.get(id=servicio_id)
-        instancia.delete()
-        messages.success(request, 'Servicio eliminado con éxito.')
+        servicio = Servicio.objects.get(id=servicio_id)
+        
+        # Eliminar imagen si existe
+        if servicio.imagen and os.path.exists(servicio.imagen.path):
+            os.remove(servicio.imagen.path)
+        
+        servicio.delete()  # Eliminar el servicio
+        messages.success(request, "Servicio eliminado con éxito.")
     except Servicio.DoesNotExist:
-        pass
+        messages.error(request, "El servicio no existe.")
 
-    return redirect('listar_servicios')
+    return redirect("listar_servicios")
 
 @login_required
 def gestionar_inventario(request):
@@ -323,17 +331,39 @@ def catalogo_productos(request):
 
 def catalogo_servicios(request):
     """
-    Muestra un catálogo de servicios con precios formateados.
+    Muestra un catálogo de servicios permitiendo ordenar por precio.
     """
+    # Obtener parámetros de filtro y orden
+    sort_order = request.GET.get('sort', '')
+
+    # Base queryset
     servicios = Servicio.objects.all()
-    
-    locale.setlocale(locale.LC_ALL, 'es_ES.UTF-8')
 
+    # Ordenar por precio
+    if sort_order == 'asc':
+        servicios = servicios.order_by('precio')
+    elif sort_order == 'desc':
+        servicios = servicios.order_by('-precio')
+
+    # Paginación
+    paginator = Paginator(servicios, 10)
+    page = request.GET.get('page')
+    try:
+        servicios = paginator.page(page)
+    except PageNotAnInteger:
+        servicios = paginator.page(1)
+    except EmptyPage:
+        servicios = paginator.page(paginator.num_pages)
+
+    # Formateo de precios
     for servicio in servicios:
-        servicio.precio = locale.format_string('%.0f', servicio.precio, grouping=True)
+        servicio.precio_formateado = formato_precio(servicio.precio)
 
-    return render(request, 'Transaccion/catalogo_servicios.html', {'servicios': servicios})
+    return render(request, 'Transaccion/catalogo_servicios.html', {
+        'servicios': servicios,
+    })
 
+@login_required
 def listar_ventas_online(request):
     """
     Lista todas las ventas aprobadas, con opciones de búsqueda por cliente.
@@ -419,97 +449,7 @@ def editar_venta_online(request, venta_id):
         'detalles': detalles
     })
 
-def agregar_venta(request):
-    """
-    Permite agregar una nueva venta, verificando la disponibilidad de stock
-    y los permisos del cliente. Calcula el total y maneja pagos y cambios.
-    """
-    orden_venta_form = VentaManualForm(request.POST or None)
-    detalle_formset = DetalleVentaManualFormset(request.POST or None, prefix='productos')
-    detalle_servicio_formset = DetalleVentaManualServicioFormset(request.POST or None, prefix='servicios')
-    query_string = request.GET.urlencode()
-
-    if request.method == 'POST':
-        if orden_venta_form.is_valid() and detalle_formset.is_valid() and detalle_servicio_formset.is_valid():
-
-            cliente = orden_venta_form.cleaned_data.get('cliente')
-            if cliente.id == 1 and any(form.cleaned_data for form in detalle_servicio_formset):
-                messages.error(request, 'Este cliente no puede comprar servicios.')
-                return render(request, 'Transaccion/agregar_venta.html', {
-                    'orden_venta_form': orden_venta_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
-                    'query_string': query_string,
-                })
-                
-            total_productos = sum(form.cleaned_data.get('cantidad', 0) * form.cleaned_data.get('producto').precio for form in detalle_formset if form.cleaned_data.get('producto'))
-            total_servicios = sum(form.cleaned_data.get('servicio').precio for form in detalle_servicio_formset if form.cleaned_data.get('servicio'))
-            total_venta = total_productos + total_servicios
-            pago_cliente = orden_venta_form.cleaned_data.get('pago_cliente')
-
-            if pago_cliente < total_venta:
-                messages.error(request, 'La cantidad ingresada a pagar es inferior al total de la venta.')
-                return render(request, 'Transaccion/agregar_venta.html', {
-                    'orden_venta_form': orden_venta_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
-                    'query_string': query_string,
-                })
-
-            stock_insuficiente = False
-            for form in detalle_formset:
-                if form.cleaned_data.get('producto'):
-                    producto = form.cleaned_data['producto']
-                    cantidad = form.cleaned_data['cantidad']
-                    if cantidad > producto.cantidad_stock:
-                        stock_insuficiente = True
-                        messages.error(request, f'Stock insuficiente para el producto {producto.nombre}.')
-                        break
-
-            if stock_insuficiente:
-                return render(request, 'Transaccion/agregar_venta.html', {
-                    'orden_venta_form': orden_venta_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
-                    'query_string': query_string,
-                })
-
-            with transaction.atomic():
-                orden_venta = orden_venta_form.save(commit=False)
-                orden_venta.total = total_venta
-                orden_venta.cambio = max(pago_cliente - total_venta, 0)
-                orden_venta.save()
-
-                for form in detalle_formset:
-                    if form.cleaned_data.get('producto'):
-                        producto = form.cleaned_data['producto']
-                        cantidad = form.cleaned_data['cantidad']
-                        producto.cantidad_stock -= cantidad
-                        producto.save()
-                        detalle = form.save(commit=False)
-                        detalle.orden_venta = orden_venta
-                        detalle.save()
-
-                for form in detalle_servicio_formset:
-                    if form.cleaned_data.get('servicio'):
-                        detalle = form.save(commit=False)
-                        detalle.orden_venta = orden_venta
-                        detalle.save()
-
-                messages.success(request, 'Venta registrada exitosamente.')
-                return redirect('listar_ventas_manuales')
-
-        else:
-            messages.error(request, 'Errores en el formulario de venta')
-
-    context = {
-        'orden_venta_form': orden_venta_form,
-        'detalle_formset': detalle_formset,
-        'detalle_servicio_formset': detalle_servicio_formset,
-        'query_string': query_string,
-    }
-    return render(request, 'Transaccion/agregar_venta.html', context)
-
+@login_required
 def listar_ventas_manuales(request):
     """
     Lista todas las ventas registradas de forma manual, con opciones de búsqueda por cliente y paginación.
@@ -555,6 +495,98 @@ def listar_ventas_manuales(request):
         'ventas_paginadas': ventas_paginadas,
         'cliente_query': cliente_query,
     })
+
+@login_required
+def agregar_venta_manual(request):
+    """
+    Permite agregar una nueva venta, verificando la disponibilidad de stock
+    y los permisos del cliente. Calcula el total y maneja pagos y cambios.
+    """
+    orden_venta_form = VentaManualForm(request.POST or None)
+    detalle_formset = DetalleVentaManualFormset(request.POST or None, prefix='productos')
+    detalle_servicio_formset = DetalleVentaManualServicioFormset(request.POST or None, prefix='servicios')
+    query_string = request.GET.urlencode()
+
+    if request.method == 'POST':
+        if orden_venta_form.is_valid() and detalle_formset.is_valid() and detalle_servicio_formset.is_valid():
+
+            cliente = orden_venta_form.cleaned_data.get('cliente')
+            if cliente.id == 1 and any(form.cleaned_data for form in detalle_servicio_formset):
+                messages.error(request, 'Este cliente no puede comprar servicios.')
+                return render(request, 'Transaccion/agregar_venta_manual.html', {
+                    'orden_venta_form': orden_venta_form,
+                    'detalle_formset': detalle_formset,
+                    'detalle_servicio_formset': detalle_servicio_formset,
+                    'query_string': query_string,
+                })
+                
+            total_productos = sum(form.cleaned_data.get('cantidad', 0) * form.cleaned_data.get('producto').precio for form in detalle_formset if form.cleaned_data.get('producto'))
+            total_servicios = sum(form.cleaned_data.get('servicio').precio for form in detalle_servicio_formset if form.cleaned_data.get('servicio'))
+            total_venta = total_productos + total_servicios
+            pago_cliente = orden_venta_form.cleaned_data.get('pago_cliente')
+
+            if pago_cliente < total_venta:
+                messages.error(request, 'La cantidad ingresada a pagar es inferior al total de la venta.')
+                return render(request, 'Transaccion/agregar_venta_manual.html', {
+                    'orden_venta_form': orden_venta_form,
+                    'detalle_formset': detalle_formset,
+                    'detalle_servicio_formset': detalle_servicio_formset,
+                    'query_string': query_string,
+                })
+
+            stock_insuficiente = False
+            for form in detalle_formset:
+                if form.cleaned_data.get('producto'):
+                    producto = form.cleaned_data['producto']
+                    cantidad = form.cleaned_data['cantidad']
+                    if cantidad > producto.cantidad_stock:
+                        stock_insuficiente = True
+                        messages.error(request, f'Stock insuficiente para el producto {producto.nombre}.')
+                        break
+
+            if stock_insuficiente:
+                return render(request, 'Transaccion/agregar_venta_manual.html', {
+                    'orden_venta_form': orden_venta_form,
+                    'detalle_formset': detalle_formset,
+                    'detalle_servicio_formset': detalle_servicio_formset,
+                    'query_string': query_string,
+                })
+
+            with transaction.atomic():
+                orden_venta = orden_venta_form.save(commit=False)
+                orden_venta.total = total_venta
+                orden_venta.cambio = max(pago_cliente - total_venta, 0)
+                orden_venta.save()
+
+                for form in detalle_formset:
+                    if form.cleaned_data.get('producto'):
+                        producto = form.cleaned_data['producto']
+                        cantidad = form.cleaned_data['cantidad']
+                        producto.cantidad_stock -= cantidad
+                        producto.save()
+                        detalle = form.save(commit=False)
+                        detalle.orden_venta = orden_venta
+                        detalle.save()
+
+                for form in detalle_servicio_formset:
+                    if form.cleaned_data.get('servicio'):
+                        detalle = form.save(commit=False)
+                        detalle.orden_venta = orden_venta
+                        detalle.save()
+
+                messages.success(request, 'Venta registrada exitosamente.')
+                return redirect('listar_ventas_manuales')
+
+        else:
+            messages.error(request, 'Errores en el formulario de venta')
+
+    context = {
+        'orden_venta_form': orden_venta_form,
+        'detalle_formset': detalle_formset,
+        'detalle_servicio_formset': detalle_servicio_formset,
+        'query_string': query_string,
+    }
+    return render(request, 'Transaccion/agregar_venta_manual.html', context)
 
 @login_required
 def gestionar_transacciones(request):

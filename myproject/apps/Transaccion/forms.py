@@ -71,8 +71,14 @@ class ImagenProductoForm(forms.ModelForm):
 # Formulario para gestionar la creación y actualización de servicios
 class ServicioForm(forms.ModelForm):
     class Meta:
-        model = Servicio  # Especifica el modelo asociado
-        fields = ['nombre', 'descripcion', 'precio']  # Campos incluidos en el formulario
+        model = Servicio
+        fields = ['nombre', 'descripcion', 'precio', 'imagen']  # Incluimos la imagen
+        widgets = {
+            'nombre': forms.TextInput(attrs={'class': 'form-control'}),
+            'descripcion': forms.Textarea(attrs={'class': 'form-control'}),
+            'precio': forms.NumberInput(attrs={'class': 'form-control'}),
+            'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),
+        }
         # Define los widgets y atributos de clase según tus necesidades
 
     def clean(self):

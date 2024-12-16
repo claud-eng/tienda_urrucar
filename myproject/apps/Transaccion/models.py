@@ -30,7 +30,7 @@ class Producto(models.Model):
     precio = models.PositiveIntegerField()  # Precio normal del producto
     precio_reserva = models.PositiveIntegerField(null=True, blank=True)  # Precio de reserva del producto
     cantidad_stock = models.PositiveIntegerField()  # Cantidad disponible en stock
-    imagen = models.ImageField(upload_to='productos/', null=True, blank=True)  # Imagen del producto
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True)  # Imagen principal del producto
 
     def __str__(self):
         return self.nombre  # Retorna el nombre del producto como representación en cadena
@@ -68,9 +68,10 @@ class Servicio(models.Model):
     nombre = models.CharField(max_length=100)  # Nombre del servicio
     descripcion = models.TextField()  # Descripción del servicio
     precio = models.PositiveIntegerField()  # Precio del servicio
+    imagen = models.ImageField(upload_to='servicios/', null=True, blank=True)  # Imagen principal del servicio
 
     def __str__(self):
-        return self.nombre  # Retorna el nombre del servicio como representación en cadena
+        return self.nombre
 
 # Clase para registrar los productos o servicios en el carrito de un cliente
 class Carrito(models.Model):

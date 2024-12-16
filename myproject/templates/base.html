@@ -154,13 +154,8 @@
             <ul class="site-menu js-clone-nav d-none d-md-block">
               <li class="active"><a href="{% url 'home' %}">Inicio</a></li>
               <li><a href="{% url 'sobre_nosotros' %}">Sobre Nosotros</a></li>
-              <li class="has-children">
-                <a href="#">Tienda</a>
-                <ul class="dropdown">
-                  <li><a href="{% url 'catalogo_productos' %}">Productos</a></li>
-                  <li><a href="#">Servicios</a></li>
-                </ul>
-              </li>
+              <li><a href="{% url 'catalogo_productos' %}">Productos</a></li>
+              <li><a href="{% url 'catalogo_servicios' %}">Servicios</a></li>
               <li><a href="{% url 'preguntas_frecuentes' %}">Preguntas Frecuentes</a></li>
               <li><a href="{% url 'contactanos' %}">Contáctanos</a></li>
             </ul>

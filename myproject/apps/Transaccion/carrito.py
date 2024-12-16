@@ -73,6 +73,56 @@ def ver_detalles_producto(request, producto_id):
         'imagenes_adicionales': imagenes_adicionales
     })
 
+def ver_detalles_servicio(request, servicio_id):
+    """
+    Muestra los detalles de un servicio y permite agregarlo al carrito.
+    Si se realiza una solicitud POST, se agrega al carrito con la cantidad indicada.
+    """
+    servicio = get_object_or_404(Servicio, id=servicio_id)
+    servicio.precio_formateado = formato_precio(servicio.precio)
+
+    if request.method == 'POST':
+        cantidad = int(request.POST.get('cantidad', 1))
+
+        # Validar cantidad
+        if cantidad <= 0:
+            return render(request, 'Transaccion/ver_detalles_servicio.html', {
+                'servicio': servicio,
+                'error_message': 'Cantidad no válida',
+            })
+
+        # Obtener la instancia del cliente
+        cliente = Cliente.objects.get(user=request.user)
+
+        # Verifica si el servicio ya está en el carrito
+        carrito_item = Carrito.objects.filter(
+            cliente=cliente,
+            content_type=ContentType.objects.get_for_model(Servicio),
+            object_id=servicio.id,
+            carrito=1
+        ).first()
+
+        if carrito_item:
+            # Incrementar la cantidad del servicio
+            carrito_item.cantidad += cantidad
+            carrito_item.save()
+        else:
+            # Crear un nuevo ítem en el carrito
+            carrito_item = Carrito(
+                cliente=cliente,
+                content_type=ContentType.objects.get_for_model(Servicio),
+                object_id=servicio.id,
+                cantidad=cantidad,
+                carrito=1
+            )
+            carrito_item.save()
+
+        return redirect('carrito')
+
+    return render(request, 'Transaccion/ver_detalles_servicio.html', {
+        'servicio': servicio,
+    })
+
 def agregar_al_carrito(request, id, tipo):
     """
     Agrega un producto o servicio al carrito. Si el producto pertenece a la categoría

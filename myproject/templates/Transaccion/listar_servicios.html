@@ -18,21 +18,25 @@
     <a href="{% url 'agregar_servicio' %}" class="btn btn-success mb-2">Agregar Servicio</a>
     {% endif %}
     <!-- Filtros de búsqueda -->
-    <form method="GET" class="form-inline mb-2">
+    <form method="GET" class="mb-4">
         <div class="form-group">
             <label for="search-nombre">Buscar por Nombre:</label>
-            <input type="text" class="form-control mx-2" id="search-nombre" name="nombre" placeholder="Nombre del Servicio">
+            <input type="text" class="form-control" id="search-nombre" name="nombre" placeholder="Nombre del Servicio">
         </div>
-        <button type="submit" class="btn btn-primary">Buscar</button>
+        <div class="mt-2">
+            <button type="submit" class="btn btn-outline-primary">Filtrar</button>
+            <a href="{% url 'listar_servicios' %}" class="btn btn-outline-danger ml-2">Quitar Filtros</a>
+        </div>
     </form>
-
+    
     <table class="table table-responsive">
         <thead>
             <tr>
                 <th>ID</th>
                 <th>Nombre</th>
                 <th>Descripción</th>
-                <th>Precio (IVA incluido)</th>
+                <th>Precio Normal</th>
+                <th>Imagen</th>
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
                 <th>Acciones</th>
                 {% endif %}
@@ -44,7 +48,14 @@
                     <td>{{ servicio.id }}</td>
                     <td>{{ servicio.nombre }}</td>
                     <td style="text-align: justify;">{{ servicio.descripcion }}</td>
-                    <td>${{ servicio.precio }}</td>
+                    <td>${{ servicio.precio_formateado }}</td>
+                    <td>
+                        {% if servicio.imagen %}
+                            <img src="{{ servicio.imagen.url }}" alt="{{ servicio.nombre }}" width="100">
+                        {% else %}
+                            No hay imagen disponible
+                        {% endif %}
+                    </td>
                     {% if user.empleado and user.empleado.rol == 'Administrador' %}
                     <td>
                         <div class="d-flex align-items-center">
@@ -55,7 +66,7 @@
                     {% endif %}
                 </tr>
             {% endfor %}
-        </tbody>
+        </tbody>        
     </table>
 
     <nav aria-label="Paginación">

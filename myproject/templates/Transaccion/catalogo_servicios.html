@@ -1,222 +1,91 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block title %}Catálogo de Servicios{% endblock %}
 {% block content %}
 
-<div class="container my-5">
-    <div class="text-center mt-4">
-        <h1>Catálogo de Servicios</h1>
-    </div>
-    
+<div class="bg-light py-3">
+  <div class="container">
     <div class="row">
-        <div class="col-md-12">
-
-            <!-- Servicio 1 -->
-            <div class="card mb-4" id="servicio1">
-                <div class="row">
-                    <div class="col-md-6">
-                        <!-- Columna izquierda para la imagen del servicio -->
-                        <img src="{% static 'images/img/Servicio_cmg.jpg' %}" class="card-img-top" alt="Servicio 1" style="width: 500px; height: 500px;">
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Columna derecha para detalles del servicio -->
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 1 %}
-                                        {{ servicio.nombre }}
-                                    {% endif %}
-                                {% endfor %}
-                            </h5>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 1 %}
-                                    <p class="card-text" style="text-align: justify;">{{ servicio.descripcion }}</p>
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 1 %}
-                                        Precio (IVA incluido): ${{ servicio.precio }}
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% if user.is_authenticated and user.cliente %}
-                                <a href="{% url 'agregar_servicio_al_carrito' 1 %}" class="btn btn-primary">Agregar al Carrito</a>
-                            {% else %}
-                                <p>Debes iniciar sesión como cliente para poder continuar con la compra.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Servicio 2 -->
-            <div class="card mb-4" id="servicio2">
-                <div class="row">
-                    <div class="col-md-6">
-                        <!-- Columna izquierda para la imagen del servicio -->
-                        <img src="{% static 'images/img/Servicio_esterilizacion.jpg' %}" class="card-img-top" alt="Servicio 2" style="width: 500px; height: 500px;">
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Columna derecha para detalles del servicio -->
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 2 %}
-                                        {{ servicio.nombre }}
-                                    {% endif %}
-                                {% endfor %}
-                            </h5>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 2 %}
-                                    <p class="card-text" style="text-align: justify;">{{ servicio.descripcion }}</p>
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 2 %}
-                                    Precio (IVA incluido): ${{ servicio.precio }}
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% if user.is_authenticated and user.cliente %}
-                                <a href="{% url 'agregar_servicio_al_carrito' 2 %}" class="btn btn-primary">Agregar al Carrito</a>
-                            {% else %}
-                                <p>Debes iniciar sesión como cliente para poder continuar con la compra.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Servicio 3 -->
-            <div class="card mb-4" id="servicio3">
-                <div class="row">
-                    <div class="col-md-6">
-                        <!-- Columna izquierda para la imagen del servicio -->
-                        <img src="{% static 'images/img/Servicio_guarderia.jpg' %}" class="card-img-top" alt="Servicio 3" style="width: 500px; height: 500px;">
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Columna derecha para detalles del servicio -->
-                        <div class= "card-body">
-                            <h5 class="card-title">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 3 %}
-                                        {{ servicio.nombre }}
-                                    {% endif %}
-                                {% endfor %}
-                            </h5>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 3 %}
-                                    <p class="card-text" style="text-align: justify;">{{ servicio.descripcion }}</p>
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 3 %}
-                                        Precio por día (IVA incluido): ${{ servicio.precio }}
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% if user.is_authenticated and user.cliente %}
-                                <a href="{% url 'agregar_servicio_al_carrito' 3 %}" class="btn btn-primary">Agregar al Carrito</a>
-                            {% else %}
-                                <p>Debes iniciar sesión como cliente para poder continuar con la compra.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Servicio 4 -->
-            <div class="card mb-4" id="servicio4">
-                <div class="row">
-                    <div class="col-md-6">
-                        <!-- Columna izquierda para la imagen del servicio -->
-                        <img src="{% static 'images/img/Servicio_peluqueria.jpg' %}" class="card-img-top" alt="Servicio 4" style="width: 500px; height: 500px;">
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Columna derecha para detalles del servicio -->
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 4 %}
-                                        {{ servicio.nombre }}
-                                    {% endif %}
-                                {% endfor %}
-                            </h5>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 4 %}
-                                    <p class="card-text" style="text-align: justify;">{{ servicio.descripcion }}</p>
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 4 %}
-                                    Precio (IVA incluido): ${{ servicio.precio }}
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% if user.is_authenticated and user.cliente %}
-                                <a href="{% url 'agregar_servicio_al_carrito' 4 %}" class="btn btn-primary">Agregar al Carrito</a>
-                            {% else %}
-                                <p>Debes iniciar sesión como cliente para poder continuar con la compra.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Servicio 5 -->
-            <div class="card mb-4" id="servicio5">
-                <div class="row">
-                    <div class="col-md-6">
-                        <!-- Columna izquierda para la imagen del servicio -->
-                        <img src="{% static 'images/img/Servicio_vacunacion.png' %}" class="card-img-top" alt="Servicio 5" style="width: 500px; height: 500px;">
-                    </div>
-                    <div class="col-md-6">
-                        <!-- Columna derecha para detalles del servicio -->
-                        <div class="card-body">
-                            <h5 class="card-title">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 5 %}
-                                        {{ servicio.nombre }}
-                                    {% endif %}
-                                {% endfor %}
-                            </h5>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 5 %}
-                                    <p class="card-text" style="text-align: justify;">{{ servicio.descripcion }}</p>
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            <p class="card-text">
-                                {% for servicio in servicios %}
-                                    {% if servicio.id == 5 %}
-                                    Precio (IVA incluido): ${{ servicio.precio }}
-                                    {% endif %}
-                                {% endfor %}
-                            </p>
-                            {% if user.is_authenticated and user.cliente %}
-                                <a href="{% url 'agregar_servicio_al_carrito' 5 %}" class="btn btn-primary">Agregar al Carrito</a>
-                            {% else %}
-                                <p>Debes iniciar sesión como cliente para poder continuar con la compra.</p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+      <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Catálogo de Servicios</strong></div>
     </div>
+  </div>
+</div>
+
+<div class="site-section">
+  <div class="container">
+    <div class="row mb-5">
+      <div class="col-md-9 order-2">
+        <div class="row">
+          <div class="col-md-12 mb-5">
+            <div class="float-md-left mb-4"><h2 class="text-black h5">Tienda</h2></div>
+            <div class="d-flex">
+              <form method="get" id="filter-form" class="form-inline ml-auto">
+                <button type="submit" class="btn btn-outline-primary btn-sm ml-2">Aplicar</button>
+                <a href="{% url 'catalogo_servicios' %}" class="btn btn-outline-danger btn-sm ml-2">Quitar Filtros</a>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-sm ml-2">Volver atrás</a>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-5">
+          {% for servicio in servicios %}
+          <div class="col-sm-6 col-lg-4 mb-4" data-aos="fade-up">
+            <div class="block-4 text-center border">
+                <figure class="block-4-image">
+                    <a href="{% url 'ver_detalles_servicio' servicio.id %}">
+                      <img src="{{ servicio.imagen.url }}" alt="{{ servicio.nombre }}" class="img-fluid">
+                    </a>
+                  </figure>
+              <div class="block-4-text p-4">
+                <h3><a href="{% url 'ver_detalles_servicio' servicio.id %}">{{ servicio.nombre }}</a></h3>
+                <p class="mb-0">{{ servicio.descripcion|truncatewords:10 }}</p>
+                <p class="text-primary font-weight-bold">${{ servicio.precio_formateado }}</p>
+              </div>
+            </div>
+          </div>
+          {% empty %}
+          <p>No hay servicios disponibles en este momento.</p>
+          {% endfor %}
+        </div>
+        
+        <!-- Paginación -->
+        <div class="row" data-aos="fade-up">
+          <div class="col-md-12 text-center">
+            <div class="site-block-27">
+              <ul>
+                {% if servicios.has_previous %}
+                  <li><a href="?page={{ servicios.previous_page_number }}">&lt;</a></li>
+                {% endif %}
+                
+                {% for i in servicios.paginator.page_range %}
+                  <li class="{% if servicios.number == i %}active{% endif %}">
+                    <a href="?page={{ i }}">{{ i }}</a>
+                  </li>
+                {% endfor %}
+
+                {% if servicios.has_next %}
+                  <li><a href="?page={{ servicios.next_page_number }}">&gt;</a></li>
+                {% endif %}
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-md-3 order-1 mb-5 mb-md-0">
+        <!-- Filtro de Ordenar por -->
+        <div class="border p-4 rounded mb-4">
+          <h3 class="mb-3 h6 text-uppercase text-black d-block">Ordenar por</h3>
+          <select name="sort" form="filter-form" class="form-control btn-sm">
+            <option value="">Ordenar por</option>
+            <option value="asc" {% if request.GET.sort == 'asc' %}selected{% endif %}>Precio: Menor a Mayor</option>
+            <option value="desc" {% if request.GET.sort == 'desc' %}selected{% endif %}>Precio: Mayor a Menor</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
 {% endblock %}
+

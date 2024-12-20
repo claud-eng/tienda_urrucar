@@ -62,7 +62,7 @@
                       }
                     </style>
         
-                    {% if user.is_authenticated and user.cliente %}
+                    {% if not user.empleado %}
                     <!-- Ícono del carro de compras a la izquierda -->
                     <li class="navbar-top" style="text-align: center; margin-right: 20px;">
                       <a href="{% url 'carrito' %}" class="site-cart">

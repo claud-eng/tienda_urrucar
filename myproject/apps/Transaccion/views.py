@@ -5,7 +5,7 @@ import os  # Importa 'os' para interactuar con el sistema operativo.
 import requests  # Importa 'requests' para realizar solicitudes HTTP.
 from apps.Usuario.models import Cliente  # Importa el modelo 'Cliente' desde la aplicación 'Usuario'.
 from calendar import monthrange  # Importa 'monthrange' para obtener el rango de días en un mes.
-from collections import Counter
+from collections import Counter  # Importa Counter para contar elementos en iterables.
 from django.conf import settings  # Importa el módulo de configuración de Django.
 from django.contrib import messages  # Importa 'messages' para mostrar mensajes a los usuarios en Django.
 from django.contrib.auth.decorators import login_required  # Importa 'login_required' para proteger vistas que requieren autenticación.
@@ -80,6 +80,7 @@ def listar_productos(request):
     })
 
 @login_required
+# Función para agregar producto
 def agregar_producto(request):
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES)
@@ -98,6 +99,7 @@ def agregar_producto(request):
     return render(request, "Transaccion/agregar_producto.html", {'form': form})
 
 @login_required
+# Función para editar producto
 def editar_producto(request, producto_id):
     producto = get_object_or_404(Producto, id=producto_id)
     imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtén las imágenes adicionales
@@ -162,6 +164,7 @@ def confirmar_borrar_producto(request, producto_id):
     return render(request, 'Transaccion/confirmar_borrar_producto.html', {'producto': producto})
 
 @login_required
+# Función para borrar producto
 def borrar_producto(request, producto_id):
     try:
         producto = Producto.objects.get(id=producto_id)
@@ -217,6 +220,7 @@ def listar_servicios(request):
     })
 
 @login_required
+# Función para agregar servicio
 def agregar_servicio(request):
     if request.method == "POST":
         form = ServicioForm(request.POST, request.FILES)
@@ -229,6 +233,7 @@ def agregar_servicio(request):
     return render(request, "Transaccion/agregar_servicio.html", {"form": form})
 
 @login_required
+# Función para editar servicio
 def editar_servicio(request, servicio_id):
     servicio = get_object_or_404(Servicio, id=servicio_id)
 
@@ -262,6 +267,7 @@ def confirmar_borrar_servicio(request, servicio_id):
     return render(request, 'Transaccion/confirmar_borrar_servicio.html', {'servicio': servicio})
 
 @login_required
+# Función para editar servicio
 def borrar_servicio(request, servicio_id):
     try:
         servicio = Servicio.objects.get(id=servicio_id)
@@ -594,5 +600,4 @@ def gestionar_transacciones(request):
     Vista para que los administradores gestionen todas las transacciones.
     """
     return render(request, 'Transaccion/gestionar_transacciones.html')
-
 

@@ -2,8 +2,14 @@ import datetime # Importa 'datetime' para trabajar con fechas y horas.
 from django import forms  # Importa el módulo forms de Django para crear formularios.
 from django.core.exceptions import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.forms import inlineformset_factory  # Importa inlineformset_factory para crear formularios en línea para modelos relacionados.
-from .models import Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto, Servicio  # Importa los modelos Cliente, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto y Servicio de la aplicación actual.
+from .models import Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto, Servicio  # Importa los modelos Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto y Servicio de la aplicación actual.
 
+# Formulario para cliente anónimo
+class ClienteAnonimoForm(forms.ModelForm):
+    class Meta:
+        model = ClienteAnonimo
+        fields = ['nombre', 'apellido', 'email', 'numero_telefono']
+        
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
     class Meta:

@@ -3,7 +3,7 @@
 {% block content %}
 
 <div class="container my-5">
-    <!-- Agregar mensajes de error -->
+    <!-- Mensajes de error -->
     {% if messages %}
         <div class="alert alert-danger">
             <ul>
@@ -13,81 +13,93 @@
             </ul>
         </div>
     {% endif %}
+
+    <!-- Carrito -->
     <div class="text-center mt-4">
         <h1>Carrito de Compras</h1>
     </div>
-    <div class="row">
-        <div class="col-md-12">
-            <div class="table-responsive"> <!-- Agregamos el contenedor responsive -->
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Producto/Servicio</th>
-                            <th>Cantidad</th>
-                            <th>Precio Unitario (IVA incluido)</th>
-                            <th>Precio de Reserva</th>
-                            <th>Total (IVA incluido)</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for item in carrito_items %}
-                        <tr>
-                            <td>{{ item.item.nombre }}</td>
-                            <td>{{ item.cantidad }}</td>
-                            <td>${{ item.precio_formateado }}</td>
-                            <td>
-                                {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %}
-                                    ${{ item.item.precio_reserva_formateado }}
-                                {% endif %}
-                            </td>
-                            <td>${{ item.precio_total_formateado }}</td>
-                            <td>
-                                {% if not item.es_servicio %}
-                                    {% if item.item.categoria != "Vehículo" %}
-                                        <form method="post" action="{% url 'aumentar_cantidad' item.id %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary btn-sm">Aumentar cantidad</button>
-                                        </form>
-                                        <form method="post" action="{% url 'disminuir_cantidad' item.id %}">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary btn-sm mt-1">Disminuir cantidad</button>
-                                        </form>
-                                    {% endif %}
-                                {% endif %}
-                                <form method="post" action="{% url 'eliminar_del_carrito' item.id %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-danger btn-sm mt-1">Eliminar</button>
-                                </form>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                        <!-- Fila para el Total y Botones -->
-                        <tr>
-                            <td colspan="4"></td>
-                            <td><strong>Total: ${{ total }}</strong></td>
-                            <td>
-                                <form method="post" action="{% url 'iniciar_transaccion' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-success mb-1">Pagar</button>
-                                </form>
-                                <form method="post" action="{% url 'vaciar_carrito' %}">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-warning mb-1">Vaciar Carrito</button>
-                                </form>
-                                <a href="#" id="volverAtrasBtn" class="btn btn-secondary">Volver atrás</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+    <div class="table-responsive">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Producto/Servicio</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario (IVA incluido)</th>
+                    <th>Precio de Reserva</th>
+                    <th>Total (IVA incluido)</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in carrito_items %}
+                <tr>
+                    <td>{{ item.item.nombre }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>${{ item.precio_formateado }}</td>
+                    <td>
+                        {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %} 
+                            ${{ item.item.precio_reserva_formateado }} 
+                        {% endif %}
+                    </td>
+                    <td>${{ item.precio_total_formateado }}</td>
+                    <td>
+                        {% if not item.es_servicio and item.item.categoria != "Vehículo" %}
+                            <form method="post" action="{% url 'aumentar_cantidad' item.id %}">{% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">Aumentar</button>
+                            </form>
+                            <form method="post" action="{% url 'disminuir_cantidad' item.id %}">{% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm mt-1">Disminuir</button>
+                            </form>
+                        {% endif %}
+                        <form method="post" action="{% url 'eliminar_del_carrito' item.id %}">{% csrf_token %}
+                            <button type="submit" class="btn btn-danger btn-sm mt-1">Eliminar</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Formulario de datos antes de pagar -->
+    <h3>Datos del Comprador</h3>
+    <form method="post" action="{% url 'iniciar_transaccion' %}">
+        {% csrf_token %}
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="nombre">Nombre</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" 
+                       value="{% if user.is_authenticated %}{{ user.first_name }}{% endif %}" 
+                       {% if user.is_authenticated %}readonly{% endif %} required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="apellido">Apellido</label>
+                <input type="text" class="form-control" id="apellido" name="apellido" 
+                       value="{% if user.is_authenticated %}{{ user.last_name }}{% endif %}" 
+                       {% if user.is_authenticated %}readonly{% endif %} required>
             </div>
         </div>
-    </div>
+        <div class="form-row">
+            <div class="form-group col-md-6">
+                <label for="email">Correo Electrónico</label>
+                <input type="email" class="form-control" id="email" name="email" 
+                       value="{% if user.is_authenticated %}{{ user.email }}{% endif %}" 
+                       {% if user.is_authenticated %}readonly{% endif %} required>
+            </div>
+            <div class="form-group col-md-6">
+                <label for="numero_telefono">Número de Teléfono</label>
+                <input type="text" class="form-control" id="numero_telefono" name="numero_telefono" 
+                       value="{% if user.is_authenticated %}{{ user.cliente.numero_telefono }}{% endif %}" 
+                       {% if user.is_authenticated %}readonly{% endif %} required>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success mb-3">Pagar</button>
+    </form>
 </div>
+
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         var volverAtrasBtn = document.getElementById("volverAtrasBtn");
-    
         if (volverAtrasBtn) {
             volverAtrasBtn.addEventListener("click", function() {
                 window.history.back();
@@ -97,4 +109,3 @@
 </script>
 
 {% endblock %}
-

@@ -7,7 +7,7 @@ from django.core.mail import EmailMessage  # Importa la clase 'EmailMessage' par
 from django.http import HttpResponse  # Importa 'HttpResponse' para devolver respuestas HTTP.
 from django.shortcuts import redirect, render  # Importa 'redirect' y 'render' para redirección y renderizado de plantillas.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
-from .models import Carrito, Cliente, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos necesarios para gestionar órdenes y carritos.
+from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos necesarios para gestionar órdenes y carritos.
 from .views import formato_precio  # Importa 'formato_precio' para formatear precios en vistas.
 from transbank.common.integration_type import IntegrationType  # Importa 'IntegrationType' para configurar el entorno de integración de Webpay.
 from transbank.common.options import WebpayOptions  # Importa 'WebpayOptions' para establecer opciones de configuración de Webpay.
@@ -21,68 +21,108 @@ webpay_options = WebpayOptions(commerce_code, api_key, IntegrationType.TEST)
 
 def iniciar_transaccion(request):
     """
-    Inicia una transacción de pago con Webpay para los elementos en el carrito
-    del cliente. Genera un buy_order único y redirige a la URL de pago de Webpay
-    si todo es correcto.
+    Maneja transacciones de Webpay para clientes registrados y anónimos,
+    actualizando los datos del formulario antes de iniciar la transacción.
     """
-    cliente = Cliente.objects.get(user=request.user)
-    carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
-    total = sum(item.obtener_precio_total() for item in carrito_items)
+    cliente = None
+    cliente_anonimo = None
 
-    # Verifica si el carrito está vacío y redirige si no hay productos
-    if total == 0:
-        messages.error(request, "Tu carrito está vacío.")
-        return redirect('carrito')
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre')
+        apellido = request.POST.get('apellido')
+        email = request.POST.get('email')
+        numero_telefono = request.POST.get('numero_telefono')
 
-    # Instancia la transacción con las opciones predefinidas
-    tx = Transaction(webpay_options)
-
-    # Genera un identificador único para el buy_order y ajusta su longitud
-    timestamp = int(time.time())
-    short_uuid = uuid.uuid4().hex[:10]
-    buy_order = f"{timestamp}{short_uuid}"
-
-    if len(buy_order) > 26:
-        buy_order = buy_order[:26]
-
-    session_id = request.session.session_key or 'session-unknown'
-    amount = total
-    return_url = request.build_absolute_uri('/transaccion/transaccion_finalizada/')
-
-    # Intenta crear la transacción con Webpay
-    try:
-        response = tx.create(buy_order, session_id, amount, return_url)
-        if 'url' in response and 'token' in response:
-            # Redirige a la URL de Webpay para completar el pago
-            return redirect(response['url'] + "?token_ws=" + response['token'])
+        if request.user.is_authenticated:
+            # Cliente autenticado
+            cliente = Cliente.objects.get(user=request.user)
+            carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
         else:
-            return HttpResponse("Error: la respuesta de Webpay no contiene URL o token")
-    except TransbankError as e:
-        print(e.message)
-        return HttpResponse("Error al crear la transacción: " + str(e.message))
+            # Cliente anónimo
+            session_key = request.session.session_key
+            if not session_key:
+                request.session.create()
+                session_key = request.session.session_key
+
+            cliente_anonimo, created = ClienteAnonimo.objects.get_or_create(session_key=session_key)
+
+            # Actualiza los datos del cliente anónimo
+            cliente_anonimo.nombre = nombre
+            cliente_anonimo.apellido = apellido
+            cliente_anonimo.email = email
+            cliente_anonimo.numero_telefono = numero_telefono
+            cliente_anonimo.save()
+
+            carrito_items = Carrito.objects.filter(session_key=session_key, carrito=1)
+
+        # Calcula el total del carrito
+        total = sum(item.obtener_precio_total() for item in carrito_items)
+
+        if total == 0:
+            messages.error(request, "Tu carrito está vacío.")
+            return redirect('carrito')
+
+        # Instancia la transacción con las opciones predefinidas
+        tx = Transaction(webpay_options)
+        timestamp = int(time.time())
+        short_uuid = uuid.uuid4().hex[:10]
+        buy_order = f"{timestamp}{short_uuid}"[:26]
+        session_id = request.session.session_key or 'session-unknown'
+        amount = total
+        return_url = request.build_absolute_uri('/transaccion/transaccion_finalizada/')
+
+        try:
+            response = tx.create(buy_order, session_id, amount, return_url)
+            if 'url' in response and 'token' in response:
+                return redirect(response['url'] + "?token_ws=" + response['token'])
+            else:
+                return HttpResponse("Error: la respuesta de Webpay no contiene URL o token")
+        except TransbankError as e:
+            return HttpResponse("Error al crear la transacción: " + str(e.message))
 
 def transaccion_finalizada(request):
     """
     Completa la transacción de pago en Webpay, actualizando la orden y el estado
     del carrito según la respuesta del banco. Envía un correo de confirmación en
-    caso de éxito.
+    caso de éxito. Además, genera un nuevo session_key para clientes anónimos.
     """
     token_ws = request.GET.get('token_ws')
-    cliente = Cliente.objects.get(user=request.user)
+    cliente = None
+    cliente_anonimo = None
+
+    # Determina si el cliente es autenticado o anónimo
+    if request.user.is_authenticated:
+        cliente = Cliente.objects.get(user=request.user)
+        carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
+        print(f"Cliente autenticado: {cliente.user.email}")
+    else:
+        session_key = request.session.session_key
+        if not session_key:
+            messages.error(request, "No hay información de sesión válida.")
+            return redirect('carrito')
+
+        cliente_anonimo = ClienteAnonimo.objects.filter(session_key=session_key).first()
+        if not cliente_anonimo:
+            messages.error(request, "No se encontró información del cliente anónimo.")
+            return redirect('carrito')
+
+        carrito_items = Carrito.objects.filter(session_key=session_key, carrito=1)
+        print(f"Cliente anónimo: {cliente_anonimo.email} con session_key: {session_key}")
 
     # Instancia la transacción con las opciones predefinidas
     tx = Transaction(webpay_options)
-
     try:
-        # Confirma la transacción en Webpay usando el token
         response = tx.commit(token_ws)
+        print(f"Respuesta de Webpay: {response}")
+
         contexto = {}
 
-        # Crea o recupera la orden de compra según el token_ws, evita duplicados
+        # Crea o recupera la orden de compra
         orden, created = VentaOnline.objects.get_or_create(
             token_ws=token_ws,
             defaults={
                 'cliente': cliente,
+                'cliente_anonimo': cliente_anonimo,
                 'total': response.get('amount', 0),
                 'estado': 'pendiente',
                 'fecha': timezone.now(),
@@ -93,23 +133,18 @@ def transaccion_finalizada(request):
             }
         )
 
-        # Si la orden ya existe, muestra un mensaje de transacción procesada
         if not created:
+            print("Orden ya existente. Se evita procesamiento duplicado.")
             contexto['mensaje_error'] = "Esta transacción ya ha sido procesada."
             contexto['orden'] = orden
-            contexto['orden'].total_formateado = formato_precio(orden.total)
             return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
         detalles_compra = []
-        transaccion_exitosa = False
+        transaccion_exitosa = response.get('status') == 'AUTHORIZED'
 
-        # Verifica si el estado de la transacción es autorizado
-        if response.get('status') == 'AUTHORIZED':
-            transaccion_exitosa = True
-            carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
+        # Verifica si la transacción es autorizada
+        if transaccion_exitosa:
             stock_insuficiente = False
-
-            # Verifica si hay suficiente stock para cada producto en el carrito
             for item in carrito_items:
                 if isinstance(item.item, Producto) and item.item.cantidad_stock < item.cantidad:
                     stock_insuficiente = True
@@ -119,90 +154,161 @@ def transaccion_finalizada(request):
                 orden.estado = 'rechazada'
                 contexto['mensaje_error'] = "Stock insuficiente para uno o más productos."
                 orden.save()
+                print("Stock insuficiente encontrado.")
                 return render(request, 'Transaccion/retorno_webpay.html', contexto)
-            else:
-                # Procesa cada ítem del carrito, actualizando su stock y detalles
-                orden.estado = 'aprobada'
-                for item in carrito_items:
-                    detalle = {
-                        'nombre': item.item.nombre,
-                        'cantidad': item.cantidad,
-                        'precio_unitario': formato_precio(item.item.precio),
-                        'precio_total': formato_precio(item.obtener_precio_total())
-                    }
-                    detalles_compra.append(detalle)
 
-                    if isinstance(item.item, Producto):
-                        producto = item.item
-                        producto.cantidad_stock -= item.cantidad
-                        producto.save()
+            # Procesar ítems del carrito
+            orden.estado = 'aprobada'
+            for item in carrito_items:
+                detalle = {
+                    'nombre': item.item.nombre,
+                    'cantidad': item.cantidad,
+                    'precio_unitario': formato_precio(item.item.precio),
+                    'precio_total': formato_precio(item.obtener_precio_total())
+                }
+                detalles_compra.append(detalle)
 
-                        # Verifica si el producto pertenece a la categoría 'Vehículo'
-                        if producto.categoria == "Vehículo":
-                            DetalleVentaOnline.objects.create(
-                                orden_compra=orden,
-                                producto=producto,
-                                precio=item.obtener_precio_total(),
-                                cantidad=item.cantidad,
-                                estado_reserva="En proceso"  # Establece automáticamente el estado de la reserva
-                            )
-                        else:
-                            DetalleVentaOnline.objects.create(
-                                orden_compra=orden,
-                                producto=producto,
-                                precio=item.obtener_precio_total(),
-                                cantidad=item.cantidad
-                            )
+                if isinstance(item.item, Producto):
+                    producto = item.item
+                    producto.cantidad_stock -= item.cantidad
+                    producto.save()
+
+                    if producto.categoria == "Vehículo":
+                        DetalleVentaOnline.objects.create(
+                            orden_compra=orden,
+                            producto=producto,
+                            precio=item.obtener_precio_total(),
+                            cantidad=item.cantidad,
+                            estado_reserva="En proceso"
+                        )
                     else:
                         DetalleVentaOnline.objects.create(
                             orden_compra=orden,
-                            servicio=item.item,
+                            producto=producto,
                             precio=item.obtener_precio_total(),
                             cantidad=item.cantidad
                         )
+                else:
+                    DetalleVentaOnline.objects.create(
+                        orden_compra=orden,
+                        servicio=item.item,
+                        precio=item.obtener_precio_total(),
+                        cantidad=item.cantidad
+                    )
 
-                # Marca los ítems en el carrito como comprados
-                carrito_items.update(carrito=0)
+            carrito_items.update(carrito=0)
+            print("Ítems del carrito procesados y actualizados.")
 
         else:
-            # Marca la orden como rechazada si la transacción no es autorizada
+            # Transacción rechazada
             orden.estado = 'rechazada'
-            contexto['mensaje_error'] = "Transacción rechazada por el banco"
+            orden.save()
+            contexto['mensaje_error'] = "Transacción rechazada por el banco."
+            print("Transacción rechazada por el banco.")
+
+            # Generar un nuevo session_key y crear un nuevo cliente anónimo
+            if not request.user.is_authenticated:
+                old_session_key = request.session.session_key
+                request.session.flush()
+                request.session.create()
+                new_session_key = request.session.session_key
+
+                print(f"Session key reiniciado (rechazada): {old_session_key} -> {new_session_key}")
+
+                nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
+                    nombre="Anónimo",
+                    apellido="",
+                    email=f"anonimo_{new_session_key}@example.com",
+                    numero_telefono="",
+                    session_key=new_session_key
+                )
+                print(f"Nuevo cliente anónimo creado (rechazada): {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
+
+            return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
         orden.save()
 
-        # Configura el contexto para la plantilla de confirmación
-        contexto['orden'] = orden
-        contexto['orden'].total_formateado = formato_precio(orden.total)
-        contexto['transaccion_exitosa'] = transaccion_exitosa
-        contexto['detalles_compra'] = detalles_compra
+        # Configuración del contexto
+        orden.total_formateado = formato_precio(orden.total)
+        contexto.update({
+            'orden': orden,
+            'transaccion_exitosa': transaccion_exitosa,
+            'detalles_compra': detalles_compra
+        })
 
-        # Si la transacción es exitosa, genera y envía un comprobante por correo
         if transaccion_exitosa:
             buffer_pdf = generar_comprobante_pdf_correo(orden)
-
-            email_subject = "Comprobante de Pago - Orden {}".format(orden.numero_orden)
-            email_body = "Aquí está su comprobante de pago para la orden {}.".format(orden.numero_orden)
+            email_subject = f"Comprobante de Pago - Orden {orden.numero_orden}"
+            email_body = f"Aquí está su comprobante de pago para la orden {orden.numero_orden}."
             email = EmailMessage(
                 email_subject,
                 email_body,
                 settings.DEFAULT_FROM_EMAIL,
-                [cliente.user.email]
+                [cliente.user.email] if cliente else [cliente_anonimo.email]
             )
-
-            email.attach('comprobante_orden_{}.pdf'.format(orden.numero_orden), buffer_pdf.getvalue(), 'application/pdf')
+            email.attach(f'comprobante_orden_{orden.numero_orden}.pdf', buffer_pdf.getvalue(), 'application/pdf')
             email.send()
+            print("Comprobante enviado por correo.")
+
+            # Generar un nuevo session_key y crear un nuevo cliente anónimo
+            if not request.user.is_authenticated:
+                old_session_key = request.session.session_key
+                request.session.flush()
+                request.session.create()
+                new_session_key = request.session.session_key
+
+                print(f"Session key reiniciado: {old_session_key} -> {new_session_key}")
+
+                # Crear un nuevo cliente anónimo con valores predeterminados
+                nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
+                    nombre="Anónimo",
+                    apellido="",
+                    email=f"anonimo_{new_session_key}@example.com",
+                    numero_telefono="",
+                    session_key=new_session_key
+                )
+                print(f"Nuevo cliente anónimo creado: {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
 
         return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
     except TransbankError as e:
-        # Verifica si el mensaje del error es específico
-        if str(e.message) == "'token' can't be null or white space":
-            contexto = {
-                'mensaje_error': "Se ha anulado la compra. Por favor, inténtalo nuevamente."
-            }
-        else:
-            contexto = {
-                'mensaje_error': f"Error al procesar la transacción: {e.message}"
-            }
+        # Manejo de error en la transacción
+        print(f"Error en la transacción: {e.message}")
+
+        # Siempre crear una nueva orden anulada con un identificador único
+        nueva_orden = VentaOnline.objects.create(
+            cliente=cliente,
+            cliente_anonimo=cliente_anonimo,
+            total=0,
+            estado='anulada',
+            fecha=timezone.now(),
+            numero_orden='error_' + str(timezone.now().timestamp()).replace('.', ''),  # Identificador único
+            tipo_pago=None,
+            monto_cuotas=None,
+            numero_cuotas=None,
+            token_ws=f"error_{timezone.now().timestamp()}"  # Genera un token único para esta orden
+        )
+
+        print(f"Nueva orden anulada creada con número de orden: {nueva_orden.numero_orden}")
+
+        # Reiniciar sesión y crear un nuevo cliente anónimo
+        if not request.user.is_authenticated:
+            old_session_key = request.session.session_key
+            request.session.flush()
+            request.session.create()
+            new_session_key = request.session.session_key
+
+            print(f"Session key reiniciado (error): {old_session_key} -> {new_session_key}")
+
+            nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
+                nombre="Anónimo",
+                apellido="",
+                email=f"anonimo_{new_session_key}@example.com",
+                numero_telefono="",
+                session_key=new_session_key
+            )
+            print(f"Nuevo cliente anónimo creado (error): {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
+
+        contexto = {'mensaje_error': f"Error al procesar la transacción: {e.message}"}
         return render(request, 'Transaccion/retorno_webpay.html', contexto)
+

@@ -1,11 +1,11 @@
 import os  # Importa el módulo 'os' para manejar operaciones relacionadas con el sistema de archivos y variables de entorno.
+from apps.Usuario.models import Cliente, ClienteAnonimo, Empleado  # Importa las clases Cliente, ClienteAnonimo Empleado desde la aplicación Usuario.
 from django.contrib.auth.models import User  # Importa el modelo User de Django para la gestión de usuarios.
 from django.utils.deconstruct import deconstructible  # Importa el decorador 'deconstructible' para serialización en migraciones.
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation  # Importa campos genéricos para relaciones en modelos.
 from django.contrib.contenttypes.models import ContentType  # Importa el modelo ContentType para gestionar tipos de contenido genéricos.
 from django.db import models  # Importa la biblioteca models de Django para definir modelos.
 from django.forms import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
-from apps.Usuario.models import Cliente, Empleado  # Importa las clases Cliente y Empleado desde la aplicación Usuario.
 
 # Clase para almacenar información de productos
 class Producto(models.Model):
@@ -75,20 +75,19 @@ class Servicio(models.Model):
 
 # Clase para registrar los productos o servicios en el carrito de un cliente
 class Carrito(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)  # Cliente asociado al carrito
-    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)  # Tipo de contenido (Producto o Servicio)
-    object_id = models.PositiveIntegerField()  # ID del objeto (Producto o Servicio)
-    item = GenericForeignKey('content_type', 'object_id')  # Relación genérica con Producto o Servicio
-    cantidad = models.PositiveIntegerField()  # Cantidad de este ítem en el carrito
-    carrito = models.PositiveIntegerField(default=1)  # Identificador de carrito, 1 indica carrito activo
-
-    def __str__(self):
-        return f'{self.cliente.username} - {self.item}'  # Retorna el cliente y el ítem en el carrito
+    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
+    cliente_anonimo = models.ForeignKey(ClienteAnonimo, on_delete=models.CASCADE, null=True, blank=True)
+    session_key = models.CharField(max_length=255, null=True, blank=True)  # Identificador único para clientes anónimos
+    content_type = models.ForeignKey(ContentType, on_delete=models.CASCADE)
+    object_id = models.PositiveIntegerField()
+    item = GenericForeignKey('content_type', 'object_id')
+    cantidad = models.PositiveIntegerField()
+    carrito = models.PositiveIntegerField(default=1)
 
     def obtener_precio_total(self):
         if isinstance(self.item, Producto) and self.item.categoria == "Vehículo":
-            return self.item.precio_reserva * self.cantidad # Calcula el precio total para este ítem en el carrito
-        return self.item.precio * self.cantidad 
+            return self.item.precio_reserva * self.cantidad
+        return self.item.precio * self.cantidad
 
 # Clase para agregar relaciones inversas con Carrito
 class ContenidoCarrito(models.Model):
@@ -96,17 +95,31 @@ class ContenidoCarrito(models.Model):
 
 # Clase para almacenar ventas realizadas en línea
 class VentaOnline(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)  # Cliente que realiza la compra
-    productos = models.ManyToManyField(Producto, through='DetalleVentaOnline')  # Productos comprados en la venta
-    servicios = models.ManyToManyField(Servicio, through='DetalleVentaOnline')  # Servicios comprados en la venta
-    total = models.DecimalField(max_digits=10, decimal_places=2)  # Monto total de la venta
+    cliente = models.ForeignKey(
+        Cliente, on_delete=models.CASCADE, null=True, blank=True,
+        help_text="Cliente registrado que realiza la compra (opcional para cliente anónimo)."
+    )  # Cliente registrado
+    cliente_anonimo = models.ForeignKey(
+        ClienteAnonimo, on_delete=models.CASCADE, null=True, blank=True,
+        help_text="Cliente anónimo que realiza la compra."
+    )  # Cliente anónimo
+    productos = models.ManyToManyField(Producto, through='DetalleVentaOnline')  # Productos comprados
+    servicios = models.ManyToManyField(Servicio, through='DetalleVentaOnline')  # Servicios comprados
+    total = models.DecimalField(max_digits=10, decimal_places=2)  # Monto total
     fecha = models.DateTimeField(auto_now_add=True)  # Fecha de la venta
-    estado = models.CharField(max_length=20, default='pendiente')  # Estado de la venta (pendiente, aprobada, etc.)
+    estado = models.CharField(max_length=20, default='pendiente')  # Estado de la venta
     token_ws = models.CharField(max_length=100, null=True, blank=True)  # Token de la transacción
-    numero_orden = models.CharField(max_length=26, null=True, blank=True)  # Número de orden asignado
+    numero_orden = models.CharField(max_length=26, null=True, blank=True)  # Número de orden
     tipo_pago = models.CharField(max_length=30, null=True, blank=True)  # Tipo de pago (VD, VN, etc.)
     monto_cuotas = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Monto por cuota
     numero_cuotas = models.PositiveIntegerField(null=True, blank=True)  # Número de cuotas
+
+    def __str__(self):
+        if self.cliente:
+            return f"Venta Online - Cliente: {self.cliente.user.username}"
+        elif self.cliente_anonimo:
+            return f"Venta Online - Cliente Anónimo: {self.cliente_anonimo.nombre}"
+        return f"Venta Online - Sin cliente asociado"
 
 # Clase para detallar cada ítem (producto o servicio) en la venta en línea
 class DetalleVentaOnline(models.Model):
@@ -127,11 +140,18 @@ class DetalleVentaOnline(models.Model):
 
 # Clase para almacenar ventas realizadas manualmente
 class VentaManual(models.Model):
-    cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE)  # Cliente que realiza la compra
-    fecha_creacion = models.DateTimeField(auto_now_add=True)  # Fecha de creación de la venta
+    cliente = models.ForeignKey(
+        Cliente, on_delete=models.CASCADE, null=True, blank=True,
+        help_text="Cliente registrado que realiza la compra (opcional para cliente anónimo)."
+    )  # Cliente registrado
+    cliente_anonimo = models.ForeignKey(
+        ClienteAnonimo, on_delete=models.CASCADE, null=True, blank=True,
+        help_text="Cliente anónimo que realiza la compra."
+    )  # Cliente anónimo
+    fecha_creacion = models.DateTimeField(auto_now_add=True)  # Fecha de creación
     total = models.PositiveIntegerField(default=0)  # Total de la venta
     pago_cliente = models.PositiveIntegerField(default=0)  # Monto pagado por el cliente
-    cambio = models.PositiveIntegerField(default=0)  # Cambio a devolver al cliente
+    cambio = models.PositiveIntegerField(default=0)  # Cambio a devolver
 
     def calcular_total(self):
         # Calcula el total de la venta sumando productos y servicios
@@ -152,7 +172,11 @@ class VentaManual(models.Model):
         super().save(*args, **kwargs)  # Guarda la instancia para actualizar total y cambio
 
     def __str__(self):
-        return f"Orden {self.id} - Cliente: {self.cliente.user.username}"  # Representación en cadena de la venta manual
+        if self.cliente:
+            return f"Orden {self.id} - Cliente: {self.cliente.user.username}"
+        elif self.cliente_anonimo:
+            return f"Orden {self.id} - Cliente Anónimo: {self.cliente_anonimo.nombre}"
+        return f"Orden {self.id} - Sin cliente asociado"
 
 # Clase para detallar cada ítem (producto o servicio) en la venta manual
 class DetalleVentaManual(models.Model):

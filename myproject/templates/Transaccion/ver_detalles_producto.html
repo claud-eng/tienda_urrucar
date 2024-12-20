@@ -59,7 +59,7 @@
         {% endif %}
         <p>Cantidad en Stock: {{ producto.cantidad_stock }}</p>
         
-        {% if user.is_authenticated and user.cliente %}
+        {% if not user.empleado %}
         <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
           {% csrf_token %}
           <div class="mb-5">
@@ -76,7 +76,7 @@
           <p><button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button></p>
         </form>
         {% else %}
-        <p>Debes iniciar sesión para continuar con la compra.</p>
+        <p>No puedes realizar compras con una cuenta de empleado.</p>
         {% endif %}
         <p><a href="javascript:history.back()" class="btn btn-secondary mt-2">Volver atrás</a></p>
       </div>

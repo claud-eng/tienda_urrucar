@@ -35,23 +35,13 @@
         <p class="mb-4">{{ servicio.descripcion }}</p>
         <p><strong class="text-primary h4">${{ servicio.precio_formateado }}</strong></p>
 
-        {% if user.is_authenticated and user.cliente %}
+        {% if not user.empleado %}
           <form method="post" action="{% url 'agregar_servicio_al_carrito' servicio.id %}">
             {% csrf_token %}
-            <label for="cantidad">Cantidad:</label>
-            <div class="input-group mb-3" style="max-width: 120px;">
-              <div class="input-group-prepend">
-                <button class="btn btn-outline-primary js-btn-minus" type="button">&minus;</button>
-              </div>
-              <input type="number" id="cantidad" name="cantidad" value="1" min="1" class="form-control text-center">
-              <div class="input-group-append">
-                <button class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
-              </div>
-            </div>
             <button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button>
           </form>
         {% else %}
-          <p>Debes iniciar sesión para poder continuar con la compra.</p>
+          <p>No puedes realizar compras con una cuenta de empleado.</p>
         {% endif %}
         
         <p><a href="javascript:history.back()" class="btn btn-secondary mt-2">Volver atrás</a></p>

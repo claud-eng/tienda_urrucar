@@ -33,20 +33,49 @@ def generar_comprobante_pdf_correo(orden):
     # Cabecera y datos principales de la orden
     p.drawString(100, 800, "Empresa: Automotriz Urrutia")
     p.drawString(100, 785, "Número de Orden: {}".format(orden.numero_orden))
-    p.drawString(100, 770, "Cliente: {}".format(orden.cliente.user.username))
+
+    # Verificar si el cliente es autenticado o anónimo
+    if orden.cliente:
+        # Extraer nombre, apellido y correo del cliente autenticado
+        nombre = orden.cliente.user.first_name if orden.cliente.user.first_name else "No disponible"
+        apellido = orden.cliente.user.last_name if orden.cliente.user.last_name else ""
+        correo = orden.cliente.user.username  # Username tratado como correo electrónico
+        p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
+        p.drawString(100, 755, "Correo: {}".format(correo))
+    elif orden.cliente_anonimo:
+        # Datos del cliente anónimo
+        nombre = orden.cliente_anonimo.nombre if orden.cliente_anonimo.nombre else "Anónimo"
+        apellido = orden.cliente_anonimo.apellido if orden.cliente_anonimo.apellido else ""
+        p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
+        p.drawString(100, 755, "Correo: {}".format(orden.cliente_anonimo.email))
+    else:
+        p.drawString(100, 770, "Cliente: Información no disponible")
+        p.drawString(100, 755, "Correo: No disponible")
 
     # Fecha y hora de la orden
     fecha_local = timezone.localtime(orden.fecha)
-    p.drawString(100, 755, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
-    p.drawString(100, 740, "Detalle:")
+    p.drawString(100, 740, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
+    p.drawString(100, 725, "Detalle:")
 
     # Detalles de cada producto o servicio
-    y = 725
+    y = 710
     detalles = DetalleVentaOnline.objects.filter(orden_compra=orden)
     for detalle in detalles:
         producto_o_servicio = detalle.producto if detalle.producto else detalle.servicio
-        p.drawString(120, y, "{} - Cantidad: {} - Precio: ${}".format(producto_o_servicio.nombre, detalle.cantidad, detalle.precio))
+        p.drawString(
+            120, y, 
+            "{} - Cantidad: {} - Precio: ${}".format(
+                producto_o_servicio.nombre, detalle.cantidad, detalle.precio
+            )
+        )
         y -= 15
+
+        # Evitar que se salga de la página
+        if y < 50:
+            p.showPage()
+            y = 800
+            p.drawString(100, y, "Detalle (continuación):")
+            y -= 15
 
     # Detalles del tipo de pago y el total
     tipo_pago_conversion = {
@@ -87,16 +116,35 @@ def generar_comprobante_online(request, numero_orden):
     # Crear el contenido del PDF
     p = canvas.Canvas(response)
 
-    # Datos de la empresa y cliente
+    # Datos de la empresa
     p.drawString(100, 800, "Empresa: Automotriz Urrutia")
     p.drawString(100, 785, "Número de Orden: {}".format(orden.numero_orden))
-    p.drawString(100, 770, "Cliente: {}".format(orden.cliente.user.username))
+
+    # Datos del cliente autenticado o anónimo
+    if orden.cliente:
+        nombre = orden.cliente.user.first_name
+        apellido = orden.cliente.user.last_name
+        email = orden.cliente.user.username
+    elif orden.cliente_anonimo:
+        nombre = orden.cliente_anonimo.nombre
+        apellido = orden.cliente_anonimo.apellido
+        email = orden.cliente_anonimo.email
+    else:
+        nombre = "No disponible"
+        apellido = "No disponible"
+        email = "No disponible"
+
+    # Imprimir los datos del cliente
+    p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
+    p.drawString(100, 755, "Correo Electrónico: {}".format(email))
+
+    # Fecha y hora de la orden
     fecha_local = timezone.localtime(orden.fecha)
-    p.drawString(100, 755, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
-    p.drawString(100, 740, "Detalle:")
+    p.drawString(100, 740, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
+    p.drawString(100, 725, "Detalle:")
 
     # Detalle de productos o servicios
-    y = 725
+    y = 710
     for detalle in detalles:
         producto_o_servicio = detalle.producto if detalle.producto else detalle.servicio
         p.drawString(120, y, "{} - Cantidad: {} - Precio: ${}".format(producto_o_servicio.nombre, detalle.cantidad, detalle.precio))

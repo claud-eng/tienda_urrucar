@@ -13,6 +13,17 @@ class Cliente(models.Model):
 
     def __str__(self):
         return self.user.username  # Retorna el nombre de usuario como representación en cadena
+    
+# Modelo para usuarios no registrados
+class ClienteAnonimo(models.Model):
+    nombre = models.CharField(max_length=150) # Nombre del cliente anónimo
+    apellido = models.CharField(max_length=150) # Apellido del cliente anónimo
+    email = models.EmailField() # Correo del cliente anónimo
+    numero_telefono = models.CharField(max_length=15, blank=True, null=True) # Número de teléfono del cliente anónimo
+    session_key = models.CharField(max_length=255, unique=True)  # Identificador único basado en la sesión
+
+    def __str__(self):
+        return self.email # Retorna el correo del usuario anónimo como representación en cadena
 
 # Modelo para almacenar información del empleado
 class Empleado(models.Model):

@@ -14,6 +14,8 @@ from reportlab.lib.utils import ImageReader  # Importa ImageReader de ReportLab 
 from reportlab.pdfgen import canvas  # Importa canvas de ReportLab para generar documentos PDF.
 from reportlab.platypus import Table, TableStyle  # Importa Table y TableStyle de ReportLab para crear tablas en PDFs.
 from .models import Carrito, DetalleVentaOnline, DetalleVentaManual, VentaOnline, VentaManual, Producto, Servicio  # Importa modelos de la aplicación actual.
+from django.core.mail import send_mail
+from django.conf import settings
 
 # Diccionario de meses en español
 MES_ESPANOL = {
@@ -222,22 +224,6 @@ def generar_comprobante(request, id_venta):
     p.save()
     return response
 
-def top_cinco_productos_vendidos(anio, mes):
-    """
-    Retorna los cinco productos más vendidos en un mes específico.
-    """
-    fecha_inicio = datetime(anio, mes, 1)
-    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
-    return Producto.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
-
-def top_cinco_servicios_vendidos(anio, mes):
-    """
-    Retorna los cinco servicios más vendidos en un mes específico.
-    """
-    fecha_inicio = datetime(anio, mes, 1)
-    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
-    return Servicio.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
-
 def generar_grafico_base64(datos):
     """
     Genera un gráfico de torta a partir de datos proporcionados y lo convierte en
@@ -255,137 +241,76 @@ def generar_grafico_base64(datos):
     graphic = graphic.decode('utf-8')
     return graphic
 
-def exportar_pdf(request):
+def calcular_rango_fechas(anio, tipo, valor):
     """
-    Genera un reporte de ventas en PDF para el mes y año seleccionados. Incluye
-    los cinco productos y servicios más vendidos con gráficos de torta y tablas.
+    Calcula el rango de fechas basado en el tipo de filtro (mes, trimestre o semestre).
     """
-    anio = request.GET.get('anioParaPDF', str(datetime.now().year))
-    mes = request.GET.get('mesParaPDF', str(datetime.now().month))
+    if tipo == 'mes':
+        fecha_inicio = datetime(anio, valor, 1)
+        fecha_fin = datetime(anio, valor + 1, 1) if valor < 12 else datetime(anio + 1, 1, 1)
+    elif tipo == 'trimestre':
+        fecha_inicio = datetime(anio, 3 * (valor - 1) + 1, 1)
+        mes_fin = 3 * valor
+        fecha_fin = datetime(anio, mes_fin + 1, 1) if mes_fin < 12 else datetime(anio + 1, 1, 1)
+    elif tipo == 'semestre':
+        fecha_inicio = datetime(anio, 6 * (valor - 1) + 1, 1)
+        mes_fin = 6 * valor
+        fecha_fin = datetime(anio, mes_fin + 1, 1) if mes_fin < 12 else datetime(anio + 1, 1, 1)
+    return fecha_inicio, fecha_fin
 
-    top_cinco_productos = top_cinco_productos_vendidos(int(anio), int(mes))
-    top_cinco_servicios = top_cinco_servicios_vendidos(int(anio), int(mes))
+def top_cinco_productos_manuales(anio, mes):
+    """
+    Retorna los cinco productos más vendidos en un mes específico.
+    """
+    fecha_inicio = datetime(anio, mes, 1)
+    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
+    return Producto.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
-    # Calcular el total vendido de productos y servicios
-    total_vendido_productos = sum([producto.total_vendido for producto in top_cinco_productos])
-    total_vendido_servicios = sum([servicio.total_vendido for servicio in top_cinco_servicios])
+def top_cinco_servicios_manuales(anio, mes):
+    """
+    Retorna los cinco servicios más vendidos en un mes específico.
+    """
+    fecha_inicio = datetime(anio, mes, 1)
+    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
+    return Servicio.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="reporte_ventas_{anio}_{mes}.pdf"'
-
-    p = canvas.Canvas(response, pagesize=letter)
-    nombre_mes = MES_ESPANOL.get(int(mes), "Mes desconocido")
-
-    # Configuración inicial de la página y título del reporte
-    y_position = 750
-    p.drawString(100, y_position, f"Reporte de Ventas del mes {nombre_mes} del año {anio}")
-    y_position -= 40
-
-    # Sección de productos más vendidos
-    if top_cinco_productos:
-        p.drawString(100, y_position, "Top 5 Productos Más Vendidos")
-        y_position -= 20
-
-        datos_para_grafico_productos = {
-            'labels': [producto.nombre for producto in top_cinco_productos],
-            'values': [producto.total_vendido for producto in top_cinco_productos]
-        }
-        imagen_grafico_productos = generar_grafico_base64(datos_para_grafico_productos)
-        imagen_grafico_productos = ImageReader(BytesIO(base64.b64decode(imagen_grafico_productos)))
-        p.drawImage(imagen_grafico_productos, 100, y_position - 220, width=400, height=200)
-
-        y_position -= 220 + 20
-
-        # Tabla de productos vendidos
-        data_productos = [['Producto', 'Cantidad', 'Porcentaje']]
-        for producto in top_cinco_productos:
-            porcentaje = (producto.total_vendido / total_vendido_productos * 100) if total_vendido_productos else 0
-            data_productos.append([producto.nombre, producto.total_vendido, f"{porcentaje:.2f}%"])
-        tabla_productos = Table(data_productos, colWidths=[200, 100, 100], hAlign='LEFT')
-        tabla_productos.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-
-        tabla_productos.wrapOn(p, 400, 200)
-        tabla_productos.drawOn(p, 100, y_position - 20 * len(data_productos) - 10)
-        y_position -= 20 * len(data_productos) + 30
-    else:
-        p.drawString(100, y_position, "No se han registrado ventas de productos en el mes seleccionado.")
-        y_position -= 30
-
-    # Sección de servicios más vendidos en nueva página
-    p.showPage()
-    y_position = 750
-    p.drawString(100, y_position, "Top 5 Servicios Más Vendidos")
-    y_position -= 40
-
-    if top_cinco_servicios:
-        datos_para_grafico_servicios = {
-            'labels': [servicio.nombre for servicio in top_cinco_servicios],
-            'values': [servicio.total_vendido for servicio in top_cinco_servicios]
-        }
-        imagen_grafico_servicios = generar_grafico_base64(datos_para_grafico_servicios)
-        imagen_grafico_servicios = ImageReader(BytesIO(base64.b64decode(imagen_grafico_servicios)))
-        p.drawImage(imagen_grafico_servicios, 100, y_position - 220, width=400, height=200)
-        y_position -= 220 + 20
-
-        # Tabla de servicios vendidos
-        data_servicios = [['Servicio', 'Cantidad', 'Porcentaje']]
-        for servicio in top_cinco_servicios:
-            porcentaje = (servicio.total_vendido / total_vendido_servicios * 100) if total_vendido_servicios else 0
-            data_servicios.append([servicio.nombre, servicio.total_vendido, f"{porcentaje:.2f}%"])
-        tabla_servicios = Table(data_servicios, colWidths=[200, 100, 100], hAlign='LEFT')
-        tabla_servicios.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black),
-        ]))
-
-        tabla_servicios.wrapOn(p, 400, 200)
-        tabla_servicios.drawOn(p, 100, y_position - 20 * len(data_servicios) - 10)
-        y_position -= 20 * len(data_servicios) + 30
-    else:
-        p.drawString(100, y_position, "No se han registrado ventas de servicios en el mes seleccionado.")
-        y_position -= 30
-
-    # Guardar el PDF en la respuesta
-    p.save()
-    return response
-
-def reportes_ventas_manuales(request):
+def reporte_ventas_manuales(request):
     """
     Genera el contexto para la vista de reportes de ventas en la interfaz.
     Incluye el top 5 de productos y servicios en JSON para gráficos y mensajes
-    si no hay datos.
+    si no hay datos. Permite filtrar por mes, trimestre y semestre.
     """
     anio_actual = datetime.now().year
     mes_actual = datetime.now().month
 
+    # Obtener parámetros del GET (filtro dinámico)
     anio = int(request.GET.get('anio', anio_actual))
-    mes = int(request.GET.get('mes', mes_actual))
+    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre'
+    valor_filtro = int(request.GET.get('valor_filtro', mes_actual))
 
-    top_cinco_productos = top_cinco_productos_vendidos(anio, mes)
-    top_cinco_servicios = top_cinco_servicios_vendidos(anio, mes)
+    # Calcular rango de fechas según el filtro
+    fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
 
+    # Obtener datos de ventas en ese rango de fechas
+    top_cinco_productos = Producto.objects.filter(
+        detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]
+    ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
+
+    top_cinco_servicios = Servicio.objects.filter(
+        detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]
+    ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
+
+    # Mensajes si no hay productos o servicios vendidos
     mensaje_productos = ""
     mensaje_servicios = ""
 
     if not top_cinco_productos:
-        mensaje_productos = "No se han registrado ventas de productos en el mes seleccionado."
+        mensaje_productos = f"No se han registrado ventas de productos en el {tipo_filtro} seleccionado."
 
     if not top_cinco_servicios:
-        mensaje_servicios = "No se han registrado ventas de servicios en el mes seleccionado."
+        mensaje_servicios = f"No se han registrado ventas de servicios en el {tipo_filtro} seleccionado."
 
+    # Preparar datos para gráficos (JSON)
     datos_productos = json.dumps({
         'labels': [producto.nombre for producto in top_cinco_productos],
         'data': [producto.total_vendido for producto in top_cinco_productos]
@@ -396,13 +321,18 @@ def reportes_ventas_manuales(request):
         'data': [servicio.total_vendido for servicio in top_cinco_servicios]
     }, cls=DjangoJSONEncoder) if top_cinco_servicios else json.dumps({})
 
+    # Meses para visualización
     meses = {
         1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
         5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
         9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
     }
 
-    nombre_mes = meses.get(mes, "Mes desconocido")
+    # Trimestres y semestres para mostrar en el filtro
+    trimestres = {1: '1er Trimestre', 2: '2do Trimestre', 3: '3er Trimestre', 4: '4to Trimestre'}
+    semestres = {1: '1er Semestre', 2: '2do Semestre'}
+
+    nombre_mes = meses.get(valor_filtro, "Mes desconocido")
 
     datos_grafico = {
         'labels': [producto.nombre for producto in top_cinco_productos],
@@ -410,6 +340,7 @@ def reportes_ventas_manuales(request):
     }
     imagen_grafico = generar_grafico_base64(datos_grafico)
 
+    # Contexto para la plantilla
     contexto = {
         'datos_productos_json': datos_productos,
         'datos_servicios_json': datos_servicios,
@@ -417,15 +348,196 @@ def reportes_ventas_manuales(request):
         'mensaje_servicios': mensaje_servicios,
         'rango_anios': range(2022, 2028),
         'rango_meses': range(1, 13),
+        'rango_trimestres': range(1, 5),
+        'rango_semestres': range(1, 3),
         'anio_actual': anio_actual,
         'mes_actual': mes_actual,
         'anio_seleccionado': anio,
-        'mes_seleccionado': mes,
+        'tipo_filtro': tipo_filtro,
+        'valor_filtro': valor_filtro,
         'nombre_mes': nombre_mes,
         'imagen_grafico': imagen_grafico,
         'top_cinco_productos': top_cinco_productos,
         'top_cinco_servicios': top_cinco_servicios,
     }
 
-    return render(request, 'Transaccion/reportes_ventas_manuales.html', contexto)
+    return render(request, 'Transaccion/reporte_ventas_manuales.html', contexto)
+
+def top_cinco_productos_online(anio, mes):
+    """
+    Retorna los cinco productos más vendidos en ventas online para un mes específico.
+    """
+    fecha_inicio = datetime(anio, mes, 1)
+    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
+
+    return Producto.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).annotate(
+        total_vendido=Sum('detalleventaonline__cantidad')
+    ).order_by('-total_vendido')[:5]
+
+def top_cinco_servicios_online(anio, mes):
+    """
+    Retorna los cinco servicios más vendidos en ventas online para un mes específico.
+    """
+    fecha_inicio = datetime(anio, mes, 1)
+    fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
+
+    return Servicio.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).annotate(
+        total_vendido=Sum('detalleventaonline__cantidad')
+    ).order_by('-total_vendido')[:5]
+
+def reporte_ventas_online(request):
+    """
+    Genera el contexto para el reporte de ventas online.
+    Permite filtrar por mes, trimestre o semestre.
+    """
+    anio_actual = datetime.now().year
+    mes_actual = datetime.now().month
+
+    # Obtener parámetros del GET (filtro dinámico)
+    anio = int(request.GET.get('anio', anio_actual))
+    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre'
+    valor_filtro = int(request.GET.get('valor_filtro', mes_actual))
+
+    # Calcular rango de fechas según el filtro
+    fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
+
+    # Obtener datos de ventas online dentro del rango
+    top_cinco_productos = Producto.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).annotate(total_vendido=Sum('detalleventaonline__cantidad')).order_by('-total_vendido')[:5]
+
+    top_cinco_servicios = Servicio.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).annotate(total_vendido=Sum('detalleventaonline__cantidad')).order_by('-total_vendido')[:5]
+
+    # Mensajes si no hay productos o servicios vendidos
+    mensaje_productos = ""
+    mensaje_servicios = ""
+
+    if not top_cinco_productos:
+        mensaje_productos = f"No se han registrado ventas de productos online en el {tipo_filtro} seleccionado."
+
+    if not top_cinco_servicios:
+        mensaje_servicios = f"No se han registrado ventas de servicios online en el {tipo_filtro} seleccionado."
+
+    # Preparar datos para gráficos (JSON)
+    datos_productos = json.dumps({
+        'labels': [producto.nombre for producto in top_cinco_productos],
+        'data': [producto.total_vendido for producto in top_cinco_productos]
+    }, cls=DjangoJSONEncoder) if top_cinco_productos else json.dumps({})
+
+    datos_servicios = json.dumps({
+        'labels': [servicio.nombre for servicio in top_cinco_servicios],
+        'data': [servicio.total_vendido for servicio in top_cinco_servicios]
+    }, cls=DjangoJSONEncoder) if top_cinco_servicios else json.dumps({})
+
+    # Meses para visualización
+    meses = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+
+    # Trimestres y semestres para mostrar en el filtro
+    trimestres = {1: '1er Trimestre', 2: '2do Trimestre', 3: '3er Trimestre', 4: '4to Trimestre'}
+    semestres = {1: '1er Semestre', 2: '2do Semestre'}
+
+    nombre_mes = meses.get(valor_filtro, "Mes desconocido")
+
+    datos_grafico = {
+        'labels': [producto.nombre for producto in top_cinco_productos],
+        'values': [producto.total_vendido for producto in top_cinco_productos]
+    }
+    imagen_grafico = generar_grafico_base64(datos_grafico)
+
+    # Contexto para la plantilla
+    contexto = {
+        'datos_productos_json': datos_productos,
+        'datos_servicios_json': datos_servicios,
+        'mensaje_productos': mensaje_productos,
+        'mensaje_servicios': mensaje_servicios,
+        'rango_anios': range(2022, 2028),
+        'rango_meses': range(1, 13),
+        'rango_trimestres': range(1, 5),
+        'rango_semestres': range(1, 3),
+        'anio_actual': anio_actual,
+        'mes_actual': mes_actual,
+        'anio_seleccionado': anio,
+        'tipo_filtro': tipo_filtro,
+        'valor_filtro': valor_filtro,
+        'nombre_mes': nombre_mes,
+        'imagen_grafico': imagen_grafico,
+        'top_cinco_productos': top_cinco_productos,
+        'top_cinco_servicios': top_cinco_servicios,
+    }
+
+    return render(request, 'Transaccion/reporte_ventas_online.html', contexto)
+
+def envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito_items):
+    """
+    Envía un correo electrónico al administrador con los datos del formulario dinámico,
+    los datos de la persona, los productos adquiridos y los servicios contratados.
+    """
+    asunto = "Has recibido una nueva compra por Webpay"
+    
+    # Agregar los datos de la persona al mensaje
+    mensaje = "Datos del comprador:\n"
+    mensaje += f"Nombre: {datos_persona.get('nombre', 'N/A')}\n"
+    mensaje += f"Apellido: {datos_persona.get('apellido', 'N/A')}\n"
+    mensaje += f"Correo: {datos_persona.get('email', 'N/A')}\n"
+    mensaje += f"Teléfono: {datos_persona.get('numero_telefono', 'N/A')}\n\n"
+
+    # Agregar los productos adquiridos al mensaje
+    mensaje += "Productos adquiridos:\n"
+    productos_adquiridos = [
+        f"- {item.item.nombre}" for item in carrito_items if isinstance(item.item, Producto)
+    ]
+    if productos_adquiridos:
+        mensaje += "\n".join(productos_adquiridos) + "\n\n"
+    else:
+        mensaje += "Ninguno\n\n"
+
+    # Agregar los servicios contratados al mensaje
+    mensaje += "Servicios contratados:\n"
+    servicios_contratados = [
+        f"- {item.item.nombre}" for item in carrito_items if isinstance(item.item, Servicio)
+    ]
+    if servicios_contratados:
+        mensaje += "\n".join(servicios_contratados) + "\n\n"
+    else:
+        mensaje += "Ninguno\n\n"
+
+    # Incluir la información del formulario dinámico solo si hay servicios contratados
+    if servicios_contratados:
+        mensaje += "Información del vehículo al contratar uno o más servicios:\n"
+        
+        # Mapeo de campos a nombres legibles
+        mapeo_campos = {
+            'nombre_vehiculo': "Nombre del Vehículo",
+            'marca': "Marca",
+            'ano': "Año",
+            'retiro_domicilio': "Retiro a Domicilio",
+            'direccion': "Dirección",
+            'descripcion_vehiculo': "Descripción del Vehículo",
+        }
+
+        for campo, valor in datos_formulario.items():
+            nombre_legible = mapeo_campos.get(campo, campo)
+            mensaje += f"{nombre_legible}: {valor if valor else 'N/A'}\n"
+
+    destinatario = "czamorano@claudev.cl"
+    
+    # Enviar el correo
+    send_mail(
+        asunto,
+        mensaje,
+        settings.DEFAULT_FROM_EMAIL,
+        [destinatario],
+        fail_silently=False
+    )
+
 

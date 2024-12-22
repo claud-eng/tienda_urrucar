@@ -25,20 +25,12 @@
         </div>
         <button type="submit" class="btn btn-primary">Buscar</button>
     </form>
-    <form method="GET" class="form-inline mb-2">
-        <div class="form-group">
-            <label for="search-username">Buscar por RUT:</label>
-            <input type="text" class="form-control mx-2" id="search-rut" name="rut" placeholder="XX.XXX.XXX-X">
-        </div>
-        <button type="submit" class="btn btn-primary">Buscar</button>
-    </form>
 
     <table class="table table-responsive">
         <thead>
             <tr>
                 <th>Id</th>
                 <th>Usuario</th>
-                <th>RUT</th>
                 <th>Nombre</th>
                 <th>Primer Apellido</th>
                 <th>Segundo Apellido</th>
@@ -52,7 +44,6 @@
             <tr>
                 <td>{{ c.id }}</td>
                 <td>{{ c.user }}</td>
-                <td>{{ c.rut }}</td>
                 <td>{{ c.user.first_name }}</td>
                 <td>{{ c.user.last_name }}</td>
                 <td>{{ c.second_last_name }}</td>
@@ -98,7 +89,7 @@
         </ul>
       </nav>
           <!-- "Volver atrás" con la clase btn btn-secondary -->
-          {% if has_search_query_username or has_search_query_rut %}
+          {% if has_search_query_username %}
 
         <a href="{% url 'listar_clientes' %}"><button class="btn btn-secondary">Volver atrás</button></a>
 

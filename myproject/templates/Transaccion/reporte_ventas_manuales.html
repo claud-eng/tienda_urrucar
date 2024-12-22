@@ -1,0 +1,238 @@
+{% extends 'base.html' %}
+{% block title %}
+    Reporte de Ventas Manuales
+{% endblock %}
+{% block content %}
+
+<style>
+    .header-background {
+        background-color: #f2f2f2;
+    }
+    #graficoProductosMasVendidos, #graficoServiciosMasVendidos {
+        max-width: 50%;
+        height: auto;
+        display: block;
+        margin: 0 auto;  /* Centrar el gráfico */
+    }
+    .grafico-contenedor {
+        background-color: #f8f9fa;  /* Color gris claro */
+        border-radius: 10px;  /* Bordes redondeados */
+        padding: 20px;  /* Espaciado interno */
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Sombra ligera */
+    }
+</style>
+
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Reporte de Ventas Manuales</strong></div>
+      </div>
+    </div>
+</div>  
+
+<div class="container mt-4">
+    <h2>Reporte de Ventas Manuales</h2>
+
+    <!-- Formulario para seleccionar año, tipo de filtro y valor -->
+    <form action="{% url 'reporte_ventas_manuales' %}" method="get">
+        <div class="row">
+            <div class="col">
+                <label for="anio">Año:</label>
+                <select id="anio" name="anio" class="form-control">
+                    {% for anio in rango_anios %}
+                    <option value="{{ anio }}" {% if anio == anio_seleccionado %}selected{% endif %}>{{ anio }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col">
+                <label for="tipo_filtro">Filtro:</label>
+                <select id="tipo_filtro" name="tipo_filtro" class="form-control" onchange="actualizarValores()">
+                    <option value="mes" {% if tipo_filtro == 'mes' %}selected{% endif %}>Mensual</option>
+                    <option value="trimestre" {% if tipo_filtro == 'trimestre' %}selected{% endif %}>Trimestral</option>
+                    <option value="semestre" {% if tipo_filtro == 'semestre' %}selected{% endif %}>Semestral</option>
+                </select>
+            </div>
+            <div class="col">
+                <label for="valor_filtro">Valor:</label>
+                <select id="valor_filtro" name="valor_filtro" class="form-control">
+                    <!-- Opciones se generarán dinámicamente -->
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-2">Mostrar Reporte</button>
+        <p><a href="javascript:history.back()" class="btn btn-secondary mt-2">Volver atrás</a></p>
+    </form>
+
+    <div class="row mt-4">
+        <!-- Productos -->
+        <div class="col-md-6">
+            <h3>
+                Top 5 productos registrados manualmente más vendidos
+                {% if tipo_filtro == 'mes' %}
+                    en {{ nombre_mes }}
+                {% elif tipo_filtro == 'trimestre' %}
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre
+                {% elif tipo_filtro == 'semestre' %}
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre
+                {% endif %}
+            </h3>
+            {% if mensaje_productos %}
+                <p>{{ mensaje_productos }}</p>
+            {% else %}
+            <div class="grafico-contenedor">
+                <canvas id="graficoProductosMasVendidos"></canvas>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6 mt-2">
+            {% if datos_productos_json %}
+                <table class="table" id="tablaProductos">
+                    <thead>
+                        <tr>
+                            <th class="header-background">Producto</th>
+                            <th class="header-background">Cantidad</th>
+                            <th class="header-background">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            {% endif %}
+        </div>
+
+        <!-- Servicios -->
+        <div class="col-md-6 mt-4">
+            <h3>
+                Top 5 servicios registrados manualmente más vendidos
+                {% if tipo_filtro == 'mes' %}
+                    en {{ nombre_mes }}
+                {% elif tipo_filtro == 'trimestre' %}
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre
+                {% elif tipo_filtro == 'semestre' %}
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre
+                {% endif %}
+            </h3>
+            {% if mensaje_servicios %}
+                <p>{{ mensaje_servicios }}</p>
+            {% else %}
+            <div class="grafico-contenedor">
+                <canvas id="graficoServiciosMasVendidos"></canvas>
+            </div>
+            {% endif %}
+        </div>
+        <div class="col-md-6 mt-2">
+            {% if datos_servicios_json %}
+                <table class="table" id="tablaServicios">
+                    <thead>
+                        <tr>
+                            <th class="header-background">Servicio</th>
+                            <th class="header-background">Cantidad</th>
+                            <th class="header-background">Porcentaje</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+    const meses = [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+    ];
+    const rangoTrimestres = [1, 2, 3, 4];
+    const rangoSemestres = [1, 2];
+    const valorFiltroSeleccionado = `{{ valor_filtro }}`;
+
+    // Actualizar el select de valor_filtro dinámicamente
+    function actualizarValores() {
+        const tipoFiltro = document.getElementById('tipo_filtro').value;
+        const valorFiltro = document.getElementById('valor_filtro');
+        
+        let opciones = [];
+        valorFiltro.innerHTML = "";  // Limpiar opciones previas
+
+        if (tipoFiltro === 'mes') {
+            opciones = meses.map((mes, index) => 
+                `<option value="${index + 1}" ${index + 1 == valorFiltroSeleccionado ? 'selected' : ''}>${mes}</option>`);
+        } else if (tipoFiltro === 'trimestre') {
+            opciones = rangoTrimestres.map(trimestre => 
+                `<option value="${trimestre}" ${trimestre == valorFiltroSeleccionado ? 'selected' : ''}>${trimestre}er Trimestre</option>`);
+        } else if (tipoFiltro === 'semestre') {
+            opciones = rangoSemestres.map(semestre => 
+                `<option value="${semestre}" ${semestre == valorFiltroSeleccionado ? 'selected' : ''}>${semestre}er Semestre</option>`);
+        }
+
+        valorFiltro.innerHTML = opciones.join('');
+    }
+
+    // Llamar a la función para cargar valores iniciales
+    actualizarValores();
+
+    // Cargar datos de productos y servicios desde Django
+    const datosProductos = JSON.parse(`{% autoescape off %}{{ datos_productos_json }}{% endautoescape %}`);
+    const datosServicios = JSON.parse(`{% autoescape off %}{{ datos_servicios_json }}{% endautoescape %}`);
+
+    console.log("Datos de Productos Manuales:", datosProductos);
+    console.log("Datos de Servicios Manuales:", datosServicios);
+
+    // Colores para los gráficos de torta
+    const colores = [
+        'rgba(255, 99, 132, 0.7)', 'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 206, 86, 0.7)', 'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)'
+    ];
+
+    // Función para crear gráficos de torta con Chart.js
+    function crearGraficoTorta(ctx, datos) {
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: datos.labels,
+                datasets: [{
+                    data: datos.data,
+                    backgroundColor: colores.slice(0, datos.data.length),
+                    hoverOffset: 4
+                }]
+            }
+        });
+    }
+
+    // Función para llenar las tablas de productos y servicios con datos
+    function mostrarTabla(elementId, datos) {
+        const tabla = document.querySelector(`#${elementId} tbody`);
+        tabla.innerHTML = datos.labels.map((label, index) => `
+            <tr style="background-color: ${colores[index]}">
+                <td>${label}</td>
+                <td>${datos.data[index]}</td>
+                <td>${((datos.data[index] / datos.data.reduce((a,b) => a + b, 0)) * 100).toFixed(2)}%</td>
+            </tr>
+        `).join('');
+    }
+
+    // Al cargar la página, mostrar los gráficos y tablas
+    window.onload = function() {
+        actualizarValores();
+
+        // Gráfico y tabla de productos
+        if (datosProductos.labels && datosProductos.labels.length > 0) {
+            const ctxProductos = document.getElementById('graficoProductosMasVendidos').getContext('2d');
+            crearGraficoTorta(ctxProductos, datosProductos);
+            mostrarTabla('tablaProductos', datosProductos);
+        }
+
+        // Gráfico y tabla de servicios
+        if (datosServicios.labels && datosServicios.labels.length > 0) {
+            const ctxServicios = document.getElementById('graficoServiciosMasVendidos').getContext('2d');
+            crearGraficoTorta(ctxServicios, datosServicios);
+            mostrarTabla('tablaServicios', datosServicios);
+        }
+    };
+</script>
+
+{% endblock %}
+

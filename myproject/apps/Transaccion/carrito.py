@@ -210,7 +210,8 @@ def agregar_al_carrito(request, id, tipo):
 
     return redirect('carrito')
 
-# Ajustar la vista del carrito
+from django.contrib.contenttypes.models import ContentType
+
 def carrito(request):
     """
     Muestra el contenido actual del carrito y gestiona la información de los clientes no registrados.
@@ -219,6 +220,7 @@ def carrito(request):
     cliente_form = None
     carrito_items = None
     session_key = request.session.session_key
+    contiene_servicios = False  # Bandera para identificar si hay servicios en el carrito
 
     # Asegurar que la sesión exista
     if not session_key:
@@ -257,17 +259,22 @@ def carrito(request):
     total = sum(item.obtener_precio_total() for item in carrito_items)
     total_formateado = formato_precio(total)
 
-    # Agrega información adicional y formatea precios para cada elemento en el carrito
+    # Procesa cada elemento del carrito
     for item in carrito_items:
         item.precio_formateado = formato_precio(item.item.precio)
         item.precio_total_formateado = formato_precio(item.obtener_precio_total())
-        item.es_servicio = isinstance(item.item, Servicio)
-        
-        # Formatear el precio de reserva si aplica
-        if isinstance(item.item, Producto) and item.item.precio_reserva:
-            item.item.precio_reserva_formateado = formato_precio(item.item.precio_reserva)
-        else:
-            item.item.precio_reserva_formateado = None
+
+        # Determina si es un servicio comparando el modelo del item
+        is_servicio = item.content_type.model == "servicio"
+        item.es_servicio = is_servicio
+
+        # Actualiza la bandera si se encuentra un servicio
+        if is_servicio:
+            contiene_servicios = True
+
+    # Guarda el estado de contiene_servicios en la sesión
+    request.session['contiene_servicios'] = contiene_servicios
+    print(f"Contiene servicios guardado en sesión: {contiene_servicios}")
 
     # Procesa el formulario para clientes anónimos
     if request.method == 'POST' and not request.user.is_authenticated:
@@ -280,7 +287,8 @@ def carrito(request):
     return render(request, 'Transaccion/carrito.html', {
         'carrito_items': carrito_items,
         'total': total_formateado,
-        'cliente_form': cliente_form
+        'cliente_form': cliente_form,
+        'contiene_servicios': contiene_servicios  # Pasa la bandera a la plantilla
     })
 
 def realizar_compra(request):

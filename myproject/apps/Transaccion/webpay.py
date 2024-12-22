@@ -28,10 +28,38 @@ def iniciar_transaccion(request):
     cliente_anonimo = None
 
     if request.method == 'POST':
+        # Captura los datos básicos del formulario
         nombre = request.POST.get('nombre')
         apellido = request.POST.get('apellido')
         email = request.POST.get('email')
         numero_telefono = request.POST.get('numero_telefono')
+
+        # Captura datos adicionales del formulario dinámico
+        datos_formulario_dinamico = {
+            'nombre_vehiculo': request.POST.get('nombre_vehiculo'),
+            'marca': request.POST.get('marca'),
+            'ano': request.POST.get('ano'),
+            'retiro_domicilio': request.POST.get('retiro_domicilio'),
+            'direccion': request.POST.get('direccion'),
+            'descripcion_vehiculo': request.POST.get('descripcion_vehiculo'),
+        }
+
+        # Obtiene la bandera desde la sesión
+        contiene_servicios = request.session.get('contiene_servicios', False)
+        print(f"Contiene servicios desde sesión: {contiene_servicios}")
+
+        # Validar los campos adicionales solo si el carrito contiene servicios
+        if contiene_servicios:
+            campos_obligatorios = ['nombre_vehiculo', 'marca', 'ano']
+            if datos_formulario_dinamico.get('retiro_domicilio') == 'Si':
+                campos_obligatorios.append('direccion')
+            for campo in campos_obligatorios:
+                if not datos_formulario_dinamico.get(campo):
+                    messages.error(request, "Por favor, completa todos los campos obligatorios del formulario.")
+                    return redirect('carrito')
+
+        # Guarda los datos adicionales en la sesión
+        request.session['datos_formulario'] = datos_formulario_dinamico
 
         if request.user.is_authenticated:
             # Cliente autenticado
@@ -72,12 +100,16 @@ def iniciar_transaccion(request):
         return_url = request.build_absolute_uri('/transaccion/transaccion_finalizada/')
 
         try:
+            # Crea la transacción con Webpay
             response = tx.create(buy_order, session_id, amount, return_url)
             if 'url' in response and 'token' in response:
+                # Redirige a Webpay si la respuesta contiene URL y token
                 return redirect(response['url'] + "?token_ws=" + response['token'])
             else:
+                # Responde con un error si faltan la URL o el token
                 return HttpResponse("Error: la respuesta de Webpay no contiene URL o token")
         except TransbankError as e:
+            # Manejo de errores en la transacción
             return HttpResponse("Error al crear la transacción: " + str(e.message))
 
 def transaccion_finalizada(request):
@@ -159,6 +191,21 @@ def transaccion_finalizada(request):
 
             # Procesar ítems del carrito
             orden.estado = 'aprobada'
+
+            # Obtener los datos del comprador
+            datos_persona = {
+                'nombre': cliente.nombre if cliente else cliente_anonimo.nombre,
+                'apellido': cliente.apellido if cliente else cliente_anonimo.apellido,
+                'email': cliente.user.email if cliente else cliente_anonimo.email,
+                'numero_telefono': cliente.numero_telefono if cliente else cliente_anonimo.numero_telefono,
+            }
+
+            # Capturar datos del formulario dinámico
+            datos_formulario = request.session.pop('datos_formulario', {})
+
+            # Enviar correo al administrador
+            envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito_items)
+
             for item in carrito_items:
                 detalle = {
                     'nombre': item.item.nombre,

@@ -6,7 +6,6 @@ from django.dispatch import receiver  # Importa el receptor de señales para rea
 # Modelo para almacenar información del cliente
 class Cliente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)  # Relación uno a uno con el usuario
-    rut = models.CharField(max_length=12, default='')  # Identificación RUT del cliente
     second_last_name = models.CharField(max_length=150, default='')  # Segundo apellido del cliente
     fecha_nacimiento = models.DateField()  # Fecha de nacimiento del cliente
     numero_telefono = models.CharField(max_length=15, default='')  # Número de teléfono del cliente

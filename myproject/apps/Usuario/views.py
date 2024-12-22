@@ -12,16 +12,13 @@ from .forms import CambiarContraseñaClienteForm, ClienteForm, CustomClienteForm
 def listar_clientes(request):
     """
     Lista todos los clientes en la base de datos con opciones de búsqueda
-    y paginación. Permite buscar clientes por nombre de usuario y RUT.
+    y paginación. Permite buscar clientes por nombre de usuario.
     """
     clientes = Cliente.objects.all()
     username_query = request.GET.get('username')
-    rut_query = request.GET.get('rut')
 
     if username_query:
         clientes = clientes.filter(user__username__icontains=username_query)
-    if rut_query:
-        clientes = clientes.filter(rut__icontains=rut_query)
 
     paginator = Paginator(clientes, 5)  # Configura paginación para mostrar 5 clientes por página
     page = request.GET.get('page')
@@ -34,12 +31,10 @@ def listar_clientes(request):
         clientes = paginator.page(paginator.num_pages)
 
     has_search_query_username = bool(username_query)
-    has_search_query_rut = bool(rut_query)
 
     return render(request, 'Usuario/listar_clientes.html', {
         'clientes': clientes,
         'has_search_query_username': has_search_query_username,
-        'has_search_query_rut': has_search_query_rut,
     })
 
 def agregar_cliente(request):

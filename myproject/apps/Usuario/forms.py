@@ -78,28 +78,14 @@ class ClienteForm(forms.ModelForm):
         max_length=30,
         required=True,
         label='Primer Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Torres'}),
     )
-
-    rut = forms.CharField(
-        max_length=12,
-        required=True,
-        label='RUT',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresar con puntos y guión: XX.XXX.XXX-X'}),
-        validators=[validate_rut_chileno],  # Aplicar la validación personalizada
-    )
-
-    def clean_rut(self):
-        # Validación adicional: convierte la letra 'K' (si existe) a mayúscula antes de guardar
-        rut = self.cleaned_data['rut']
-        rut = rut.upper()
-        return rut
 
     second_last_name = forms.CharField(
         max_length=150,
         required=True,
         label='Segundo Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Capdeville'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Herrera'}),
     )
     fecha_nacimiento = forms.DateField(
         required=True,
@@ -128,7 +114,7 @@ class ClienteForm(forms.ModelForm):
     class Meta:
         # Define el modelo de base y los campos que aparecerán en el formulario
         model = Cliente
-        fields = ['username', 'password', 'rut', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono',]
+        fields = ['username', 'password', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono',]
 
     def save(self, commit=True):
         # Crear o actualizar el usuario (auth_user)
@@ -184,34 +170,20 @@ class EditarClienteForm(forms.ModelForm):
         max_length=30,
         required=True,
         label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Claudio'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Alejandra'}),
     )
     last_name = forms.CharField(
         max_length=30,
         required=True,
         label='Primer Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Zamorano'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Torres'}),
     )
-
-    rut = forms.CharField(
-        max_length=12,
-        required=True,
-        label='RUT',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresar con puntos y guión: XX.XXX.XXX-X'}),
-        validators=[validate_rut_chileno],  # Aplicar la validación personalizada
-    )
-
-    def clean_rut(self):
-        # Validación adicional: convierte la letra 'K' (si existe) a mayúscula antes de guardar
-        rut = self.cleaned_data['rut']
-        rut = rut.upper()
-        return rut
 
     second_last_name = forms.CharField(
         max_length=150,
         required=True,
         label='Segundo Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Herrera'}),
     )
     fecha_nacimiento = forms.DateField(
         required=True,
@@ -238,7 +210,7 @@ class EditarClienteForm(forms.ModelForm):
 
     class Meta:
         model = Cliente
-        fields = ['username', 'rut', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono',]
+        fields = ['username', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono',]
 
     def save(self, commit=True):
         # Obtener la instancia del cliente actual
@@ -289,19 +261,6 @@ class CustomClienteForm(forms.ModelForm):
     
     first_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
     last_name = forms.CharField(max_length=30, widget=forms.TextInput(attrs={'class': 'form-control'}))
-    rut = forms.CharField(
-        max_length=12,
-        required=True,
-        label='RUT',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ingresar con puntos y guión: XX.XXX.XXX-X'}),
-        validators=[validate_rut_chileno],  # Aplicar la validación personalizada
-    )
-
-    def clean_rut(self):
-        # Validación adicional: convierte la letra 'K' (si existe) a mayúscula antes de guardar
-        rut = self.cleaned_data['rut']
-        rut = rut.upper()
-        return rut
     second_last_name = forms.CharField(max_length=150, widget=forms.TextInput(attrs={'class': 'form-control'}))
     fecha_nacimiento = forms.DateField(
         required=True,
@@ -338,7 +297,7 @@ class CustomClienteForm(forms.ModelForm):
     
     class Meta:
         model = Cliente
-        fields = ['username', 'first_name', 'last_name', 'rut', 'second_last_name', 'fecha_nacimiento', 'numero_telefono']
+        fields = ['username', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono']
 
 class CambiarContraseñaClienteForm(PasswordChangeForm):
     class Meta:
@@ -380,13 +339,13 @@ class EmpleadoForm(forms.ModelForm):
         max_length=30,
         required=True,
         label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Claudio'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Alejandra'}),
     )
     last_name = forms.CharField(
         max_length=30,
         required=True,
         label='Primer Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Zamorano'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Torres'}),
     )
 
     rut = forms.CharField(
@@ -406,7 +365,7 @@ class EmpleadoForm(forms.ModelForm):
         max_length=150,
         required=True,
         label='Segundo Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Herrera'}),
     )
     fecha_nacimiento = forms.DateField(
         required=True,
@@ -482,13 +441,13 @@ class EditarEmpleadoForm(forms.ModelForm):
         max_length=30,
         required=True,
         label='Nombre',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Claudio'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Alejandra'}),
     )
     last_name = forms.CharField(
         max_length=30,
         required=True,
         label='Primer Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Zamorano'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Torres'}),
     )
 
     rut = forms.CharField(
@@ -509,7 +468,7 @@ class EditarEmpleadoForm(forms.ModelForm):
         max_length=150,
         required=True,
         label='Segundo Apellido',
-        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Urrutia'}),
+        widget=forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Herrera'}),
     )
     fecha_nacimiento = forms.DateField(
         required=True,

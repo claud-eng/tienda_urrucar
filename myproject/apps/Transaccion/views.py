@@ -601,3 +601,9 @@ def gestionar_transacciones(request):
     """
     return render(request, 'Transaccion/gestionar_transacciones.html')
 
+@login_required
+def ver_reportes(request):
+    """
+    Vista para ver reportes de todas las transacciones.
+    """
+    return render(request, 'Transaccion/ver_reportes.html')

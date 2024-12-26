@@ -101,70 +101,71 @@ class ServicioForm(forms.ModelForm):
 
         return cleaned_data
 
+# Formulario para ventas online
 class VentaOnlineForm(forms.ModelForm):
     class Meta:
         model = VentaOnline
         fields = ['cliente', 'total', 'estado', 'tipo_pago', 'numero_cuotas', 'monto_cuotas']
 
+# Formulario de detalle para ventas online
 class DetalleVentaOnlineForm(forms.ModelForm):
     class Meta:
         model = DetalleVentaOnline
         fields = ['producto', 'cantidad', 'precio', 'estado_reserva']
 
-# Formulario para registrar una venta manual, incluye el ID del cliente
+# Formulario para ventas manuales (cliente anónimo)
 class VentaManualForm(forms.ModelForm):
-    cliente = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}), label='ID del Cliente')  # Campo para ingresar el ID del cliente
-
     class Meta:
-        model = VentaManual  # Especifica el modelo asociado
-        fields = ['cliente', 'pago_cliente']  # Campos incluidos en el formulario
+        model = VentaManual
+        fields = ['pago_cliente']  # Eliminamos el campo cliente
         widgets = {
-            'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),  # Widget personalizado para el campo de pago
+            'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),
         }
 
-    def clean_cliente(self):
-        # Método para validar que el cliente existe en la base de datos
-        id_cliente = self.cleaned_data['cliente']
-        try:
-            return Cliente.objects.get(id=id_cliente)  # Retorna el cliente si existe
-        except Cliente.DoesNotExist:
-            raise ValidationError("Cliente no encontrado.")  # Error si el cliente no existe
+    def save(self, commit=True):
+        # Lógica para asociar a cliente anónimo
+        venta = super().save(commit=False)
+        if commit:
+            venta.save()
+        return venta
 
-# Formulario para detalles de venta manual relacionados con productos
-class DetalleVentaManualForm(forms.ModelForm):
-    producto = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}), label='ID del Producto')  # Campo para ingresar el ID del producto
+# Formulario de detalle de productos en venta manual
+class DetalleVentaManualProductoForm(forms.ModelForm):
+    producto = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        label='ID del Producto'
+    )
 
     class Meta:
-        model = DetalleVentaManual  # Especifica el modelo asociado
-        fields = ['producto', 'cantidad']  # Campos incluidos en el formulario
-        widgets = {
-            'cantidad': forms.NumberInput(attrs={'class': 'form-control'}),  # Widget personalizado para el campo de cantidad
-        }
+        model = DetalleVentaManual
+        fields = ['producto', 'cantidad']
 
     def clean_producto(self):
-        # Método para validar que el producto existe en la base de datos
         id_producto = self.cleaned_data['producto']
         try:
-            return Producto.objects.get(id=id_producto)  # Retorna el producto si existe
+            return Producto.objects.get(id=id_producto)
         except Producto.DoesNotExist:
-            raise ValidationError("Producto no encontrado.")  # Error si el producto no existe
+            raise ValidationError("Producto no encontrado.")
 
-# Formulario para detalles de venta manual relacionados con servicios
+# Formulario de detalle de servicios
 class DetalleVentaManualServicioForm(forms.ModelForm):
-    servicio = forms.IntegerField(widget=forms.NumberInput(attrs={'class': 'form-control'}), label='ID del Servicio')  # Campo para ingresar el ID del servicio
+    servicio = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        label='ID del Servicio'
+    )
 
     class Meta:
-        model = DetalleVentaManual  # Especifica el modelo asociado
-        fields = ['servicio']  # Campo incluido en el formulario
-
+        model = DetalleVentaManual
+        fields = ['servicio']
+    
     def clean_servicio(self):
-        # Método para validar que el servicio existe en la base de datos
         id_servicio = self.cleaned_data['servicio']
         try:
-            return Servicio.objects.get(id=id_servicio)  # Retorna el servicio si existe
+            return Servicio.objects.get(id=id_servicio)
         except Servicio.DoesNotExist:
-            raise ValidationError("Servicio no encontrado.")  # Error si el servicio no existe
+            raise ValidationError("Servicio no encontrado.")
 
+# Formset para gestionar múltiples detalles en una venta online
 DetalleVentaOnlineFormset = inlineformset_factory(
     VentaOnline,  # Modelo padre
     DetalleVentaOnline,  # Modelo hijo
@@ -175,10 +176,10 @@ DetalleVentaOnlineFormset = inlineformset_factory(
 )
 
 # Formset para gestionar múltiples detalles de productos en una venta manual
-DetalleVentaManualFormset = inlineformset_factory(
+DetalleVentaManualProductoFormset = inlineformset_factory(
     VentaManual,  # Modelo padre (VentaManual)
     DetalleVentaManual,  # Modelo hijo (DetalleVentaManual)
-    form=DetalleVentaManualForm,  # Formulario para los detalles
+    form=DetalleVentaManualProductoForm,  # Formulario para los detalles
     fields=('producto', 'cantidad',),  # Campos incluidos en el formset
     extra=1,  # Número de formularios adicionales para nuevas entradas
     can_delete=True  # Permite eliminar entradas en el formset

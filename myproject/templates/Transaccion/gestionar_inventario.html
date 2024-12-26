@@ -24,7 +24,7 @@
                     Aquí puedes gestionar el inventario de productos.
                 {% endif %}
             </p>
-            <a href="{% url 'listar_productos' %}" class="btn btn-primary">
+            <a href="{% url 'listar_productos' %}" class="btn btn-primary btn-sm">
                 {% if user.empleado.rol == 'Administrador' %}
                     Gestionar productos
                 {% endif %}
@@ -41,7 +41,7 @@
                     Aquí puedes gestionar la lista de servicios.
                 {% endif %}
             </p>
-            <a href="{% url 'listar_servicios' %}" class="btn btn-primary">
+            <a href="{% url 'listar_servicios' %}" class="btn btn-primary btn-sm">
                 {% if user.empleado.rol == 'Administrador' %}
                     Gestionar servicios
                 {% endif %}

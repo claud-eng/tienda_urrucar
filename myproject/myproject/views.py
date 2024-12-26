@@ -17,30 +17,10 @@ def sobre_nosotros(request):
     # Renderiza la plantilla 'about.html'
     return render(request, 'about.html')
 
-# Vista para la página del carrito de compras
-def carro(request):
-    # Renderiza la plantilla 'cart.html'
-    return render(request, 'cart.html')
-
-# Vista para la página de proceder con el pago
-def proceder_pago(request):
-    # Renderiza la plantilla 'checkout.html'
-    return render(request, 'checkout.html')
-
 # Vista para la página de contacto
 def contactanos(request):
     # Renderiza la plantilla 'contact.html'
     return render(request, 'contact.html')
-
-# Vista para la página de la tienda
-def tienda(request):
-    # Renderiza la plantilla 'shop.html'
-    return render(request, 'shop.html')
-
-# Vista para la página de detalle de un producto en la tienda
-def producto_tienda(request):
-    # Renderiza la plantilla 'shop-single.html'
-    return render(request, 'shop-single.html')
 
 # Vista para la página de agradecimiento tras un pago exitoso
 def regreso_pago(request):

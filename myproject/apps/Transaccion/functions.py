@@ -2,20 +2,21 @@ import base64  # Importa el módulo base64 para codificación y decodificación 
 import json  # Importa el módulo json para manejar datos en formato JSON.
 import matplotlib.pyplot as plt  # Importa pyplot de matplotlib para crear gráficos.
 from datetime import datetime, timedelta  # Importa datetime y timedelta para manejar fechas y tiempos.
+from django.conf import settings  # Importa la configuración de Django.
+from django.contrib.staticfiles import finders  # Permite localizar archivos estáticos.
+from django.core.mail import send_mail  # Importa la función para enviar correos electrónicos.
 from django.core.serializers.json import DjangoJSONEncoder  # Importa el codificador JSON específico de Django.
 from django.db.models import Sum  # Importa Sum para realizar sumas agregadas en consultas de modelos.
 from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse  # Importa clases de respuesta y redirección HTTP.
 from django.shortcuts import get_object_or_404, redirect, render  # Importa funciones de atajos para renderizar y redireccionar vistas.
 from django.utils import timezone  # Importa el módulo timezone para manejar zonas horarias.
 from io import BytesIO  # Importa BytesIO para manejo de flujos de datos en memoria.
-from reportlab.lib import colors  # Importa colores de ReportLab para crear gráficos.
-from reportlab.lib.pagesizes import letter  # Importa el tamaño de página 'letter' de ReportLab.
+from reportlab.lib import colors  # Importa colores de ReportLab para crear gráficos y personalizar PDFs.
+from reportlab.lib.pagesizes import A4, letter  # Importa tamaños de página 'A4' y 'letter' de ReportLab.
 from reportlab.lib.utils import ImageReader  # Importa ImageReader de ReportLab para manejar imágenes en PDFs.
 from reportlab.pdfgen import canvas  # Importa canvas de ReportLab para generar documentos PDF.
 from reportlab.platypus import Table, TableStyle  # Importa Table y TableStyle de ReportLab para crear tablas en PDFs.
 from .models import Carrito, DetalleVentaOnline, DetalleVentaManual, VentaOnline, VentaManual, Producto, Servicio  # Importa modelos de la aplicación actual.
-from django.core.mail import send_mail
-from django.conf import settings
 
 # Diccionario de meses en español
 MES_ESPANOL = {
@@ -24,204 +25,163 @@ MES_ESPANOL = {
     9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
 }
 
-def generar_comprobante_pdf_correo(orden):
-    """
-    Genera un PDF del comprobante de la orden de compra para enviar por correo.
-    Incluye detalles del cliente, tipo de pago y productos comprados.
-    """
-    buffer = BytesIO()
-    p = canvas.Canvas(buffer)
+TIPO_PAGO_CONVERSION = {
+    'VD': 'Venta Débito',
+    'VN': 'Venta Normal',
+    'VC': 'Venta en Cuotas',
+    'SI': '3 Cuotas sin Interés',
+    'S2': '2 Cuotas sin Interés',
+    'NC': 'N Cuotas sin Interés',
+    'VP': 'Venta Prepago'
+}
 
-    # Cabecera y datos principales de la orden
-    p.drawString(100, 800, "Empresa: Automotriz Urrutia")
-    p.drawString(100, 785, "Número de Orden: {}".format(orden.numero_orden))
-
-    # Verificar si el cliente es autenticado o anónimo
-    if orden.cliente:
-        # Extraer nombre, apellido y correo del cliente autenticado
-        nombre = orden.cliente.user.first_name if orden.cliente.user.first_name else "No disponible"
-        apellido = orden.cliente.user.last_name if orden.cliente.user.last_name else ""
-        correo = orden.cliente.user.username  # Username tratado como correo electrónico
-        p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
-        p.drawString(100, 755, "Correo: {}".format(correo))
-    elif orden.cliente_anonimo:
-        # Datos del cliente anónimo
-        nombre = orden.cliente_anonimo.nombre if orden.cliente_anonimo.nombre else "Anónimo"
-        apellido = orden.cliente_anonimo.apellido if orden.cliente_anonimo.apellido else ""
-        p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
-        p.drawString(100, 755, "Correo: {}".format(orden.cliente_anonimo.email))
+# Función para generar un comprobante de pago en formato pdf
+def generar_comprobante_pago_pdf(tipo_venta, id_venta=None, numero_orden=None, enviar_por_correo=False):
+    if tipo_venta == 'manual':
+        venta = get_object_or_404(VentaManual, id=id_venta)
+        detalles = venta.detalleventamanual_set.all()
+        filename = f"comprobante_pago_{venta.id}.pdf"
+    elif tipo_venta == 'online':
+        venta = get_object_or_404(VentaOnline, numero_orden=numero_orden)
+        detalles = DetalleVentaOnline.objects.filter(orden_compra=venta)
+        filename = f"comprobante_pago_{venta.numero_orden}.pdf"
     else:
-        p.drawString(100, 770, "Cliente: Información no disponible")
-        p.drawString(100, 755, "Correo: No disponible")
+        raise ValueError("Tipo de venta no reconocido")
 
-    # Fecha y hora de la orden
-    fecha_local = timezone.localtime(orden.fecha)
-    p.drawString(100, 740, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
-    p.drawString(100, 725, "Detalle:")
+    # Crear el PDF
+    if enviar_por_correo:
+        buffer = BytesIO()
+        p = canvas.Canvas(buffer, pagesize=A4)
+    else:
+        response = HttpResponse(content_type='application/pdf')
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        p = canvas.Canvas(response, pagesize=A4)
 
-    # Detalles de cada producto o servicio
-    y = 710
-    detalles = DetalleVentaOnline.objects.filter(orden_compra=orden)
+    width, height = A4
+    logo_path = finders.find('images/logo.png')
+
+    # Agregar Logo
+    p.drawImage(logo_path, 38, height - 146.5, width=150, height=150, preserveAspectRatio=True, mask='auto')
+
+    # Título y cabecera
+    p.setFont("Helvetica-Bold", 16)
+    titulo = "Urrucar Automotriz"
+    titulo_ancho = p.stringWidth(titulo, "Helvetica-Bold", 16)
+    p.drawString((width - titulo_ancho) / 2, height - 80, titulo)
+
+    p.setFont("Helvetica", 12)
+    subtitulo = "Comprobante de Pago"
+    subtitulo_ancho = p.stringWidth(subtitulo, "Helvetica", 12)
+    p.drawString((width - subtitulo_ancho) / 2, height - 100, subtitulo)
+
+    # Datos del cliente
+    y = height - 150
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y, "Orden de Venta:")
+    p.setFont("Helvetica", 11)
+    p.drawString(180, y, str(venta.numero_orden if tipo_venta == 'online' else venta.id))
+
+    y -= 20
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y, "Cliente:")
+    if venta.cliente:
+        nombre_cliente = venta.cliente.user.first_name
+        apellido_cliente = venta.cliente.user.last_name
+    else:
+        nombre_cliente = venta.cliente_anonimo.nombre
+        apellido_cliente = venta.cliente_anonimo.apellido
+
+    nombre_completo = f"{nombre_cliente} {apellido_cliente}".strip()
+    p.setFont("Helvetica", 11)
+    p.drawString(180, y, nombre_completo)
+
+    y -= 20
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y, "Correo:")
+    correo_cliente = venta.cliente.user.email if venta.cliente else venta.cliente_anonimo.email
+    p.setFont("Helvetica", 11)
+    p.drawString(180, y, correo_cliente)
+
+    y -= 20
+    p.setFont("Helvetica-Bold", 11)
+    p.drawString(50, y, "Fecha y Hora:")
+    fecha_venta = timezone.localtime(venta.fecha if tipo_venta == 'online' else venta.fecha_creacion)
+    p.setFont("Helvetica", 11)
+    p.drawString(180, y, fecha_venta.strftime("%d/%m/%Y %H:%M"))
+
+    # Línea separadora
+    p.line(50, y - 10, 550, y - 10)
+    y -= 30
+
+    # Detalles de productos o servicios
+    p.setFont("Helvetica-Bold", 12)
+    p.drawString(50, y, "Detalle:")
+    y -= 30
+
     for detalle in detalles:
         producto_o_servicio = detalle.producto if detalle.producto else detalle.servicio
-        p.drawString(
-            120, y, 
-            "{} - Cantidad: {} - Precio: ${}".format(
-                producto_o_servicio.nombre, detalle.cantidad, detalle.precio
+        if hasattr(detalle, 'precio'):  # DetalleVentaOnline
+            precio_unitario = detalle.precio
+        else:  # DetalleVentaManual
+            precio_unitario = (
+                detalle.producto.precio if detalle.producto
+                else detalle.servicio.precio if detalle.servicio
+                else 0
             )
-        )
-        y -= 15
 
-        # Evitar que se salga de la página
+        precio_formateado = format(int(precio_unitario), ',').replace(',', '.')
+        p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio: ${precio_formateado}")
+        y -= 20
         if y < 50:
             p.showPage()
-            y = 800
+            y = height - 100
             p.drawString(100, y, "Detalle (continuación):")
-            y -= 15
+            y -= 30
 
-    # Detalles del tipo de pago y el total
-    tipo_pago_conversion = {
-        'VD': 'Venta Débito',
-        'VN': 'Venta Normal',
-        'VC': 'Venta en Cuotas',
-        'SI': '3 Cuotas sin Interés',
-        'S2': '2 Cuotas sin Interés',
-        'NC': 'N Cuotas sin Interés',
-        'VP': 'Venta Prepago'
-    }
-    tipo_pago = tipo_pago_conversion.get(orden.tipo_pago, orden.tipo_pago)
-    monto_cuotas = orden.monto_cuotas if orden.monto_cuotas is not None else 0
+    # Línea separadora
+    p.line(50, y, 550, y)
+    y -= 30
 
-    p.drawString(100, y, "Tipo de Pago: {}".format(tipo_pago))
-    p.drawString(100, y-15, "Monto de Cuotas: ${}".format(monto_cuotas))
-    p.drawString(100, y-30, "Número de Cuotas: {}".format(orden.numero_cuotas))
-    p.drawString(100, y-45, "Total (IVA incluido): ${}".format(orden.total))
-
-    p.showPage()
-    p.save()
-
-    buffer.seek(0)
-    return buffer
-
-def generar_comprobante_online(request, numero_orden):
-    """
-    Genera un PDF en línea para descargar, que incluye detalles de la orden,
-    tipo de pago y el total, y lo devuelve como una respuesta HTTP.
-    """
-    orden = get_object_or_404(VentaOnline, numero_orden=numero_orden)
-    detalles = DetalleVentaOnline.objects.filter(orden_compra=orden)
-
-    # Configuración de respuesta para descargar el PDF
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = 'attachment; filename="comprobante_orden_{}.pdf"'.format(orden.numero_orden)
-
-    # Crear el contenido del PDF
-    p = canvas.Canvas(response)
-
-    # Datos de la empresa
-    p.drawString(100, 800, "Empresa: Automotriz Urrutia")
-    p.drawString(100, 785, "Número de Orden: {}".format(orden.numero_orden))
-
-    # Datos del cliente autenticado o anónimo
-    if orden.cliente:
-        nombre = orden.cliente.user.first_name
-        apellido = orden.cliente.user.last_name
-        email = orden.cliente.user.username
-    elif orden.cliente_anonimo:
-        nombre = orden.cliente_anonimo.nombre
-        apellido = orden.cliente_anonimo.apellido
-        email = orden.cliente_anonimo.email
-    else:
-        nombre = "No disponible"
-        apellido = "No disponible"
-        email = "No disponible"
-
-    # Imprimir los datos del cliente
-    p.drawString(100, 770, "Cliente: {} {}".format(nombre, apellido))
-    p.drawString(100, 755, "Correo Electrónico: {}".format(email))
-
-    # Fecha y hora de la orden
-    fecha_local = timezone.localtime(orden.fecha)
-    p.drawString(100, 740, "Fecha y Hora: {}".format(fecha_local.strftime("%d/%m/%Y %H:%M")))
-    p.drawString(100, 725, "Detalle:")
-
-    # Detalle de productos o servicios
-    y = 710
-    for detalle in detalles:
-        producto_o_servicio = detalle.producto if detalle.producto else detalle.servicio
-        p.drawString(120, y, "{} - Cantidad: {} - Precio: ${}".format(producto_o_servicio.nombre, detalle.cantidad, detalle.precio))
-        y -= 15
-
-    # Tipo de pago y total
-    tipo_pago_conversion = {
-        'VD': 'Venta Débito',
-        'VN': 'Venta Normal',
-        'VC': 'Venta en Cuotas',
-        'SI': '3 Cuotas sin Interés',
-        'S2': '2 Cuotas sin Interés',
-        'NC': 'N Cuotas sin Interés',
-        'VP': 'Venta Prepago'
-    }
-    tipo_pago = tipo_pago_conversion.get(orden.tipo_pago, orden.tipo_pago)
-    monto_cuotas = orden.monto_cuotas if orden.monto_cuotas is not None else 0
-
-    p.drawString(100, y, "Tipo de Pago: {}".format(tipo_pago))
-    p.drawString(100, y-15, "Monto de Cuotas: ${}".format(monto_cuotas))
-    p.drawString(100, y-30, "Número de Cuotas: {}".format(orden.numero_cuotas))
-    p.drawString(100, y-45, "Total (IVA incluido): ${}".format(orden.total))
-
-    p.showPage()
-    p.save()
-    return response
-
-def generar_comprobante(request, id_venta):
-    """
-    Genera un PDF de comprobante para una venta, que incluye el nombre del
-    cliente, productos y/o servicios comprados, el total pagado y el vuelto.
-    """
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename="comprobante_venta_{id_venta}.pdf"'
-
-    p = canvas.Canvas(response)
-    venta = VentaManual.objects.get(id=id_venta)
-    detalles = venta.detalleventamanual_set.all()
-
-    y = 800  # Posición inicial en el eje Y para el texto
-
-    # Cabecera de la empresa y detalles de venta
+    # Total y tipo de pago
+    tipo_pago = (
+        TIPO_PAGO_CONVERSION.get(venta.tipo_pago, venta.tipo_pago)
+        if hasattr(venta, 'tipo_pago') else 'Venta Manual'
+    )
     p.setFont("Helvetica-Bold", 12)
-    p.drawString(100, y, "Empresa: Automotriz Urrutia")
+    p.drawString(50, y, f"Tipo de Pago: {tipo_pago}")
+    y -= 20
+    p.drawString(50, y, f"Total (IVA incluido): ${format(int(venta.total), ',').replace(',', '.')}")
     y -= 20
 
-    p.drawString(100, y, f"Orden de Venta: {venta.id}")
-
-    # Verificación de cliente anónimo
-    if venta.cliente.user.username != "anonimo@gmail.com":
-        p.drawString(100, y-20, f"Cliente: {venta.cliente.user.username}")
-        y -= 40
-    else:
+    if tipo_venta == 'manual':
+        p.drawString(50, y, f"Pagó: ${format(int(venta.pago_cliente), ',').replace(',', '.')}")
         y -= 20
-
-    p.drawString(100, y-20, f"Fecha: {venta.fecha_creacion.strftime('%d/%m/%Y %H:%M')}")
-    p.drawString(100, y-40, "Detalle:")
-
-    # Detalles de productos y servicios
-    y -= 80
-    for detalle in detalles:
-        if detalle.producto:
-            p.drawString(120, y, f"Producto: {detalle.producto.nombre} - Cantidad: {detalle.cantidad} - Precio Unitario: ${detalle.producto.precio}")
-            y -= 20
-        if detalle.servicio:
-            p.drawString(120, y, f"Servicio: {detalle.servicio.nombre} - Precio: ${detalle.servicio.precio}")
-            y -= 20
-
-    # Total, pago y vuelto
-    p.drawString(100, y-20, f"Total (IVA incluido): ${venta.total}")
-    p.drawString(100, y-40, f"Pagó: ${venta.pago_cliente}")
-    p.drawString(100, y-60, f"Vuelto: ${venta.cambio}")
+        p.drawString(50, y, f"Vuelto: ${format(int(venta.cambio), ',').replace(',', '.')}")
+    else:
+        p.drawString(50, y, f"Número de Cuotas: {venta.numero_cuotas or 0}")
+        y -= 20
+        p.drawString(50, y, f"Monto de Cuotas: ${format(int(venta.monto_cuotas or 0), ',').replace(',', '.')}")
 
     p.showPage()
     p.save()
+
+    if enviar_por_correo:
+        buffer.seek(0)
+        return buffer
+    else:
+        return response
+
+# Función para poder descargar el comprobante de pago
+def descargar_comprobante_pago(request, tipo_venta, identificador):
+    if tipo_venta == 'manual':
+        venta = get_object_or_404(VentaManual, id=identificador)
+        response = generar_comprobante_pago_pdf(tipo_venta='manual', id_venta=venta.id, enviar_por_correo=False)
+    elif tipo_venta == 'online':
+        venta = get_object_or_404(VentaOnline, numero_orden=identificador)
+        response = generar_comprobante_pago_pdf(tipo_venta='online', numero_orden=venta.numero_orden, enviar_por_correo=False)
+    else:
+        return HttpResponse("Tipo de venta no válido", status=400)
+    
     return response
 
 def generar_grafico_base64(datos):
@@ -243,19 +203,26 @@ def generar_grafico_base64(datos):
 
 def calcular_rango_fechas(anio, tipo, valor):
     """
-    Calcula el rango de fechas basado en el tipo de filtro (mes, trimestre o semestre).
+    Calcula el rango de fechas basado en el tipo de filtro (mes, trimestre, semestre o anual).
     """
     if tipo == 'mes':
         fecha_inicio = datetime(anio, valor, 1)
         fecha_fin = datetime(anio, valor + 1, 1) if valor < 12 else datetime(anio + 1, 1, 1)
+    
     elif tipo == 'trimestre':
         fecha_inicio = datetime(anio, 3 * (valor - 1) + 1, 1)
         mes_fin = 3 * valor
         fecha_fin = datetime(anio, mes_fin + 1, 1) if mes_fin < 12 else datetime(anio + 1, 1, 1)
+    
     elif tipo == 'semestre':
         fecha_inicio = datetime(anio, 6 * (valor - 1) + 1, 1)
         mes_fin = 6 * valor
         fecha_fin = datetime(anio, mes_fin + 1, 1) if mes_fin < 12 else datetime(anio + 1, 1, 1)
+
+    elif tipo == 'anual':
+        fecha_inicio = datetime(anio, 1, 1)
+        fecha_fin = datetime(anio + 1, 1, 1)
+
     return fecha_inicio, fecha_fin
 
 def top_cinco_productos_manuales(anio, mes):
@@ -264,7 +231,7 @@ def top_cinco_productos_manuales(anio, mes):
     """
     fecha_inicio = datetime(anio, mes, 1)
     fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
-    return Producto.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
+    return Producto.objects.filter(detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
 def top_cinco_servicios_manuales(anio, mes):
     """
@@ -272,32 +239,41 @@ def top_cinco_servicios_manuales(anio, mes):
     """
     fecha_inicio = datetime(anio, mes, 1)
     fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
-    return Servicio.objects.filter(detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
+    return Servicio.objects.filter(detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
 def reporte_ventas_manuales(request):
     """
-    Genera el contexto para la vista de reportes de ventas en la interfaz.
+    Genera el contexto para la vista de reportes de ventas manuales.
     Incluye el top 5 de productos y servicios en JSON para gráficos y mensajes
-    si no hay datos. Permite filtrar por mes, trimestre y semestre.
+    si no hay datos. Permite filtrar por mes, trimestre, semestre o anual.
     """
     anio_actual = datetime.now().year
     mes_actual = datetime.now().month
 
     # Obtener parámetros del GET (filtro dinámico)
     anio = int(request.GET.get('anio', anio_actual))
-    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre'
-    valor_filtro = int(request.GET.get('valor_filtro', mes_actual))
+    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre', 'anual'
+    valor_filtro = int(request.GET.get('valor_filtro', mes_actual)) if tipo_filtro != 'anual' else None
 
     # Calcular rango de fechas según el filtro
     fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
 
+    # Calcular el total de ventas (productos y servicios) en general
+    total_productos = Producto.objects.filter(
+        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+    ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
+
+    total_servicios = Servicio.objects.filter(
+        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+    ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
+
     # Obtener datos de ventas en ese rango de fechas
     top_cinco_productos = Producto.objects.filter(
-        detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
     ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
     top_cinco_servicios = Servicio.objects.filter(
-        detalleventamanual__orden_venta__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
     ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
     # Mensajes si no hay productos o servicios vendidos
@@ -305,10 +281,12 @@ def reporte_ventas_manuales(request):
     mensaje_servicios = ""
 
     if not top_cinco_productos:
-        mensaje_productos = f"No se han registrado ventas de productos en el {tipo_filtro} seleccionado."
+        filtro_texto = "año" if tipo_filtro == 'anual' else tipo_filtro
+        mensaje_productos = f"No se han registrado ventas de productos en el {filtro_texto} seleccionado."
 
     if not top_cinco_servicios:
-        mensaje_servicios = f"No se han registrado ventas de servicios en el {tipo_filtro} seleccionado."
+        filtro_texto = "año" if tipo_filtro == 'anual' else tipo_filtro
+        mensaje_servicios = f"No se han registrado ventas de servicios en el {filtro_texto} seleccionado."
 
     # Preparar datos para gráficos (JSON)
     datos_productos = json.dumps({
@@ -328,11 +306,11 @@ def reporte_ventas_manuales(request):
         9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
     }
 
-    # Trimestres y semestres para mostrar en el filtro
+    # Trimestres, semestres y filtro anual
     trimestres = {1: '1er Trimestre', 2: '2do Trimestre', 3: '3er Trimestre', 4: '4to Trimestre'}
     semestres = {1: '1er Semestre', 2: '2do Semestre'}
 
-    nombre_mes = meses.get(valor_filtro, "Mes desconocido")
+    nombre_mes = meses.get(valor_filtro, "Anual") if tipo_filtro != 'anual' else "Anual"
 
     datos_grafico = {
         'labels': [producto.nombre for producto in top_cinco_productos],
@@ -344,6 +322,8 @@ def reporte_ventas_manuales(request):
     contexto = {
         'datos_productos_json': datos_productos,
         'datos_servicios_json': datos_servicios,
+        'total_productos': total_productos,
+        'total_servicios': total_servicios,
         'mensaje_productos': mensaje_productos,
         'mensaje_servicios': mensaje_servicios,
         'rango_anios': range(2022, 2028),
@@ -392,18 +372,27 @@ def top_cinco_servicios_online(anio, mes):
 def reporte_ventas_online(request):
     """
     Genera el contexto para el reporte de ventas online.
-    Permite filtrar por mes, trimestre o semestre.
+    Permite filtrar por mes, trimestre, semestre o anual.
     """
     anio_actual = datetime.now().year
     mes_actual = datetime.now().month
 
     # Obtener parámetros del GET (filtro dinámico)
     anio = int(request.GET.get('anio', anio_actual))
-    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre'
-    valor_filtro = int(request.GET.get('valor_filtro', mes_actual))
+    tipo_filtro = request.GET.get('tipo_filtro', 'mes')  # 'mes', 'trimestre', 'semestre', 'anual'
+    valor_filtro = int(request.GET.get('valor_filtro', mes_actual)) if tipo_filtro != 'anual' else None
 
     # Calcular rango de fechas según el filtro
     fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
+
+    # Obtener el total general de ventas (productos y servicios)
+    total_productos = Producto.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
+
+    total_servicios = Servicio.objects.filter(
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
 
     # Obtener datos de ventas online dentro del rango
     top_cinco_productos = Producto.objects.filter(
@@ -419,10 +408,12 @@ def reporte_ventas_online(request):
     mensaje_servicios = ""
 
     if not top_cinco_productos:
-        mensaje_productos = f"No se han registrado ventas de productos online en el {tipo_filtro} seleccionado."
+        filtro_texto = "año" if tipo_filtro == 'anual' else tipo_filtro
+        mensaje_productos = f"No se han registrado ventas de productos online en el {filtro_texto} seleccionado."
 
     if not top_cinco_servicios:
-        mensaje_servicios = f"No se han registrado ventas de servicios online en el {tipo_filtro} seleccionado."
+        filtro_texto = "año" if tipo_filtro == 'anual' else tipo_filtro
+        mensaje_servicios = f"No se han registrado ventas de servicios online en el {filtro_texto} seleccionado."
 
     # Preparar datos para gráficos (JSON)
     datos_productos = json.dumps({
@@ -442,11 +433,11 @@ def reporte_ventas_online(request):
         9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
     }
 
-    # Trimestres y semestres para mostrar en el filtro
+    # Trimestres, semestres y filtro anual para mostrar en el filtro
     trimestres = {1: '1er Trimestre', 2: '2do Trimestre', 3: '3er Trimestre', 4: '4to Trimestre'}
     semestres = {1: '1er Semestre', 2: '2do Semestre'}
 
-    nombre_mes = meses.get(valor_filtro, "Mes desconocido")
+    nombre_mes = meses.get(valor_filtro, "Mes desconocido") if tipo_filtro != 'anual' else "Anual"
 
     datos_grafico = {
         'labels': [producto.nombre for producto in top_cinco_productos],
@@ -458,6 +449,8 @@ def reporte_ventas_online(request):
     contexto = {
         'datos_productos_json': datos_productos,
         'datos_servicios_json': datos_servicios,
+        'total_productos': total_productos,
+        'total_servicios': total_servicios,
         'mensaje_productos': mensaje_productos,
         'mensaje_servicios': mensaje_servicios,
         'rango_anios': range(2022, 2028),

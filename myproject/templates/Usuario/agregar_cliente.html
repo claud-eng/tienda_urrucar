@@ -29,7 +29,7 @@
             {{ form.as_p }}
             
             <!-- Si el usuario está logeado como empleado aparece el botón de agregar, en caso contrario Registrarse -->
-            <button type="submit" class="btn btn-success">
+            <button type="submit" class="btn btn-success btn-sm">
                 {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
                     Agregar
                 {% else %}
@@ -37,15 +37,15 @@
                 {% endif %}
             </button>
             <!-- Botón para mostrar/ocultar contraseña -->
-            <button type="button" id="toggle-password" class="btn btn-info">Mostrar Contraseña</button>
+            <button type="button" id="toggle-password" class="btn btn-info btn-sm">Mostrar Contraseña</button>
             {% if user.is_authenticated %}
                 {% if user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
-                    <a href="{% url 'listar_clientes' %}" class="btn btn-secondary">Volver atrás</a>
+                    <a href="{% url 'listar_clientes' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
                 {% endif %}
             {% else %}
-                <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
             {% endif %}
         </form>
     </div>

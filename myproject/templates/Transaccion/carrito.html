@@ -129,9 +129,10 @@
                                 <td>${{ item.precio_formateado }}</td>
                                 <td>
                                     {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %} 
-                                        ${{ item.item.precio_reserva_formateado }} 
+                                        ${{ item.precio_unitario }}
                                     {% endif %}
                                 </td>
+                                
                                 <td>${{ item.precio_total_formateado }}</td>
                                 <td>
                                     <!-- Botones para acciones en el carrito -->

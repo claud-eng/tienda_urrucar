@@ -8,8 +8,8 @@
         <div class="col-md-8">
             <h2>Confirmar Borrado</h2>
             <p>¿Estás seguro de que deseas eliminar al empleado "{{ empleado.user.username }}"?</p>
-            <a href="{% url 'borrar_empleado' empleado.id %}" class="btn btn-danger">Confirmar Borrado</a>
-            <a href="{% url 'listar_empleados' %}" class="btn btn-secondary">Cancelar</a>   
+            <a href="{% url 'borrar_empleado' empleado.id %}" class="btn btn-danger btn-sm">Confirmar Borrado</a>
+            <a href="{% url 'listar_empleados' %}" class="btn btn-secondary btn-sm">Cancelar</a>   
         </div>
     </div>
 </div>

@@ -3,10 +3,16 @@
 {% block content %}
 
 <style>
-    .estado-column {
+    .table td, .table th {
+        vertical-align: middle;
+        text-align: center;
+    }
+    .estado-column span {
         min-width: 180px; /* Establece un ancho mínimo para la columna "Estado" */
+        display: inline-block;
     }
 </style>
+
 <div class="container mt-5">
     <h2>Lista de Productos</h2>
 
@@ -20,7 +26,7 @@
     {% endif %}
     {% if user.empleado and user.empleado.rol == 'Administrador' %}
     <!-- Botón para agregar un nuevo producto -->
-    <a href="{% url 'agregar_producto' %}" class="btn btn-success mb-2">Agregar Producto</a>
+    <a href="{% url 'agregar_producto' %}" class="btn btn-success btn-sm mb-2">Agregar Producto</a>
     {% endif %}
     <!-- Filtros de búsqueda -->
     <form method="GET" class="form-control-file mb-2">
@@ -68,12 +74,12 @@
             </select>
         </div>
             
-        <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-        <a href="{% url 'listar_productos' %}" class="btn btn-outline-danger ml-2">Quitar Filtros</a>
+        <button type="submit" class="btn btn-outline-primary btn-sm">Filtrar</button>
+        <a href="{% url 'listar_productos' %}" class="btn btn-outline-danger btn-sm ml-2">Quitar Filtros</a>
     </form>
 
     <table class="table table-responsive">
-        <thead>
+        <thead class="thead-dark">
             <tr>
                 <th>ID</th>
                 <th>Nombre</th>
@@ -95,7 +101,7 @@
         </thead>
         <tbody>
             {% for producto in productos %}
-                <tr>
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
                     <td>{{ producto.id }}</td>
                     <td>{{ producto.nombre }}</td>
                     <td>{{ producto.marca }}</td>
@@ -134,7 +140,7 @@
                 </tr>
             {% endfor %}
         </tbody>
-    </table>
+    </table>    
 
     <nav aria-label="Paginación">
         <ul class="pagination">
@@ -166,12 +172,12 @@
     
     <!-- "Volver atrás" con la clase btn btn-secondary -->
     {% if has_search_query_username or has_search_query_rut %}
-    <a href="{% url 'listar_productos' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+    <a href="{% url 'listar_productos' %}"><button class="btn btn-secondary btn-sm">Volver atrás</button></a>
     {% endif %}
     
     <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
     {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-    <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+    <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger btn-sm">Volver al menú principal</button></a>
     {% endif %}
 </div>
 

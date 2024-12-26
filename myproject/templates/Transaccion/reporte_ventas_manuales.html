@@ -35,6 +35,7 @@
 
     <!-- Formulario para seleccionar año, tipo de filtro y valor -->
     <form action="{% url 'reporte_ventas_manuales' %}" method="get">
+        
         <div class="row">
             <div class="col">
                 <label for="anio">Año:</label>
@@ -50,18 +51,26 @@
                     <option value="mes" {% if tipo_filtro == 'mes' %}selected{% endif %}>Mensual</option>
                     <option value="trimestre" {% if tipo_filtro == 'trimestre' %}selected{% endif %}>Trimestral</option>
                     <option value="semestre" {% if tipo_filtro == 'semestre' %}selected{% endif %}>Semestral</option>
+                    <option value="anual" {% if tipo_filtro == 'anual' %}selected{% endif %}>Anual</option>
                 </select>
             </div>
-            <div class="col">
+            
+            <div class="col" id="valorFiltroContainer">
                 <label for="valor_filtro">Valor:</label>
                 <select id="valor_filtro" name="valor_filtro" class="form-control">
-                    <!-- Opciones se generarán dinámicamente -->
+                    <!-- Opciones generadas dinámicamente -->
                 </select>
             </div>
         </div>
-        <button type="submit" class="btn btn-primary mt-2">Mostrar Reporte</button>
-        <p><a href="javascript:history.back()" class="btn btn-secondary mt-2">Volver atrás</a></p>
+        <button type="submit" class="btn btn-primary btn-sm mt-2">Mostrar Reporte</button>
+        <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
     </form>
+
+        <!-- Mostrar el total de ventas -->
+        <div class="mt-4">
+            <h4>Total de Productos Vendidos: {{ total_productos }}</h4>
+            <h4>Total de Servicios Vendidos: {{ total_servicios }}</h4>
+        </div>
 
     <div class="row mt-4">
         <!-- Productos -->
@@ -151,23 +160,30 @@
     // Actualizar el select de valor_filtro dinámicamente
     function actualizarValores() {
         const tipoFiltro = document.getElementById('tipo_filtro').value;
+        const valorFiltroContainer = document.getElementById('valorFiltroContainer');
         const valorFiltro = document.getElementById('valor_filtro');
         
         let opciones = [];
         valorFiltro.innerHTML = "";  // Limpiar opciones previas
 
-        if (tipoFiltro === 'mes') {
-            opciones = meses.map((mes, index) => 
-                `<option value="${index + 1}" ${index + 1 == valorFiltroSeleccionado ? 'selected' : ''}>${mes}</option>`);
-        } else if (tipoFiltro === 'trimestre') {
-            opciones = rangoTrimestres.map(trimestre => 
-                `<option value="${trimestre}" ${trimestre == valorFiltroSeleccionado ? 'selected' : ''}>${trimestre}er Trimestre</option>`);
-        } else if (tipoFiltro === 'semestre') {
-            opciones = rangoSemestres.map(semestre => 
-                `<option value="${semestre}" ${semestre == valorFiltroSeleccionado ? 'selected' : ''}>${semestre}er Semestre</option>`);
+        // Si es anual, oculta el valor del filtro
+        if (tipoFiltro === 'anual') {
+            valorFiltroContainer.style.display = 'none';
+        } else {
+            valorFiltroContainer.style.display = 'block';
+            
+            if (tipoFiltro === 'mes') {
+                opciones = meses.map((mes, index) => 
+                    `<option value="${index + 1}" ${index + 1 == valorFiltroSeleccionado ? 'selected' : ''}>${mes}</option>`);
+            } else if (tipoFiltro === 'trimestre') {
+                opciones = rangoTrimestres.map(trimestre => 
+                    `<option value="${trimestre}" ${trimestre == valorFiltroSeleccionado ? 'selected' : ''}>${trimestre}er Trimestre</option>`);
+            } else if (tipoFiltro === 'semestre') {
+                opciones = rangoSemestres.map(semestre => 
+                    `<option value="${semestre}" ${semestre == valorFiltroSeleccionado ? 'selected' : ''}>${semestre}er Semestre</option>`);
+            }
+            valorFiltro.innerHTML = opciones.join('');
         }
-
-        valorFiltro.innerHTML = opciones.join('');
     }
 
     // Llamar a la función para cargar valores iniciales

@@ -180,7 +180,7 @@ class VentaManual(models.Model):
 
 # Clase para detallar cada ítem (producto o servicio) en la venta manual
 class DetalleVentaManual(models.Model):
-    orden_venta = models.ForeignKey(VentaManual, on_delete=models.CASCADE, related_name='detalleventamanual_set')  # Venta a la que pertenece
+    orden_compra = models.ForeignKey(VentaManual, on_delete=models.CASCADE, related_name='detalleventamanual_set')  # Venta a la que pertenece
     producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)  # Producto en el detalle
     servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True)  # Servicio en el detalle
     cantidad = models.PositiveIntegerField(default=1)  # Cantidad del ítem
@@ -200,10 +200,10 @@ class DetalleVentaManual(models.Model):
         print(f"Guardando DetalleVentaManual: {self.producto}, Cantidad: {self.cantidad}, Subtotal: {self.subtotal}")
         super().save(*args, **kwargs)
         # Después de guardar, actualiza el total y cambio de la orden de venta
-        if self.orden_venta_id:
-            self.orden_venta.calcular_total()
-            self.orden_venta.calcular_cambio()
-            self.orden_venta.save()
+        if self.orden_compra_id:
+            self.orden_compra.calcular_total()
+            self.orden_compra.calcular_cambio()
+            self.orden_compra.save()
 
     def __str__(self):
         # Representación en cadena del detalle, indicando producto o servicio y cantidad

@@ -1,6 +1,7 @@
 from django.urls import include, path  # Importa 'path' para definir rutas de URL y 'include' para incluir otras configuraciones de URL.
 from . import views  # Importa las vistas definidas en el directorio actual.
 from .carrito import *  # Importa todas las funciones relacionadas con la gestión del carrito de compras.
+from .functions import descargar_comprobante_pago # Importa una función para descargar un comprobante de venta en formato pdf.
 from .webpay import iniciar_transaccion, transaccion_finalizada  # Importa funciones para iniciar y finalizar transacciones con Webpay.
 
 urlpatterns = [
@@ -17,6 +18,7 @@ urlpatterns = [
     path('catalogo_servicios', views.catalogo_servicios, name='catalogo_servicios'),  # Vista de catálogo de servicios
     path('confirmar-borrar-producto/<int:producto_id>/', views.confirmar_borrar_producto, name='confirmar_borrar_producto'),  # Confirmar borrado de producto
     path('confirmar-borrar-servicio/<int:servicio_id>/', views.confirmar_borrar_servicio, name='confirmar_borrar_servicio'),  # Confirmar borrado de servicio
+    path('transaccion/descargar-comprobante/<str:tipo_venta>/<str:identificador>/', descargar_comprobante_pago, name='descargar_comprobante_pago'), # Descargar comprobante de pago en formato pdf
     path('disminuir_cantidad/<int:item_id>/', disminuir_cantidad, name='disminuir_cantidad'),  # Disminuir cantidad de un ítem en el carrito
     path('editar_producto/<int:producto_id>', views.editar_producto, name="editar_producto"),  # Editar un producto
     path('eliminar_imagen_adicional/<int:imagen_id>/', views.eliminar_imagen_adicional, name='eliminar_imagen_adicional'),
@@ -35,8 +37,6 @@ urlpatterns = [
     path('reporte_ventas_online', views.reporte_ventas_online, name='reporte_ventas_online'),  # Reportes de ventas online
     path('transaccion_finalizada/', transaccion_finalizada, name='transaccion_finalizada'),  # Finalización de transacción de pago
     path('vaciar_carrito/', vaciar_carrito, name='vaciar_carrito'),  # Vaciar el carrito
-    path('ventas/comprobante/<int:id_venta>/', views.generar_comprobante, name='generar_comprobante'),  # Generar comprobante de venta
-    path('ventas_online/comprobante/<str:numero_orden>/', views.generar_comprobante_online, name='generar_comprobante_online'),  # Comprobante de ventas online
     path('ver_detalles_producto/<int:producto_id>/', ver_detalles_producto, name='ver_detalles_producto'),  # Ver detalles del producto
     path('ver_detalles_servicio/<int:servicio_id>/', ver_detalles_servicio, name='ver_detalles_servicio'),  # Ver detalles del servicio
     path('ver_reportes', views.ver_reportes, name='ver_reportes'),  # Visualizar reportes

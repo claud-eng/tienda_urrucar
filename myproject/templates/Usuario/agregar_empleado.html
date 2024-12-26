@@ -10,16 +10,16 @@
             {{ form.as_p }}
             
             <!-- Botón para mostrar/ocultar contraseña -->
-            <button type="submit" class="btn btn-primary">Agregar</button>
-            <button type="button" id="toggle-password" class="btn btn-info">Mostrar Contraseña</button>
+            <button type="submit" class="btn btn-primary btn-sm">Agregar</button>
+            <button type="button" id="toggle-password" class="btn btn-info btn-sm">Mostrar Contraseña</button>
             {% if user.is_authenticated %}
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
-                    <a href="{% url 'listar_empleados' %}" class="btn btn-secondary">Volver atrás</a>
+                    <a href="{% url 'listar_empleados' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
                 {% else %}
-                    <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                    <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
                 {% endif %}
             {% else %}
-                <a href="{% url 'login' %}" class="btn btn-secondary">Volver atrás</a>
+                <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
             {% endif %}
         </form>
     </div>

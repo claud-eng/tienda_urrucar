@@ -8,8 +8,8 @@
         <form method="post">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn btn-primary">Guardar Cambios</button>
-            <a href="{% url 'listar_empleados' %}" class="btn btn-secondary">Volver atrás</a>
+            <button type="submit" class="btn btn-primary btn-sm">Guardar Cambios</button>
+            <a href="{% url 'listar_empleados' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
         </form>
     </div>
 {% endblock %}

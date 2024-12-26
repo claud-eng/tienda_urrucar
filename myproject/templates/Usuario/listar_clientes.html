@@ -3,6 +3,14 @@
 {% block title %}Lista de clientes{% endblock %}
 
 {% block content %}
+
+<style>
+  .table td, .table th {
+      vertical-align: middle;
+      text-align: center;
+  }
+</style>
+
 <div class="container mt-5">
     <h2>Lista de clientes</h2>
 
@@ -16,50 +24,52 @@
     {% endif %}
 
     <!-- Botón para agregar cliente -->
-    <a href="{% url 'agregar_cliente' %}" class="btn btn-success mb-2">Agregar Cliente</a>
+    <a href="{% url 'agregar_cliente' %}" class="btn btn-success btn-sm mb-2">Agregar Cliente</a>
 
-    <form method="GET" class="form-inline mb-2">
-        <div class="form-group">
-            <label for="search-username">Buscar por nombre de usuario:</label>
-            <input type="text" class="form-control mx-2" id="search-username" name="username" placeholder="usuario@gmail.com">
-        </div>
-        <button type="submit" class="btn btn-primary">Buscar</button>
-    </form>
-
+    <form method="GET" class="form-control-file mb-2">
+      <div class="form-group">
+          <label for="search-username">Buscar por nombre de usuario:</label>
+          <input type="text" class="form-control mx-2" id="search-username" name="username" placeholder="usuario@gmail.com">
+      </div>
+      <div>
+          <button type="submit" class="btn btn-outline-primary btn-sm mb-2">Filtrar</button>
+          <a href="{% url 'listar_clientes' %}" class="btn btn-outline-danger btn-sm mb-2">Quitar Filtro</a>
+      </div>
+  </form>
+  
     <table class="table table-responsive">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Usuario</th>
-                <th>Nombre</th>
-                <th>Primer Apellido</th>
-                <th>Segundo Apellido</th>
-                <th>Fecha de Nacimiento</th>
-                <th>Número de Teléfono</th>
-                <th>Acciones</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for c in clientes %}
-            <tr>
-                <td>{{ c.id }}</td>
-                <td>{{ c.user }}</td>
-                <td>{{ c.user.first_name }}</td>
-                <td>{{ c.user.last_name }}</td>
-                <td>{{ c.second_last_name }}</td>
-                <td>{{ c.fecha_nacimiento }}</td>
-                <td>{{ c.numero_telefono }}</td>
-                <td>
-                  <div class="d-flex align-items-center">
-                    <!-- Botones para editar y borrar cliente -->
-                      <a href="{% url 'editar_cliente' c.id %}" class="btn btn-primary btn-sm">Editar</a>
-                      <a href="{% url 'confirmar_borrar_cliente' c.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
-                  </div>
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+      <thead class="thead-dark">
+          <tr>
+              <th>Id</th>
+              <th>Usuario</th>
+              <th>Nombre</th>
+              <th>Primer Apellido</th>
+              <th>Segundo Apellido</th>
+              <th>Fecha de Nacimiento</th>
+              <th>Número de Teléfono</th>
+              <th>Acciones</th>
+          </tr>
+      </thead>
+      <tbody>
+          {% for c in clientes %}
+          <tr class="{% cycle 'table-light' 'table-secondary' %}">
+              <td>{{ c.id }}</td>
+              <td>{{ c.user }}</td>
+              <td>{{ c.user.first_name }}</td>
+              <td>{{ c.user.last_name }}</td>
+              <td>{{ c.second_last_name }}</td>
+              <td>{{ c.fecha_nacimiento }}</td>
+              <td>{{ c.numero_telefono }}</td>
+              <td>
+                <div class="d-flex align-items-center">
+                    <a href="{% url 'editar_cliente' c.id %}" class="btn btn-primary btn-sm">Editar</a>
+                    <a href="{% url 'confirmar_borrar_cliente' c.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                </div>
+              </td>
+          </tr>
+          {% endfor %}
+      </tbody>
+  </table>  
     
     <nav aria-label="Paginación">
         <ul class="pagination">
@@ -91,14 +101,14 @@
           <!-- "Volver atrás" con la clase btn btn-secondary -->
           {% if has_search_query_username %}
 
-        <a href="{% url 'listar_clientes' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+        <a href="{% url 'listar_clientes' %}"><button class="btn btn-secondary btn-sm">Volver atrás</button></a>
 
           {% endif %}
           
           <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
           {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
 
-        <a href="{% url 'gestionar_cuentas' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+        <a href="{% url 'gestionar_cuentas' %}"><button class="btn btn-danger btn-sm">Volver al menú principal</button></a>
 
           {% endif %}
 </div>

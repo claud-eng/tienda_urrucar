@@ -9,7 +9,7 @@
       <div class="col-md-12 mb-0">
         <a href="{% url 'home' %}">Inicio</a> 
         <span class="mx-2 mb-0">/</span> 
-        <a href="{% url 'tienda' %}">Tienda</a> 
+        <a href="{% url 'catalogo_productos' %}">Productos</a> 
         <span class="mx-2 mb-0">/</span> 
         <strong class="text-black">{{ producto.nombre }}</strong>
       </div>
@@ -78,7 +78,7 @@
         {% else %}
         <p>No puedes realizar compras con una cuenta de empleado.</p>
         {% endif %}
-        <p><a href="javascript:history.back()" class="btn btn-secondary mt-2">Volver atrás</a></p>
+        <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
       </div>
     </div>
   </div>

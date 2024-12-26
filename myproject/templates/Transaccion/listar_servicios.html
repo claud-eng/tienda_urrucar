@@ -2,6 +2,13 @@
 {% block title %}Lista de Servicios{% endblock %}
 {% block content %}
 
+<style>
+    .table td, .table th {
+        vertical-align: middle;
+        text-align: center;
+    }
+</style>
+
 <div class="container mt-5">
     <h2>Lista de Servicios</h2>
 
@@ -15,7 +22,7 @@
     {% endif %}
     {% if user.empleado and user.empleado.rol == 'Administrador' %}
     <!-- Botón para agregar un nuevo servicio -->
-    <a href="{% url 'agregar_servicio' %}" class="btn btn-success mb-2">Agregar Servicio</a>
+    <a href="{% url 'agregar_servicio' %}" class="btn btn-success btn-sm mb-2">Agregar Servicio</a>
     {% endif %}
     <!-- Filtros de búsqueda -->
     <form method="GET" class="mb-4">
@@ -24,13 +31,13 @@
             <input type="text" class="form-control" id="search-nombre" name="nombre" placeholder="Nombre del Servicio">
         </div>
         <div class="mt-2">
-            <button type="submit" class="btn btn-outline-primary">Filtrar</button>
-            <a href="{% url 'listar_servicios' %}" class="btn btn-outline-danger ml-2">Quitar Filtros</a>
+            <button type="submit" class="btn btn-outline-primary btn-sm">Filtrar</button>
+            <a href="{% url 'listar_servicios' %}" class="btn btn-outline-danger btn-sm ml-2">Quitar Filtro</a>
         </div>
     </form>
     
     <table class="table table-responsive">
-        <thead>
+        <thead class="thead-dark">
             <tr>
                 <th>ID</th>
                 <th>Nombre</th>
@@ -44,7 +51,7 @@
         </thead>
         <tbody>
             {% for servicio in servicios %}
-                <tr>
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
                     <td>{{ servicio.id }}</td>
                     <td>{{ servicio.nombre }}</td>
                     <td style="text-align: justify;">{{ servicio.descripcion }}</td>
@@ -67,7 +74,7 @@
                 </tr>
             {% endfor %}
         </tbody>        
-    </table>
+    </table>    
 
     <nav aria-label="Paginación">
         <ul class="pagination">
@@ -99,14 +106,14 @@
           <!-- "Volver atrás" con la clase btn btn-secondary -->
           {% if has_search_query_username or has_search_query_rut %}
 
-        <a href="{% url 'listar_servicios' %}"><button class="btn btn-secondary">Volver atrás</button></a>
+        <a href="{% url 'listar_servicios' %}"><button class="btn btn-secondary btn-sm">Volver atrás</button></a>
 
           {% endif %}
           
           <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
           {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
 
-        <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
+        <a href="{% url 'gestionar_inventario' %}"><button class="btn btn-danger btn-sm">Volver al menú principal</button></a>
 
           {% endif %}
 </div>

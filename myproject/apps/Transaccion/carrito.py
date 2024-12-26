@@ -4,22 +4,31 @@ from django.contrib.contenttypes.models import ContentType  # Importa ContentTyp
 from django.db import transaction  # Importa transaction para manejar transacciones atómicas en la base de datos.
 from django.http import Http404, HttpResponseRedirect  # Importa Http404 para manejar errores de "No encontrado" y HttpResponseRedirect para redireccionar respuestas HTTP.
 from django.shortcuts import get_object_or_404, render, redirect  # Importa funciones auxiliares para manejo de vistas y redirecciones.
-from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos específicos usados en la aplicación.
-from .forms import ClienteAnonimoForm # Importa formulario para gestionar a los clientes anónimos.
+from django.utils.crypto import get_random_string  # Importa función para generar cadenas aleatorias seguras.
+from .forms import ClienteAnonimoForm  # Importa formulario para gestionar a los clientes anónimos.
+from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, Producto, Servicio, VentaOnline  # Importa modelos específicos usados en la aplicación.
 from .views import formato_precio  # Importa la función de formato de precio desde views.
 
-def obtener_session_key(request, reset=False):
+def obtener_session_key(request, reset=False, forzar_anonimo=False):
     """
     Obtiene o genera un identificador único para la sesión del navegador.
     Si reset=True, fuerza la creación de un nuevo session_key.
+    Si forzar_anonimo=True, genera un nuevo session_key anónimo sin usar la sesión del request.
     """
-    if reset:
-        request.session.flush()  # Limpia la sesión actual
-        request.session.create()  # Crea una nueva sesión con un nuevo session_key
-    elif not request.session.session_key:
-        request.session.create()
+    if forzar_anonimo:
+        # Genera un session_key único para clientes anónimos
+        while True:
+            session_key = 'anonimo_' + get_random_string(20)
+            if not ClienteAnonimo.objects.filter(session_key=session_key).exists():
+                return session_key
+    else:
+        if reset:
+            request.session.flush()
+            request.session.create()
+        elif not request.session.session_key:
+            request.session.create()
 
-    return request.session.session_key
+        return request.session.session_key
 
 def ver_detalles_producto(request, producto_id):
     """
@@ -210,8 +219,6 @@ def agregar_al_carrito(request, id, tipo):
 
     return redirect('carrito')
 
-from django.contrib.contenttypes.models import ContentType
-
 def carrito(request):
     """
     Muestra el contenido actual del carrito y gestiona la información de los clientes no registrados.
@@ -263,6 +270,9 @@ def carrito(request):
     for item in carrito_items:
         item.precio_formateado = formato_precio(item.item.precio)
         item.precio_total_formateado = formato_precio(item.obtener_precio_total())
+        
+        # Calcular el precio unitario y formatearlo
+        item.precio_unitario = formato_precio(item.obtener_precio_total() // item.cantidad)
 
         # Determina si es un servicio comparando el modelo del item
         is_servicio = item.content_type.model == "servicio"

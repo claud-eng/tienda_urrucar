@@ -38,7 +38,7 @@
                   </figure>
               <div class="block-4-text p-4">
                 <h3><a href="{% url 'ver_detalles_servicio' servicio.id %}">{{ servicio.nombre }}</a></h3>
-                <p class="mb-0">{{ servicio.descripcion|truncatewords:10 }}</p>
+                <br>
                 <p class="text-primary font-weight-bold">${{ servicio.precio_formateado }}</p>
               </div>
             </div>

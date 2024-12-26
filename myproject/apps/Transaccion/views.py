@@ -16,7 +16,7 @@ from django.db import transaction  # Importa 'transaction' para manejar transacc
 from django.db.models import Q, Count  # Importa 'Q' y 'Count' para construir consultas complejas.
 from email.headerregistry import ContentTypeHeader  # Importa 'ContentTypeHeader' para manipular encabezados de correo electrónico.
 from .context_processors import formato_precio  # Importa 'formato_precio' para formatear precios en contextos de plantilla.
-from .forms import ProductoForm, ServicioForm, DetalleVentaOnline, VentaOnlineForm, VentaManualForm, DetalleVentaOnlineFormset, DetalleVentaManualFormset, DetalleVentaManualServicioFormset  # Importa formularios para gestionar productos, servicios y ventas.
+from .forms import * # Importa todas las funciones definidas en 'forms' del directorio actual.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
 from .models import * # Importa la función ImagenProducto para gestionar la lógica de imágenes adicionales en la galería de productos.
 
@@ -379,14 +379,29 @@ def listar_ventas_online(request):
     cliente_query = request.GET.get('cliente', '')
 
     query = Q(estado='aprobada')
+
+    # Si el usuario es cliente, solo ve sus ventas
     if hasattr(request.user, 'cliente'):
         query &= Q(cliente=request.user.cliente)
+
+    # Si es administrador, puede filtrar por nombre y apellido
     elif hasattr(request.user, 'empleado') and request.user.empleado.rol == 'Administrador':
         if cliente_query:
-            query &= Q(cliente__user__username__icontains=cliente_query)
+            # Dividir el nombre/apellido por espacios
+            palabras = cliente_query.split()
+            
+            for palabra in palabras:
+                # Cada palabra debe coincidir en al menos uno de estos campos
+                query &= (
+                    Q(cliente__user__first_name__icontains=palabra) | 
+                    Q(cliente__user__last_name__icontains=palabra) | 
+                    Q(cliente_anonimo__nombre__icontains=palabra) | 
+                    Q(cliente_anonimo__apellido__icontains=palabra)
+                )
+
     else:
         return redirect('home')
-
+    
     ordenes_compra = VentaOnline.objects.filter(query).order_by('fecha')
 
     paginator = Paginator(ordenes_compra, 5)
@@ -458,17 +473,24 @@ def editar_venta_online(request, venta_id):
 @login_required
 def listar_ventas_manuales(request):
     """
-    Lista todas las ventas registradas de forma manual, con opciones de búsqueda por cliente y paginación.
-    Muestra los detalles de productos y servicios para cada venta.
+    Lista todas las ventas registradas de forma manual, con opciones de búsqueda por cliente anónimo
+    y paginación. Muestra los detalles de productos y servicios para cada venta.
     """
     cliente_query = request.GET.get('cliente', '')
     query = Q()
 
-    if hasattr(request.user, 'cliente'):
-        query &= Q(cliente=request.user.cliente)
-    elif hasattr(request.user, 'empleado') and request.user.empleado.rol == 'Administrador':
+    # Filtrar si el usuario es administrador
+    if hasattr(request.user, 'empleado') and request.user.empleado.rol == 'Administrador':
         if cliente_query:
-            query &= Q(cliente__user__username__icontains=cliente_query)
+            # Dividir la búsqueda en palabras (nombre y apellido/s)
+            palabras = cliente_query.split()
+            
+            for palabra in palabras:
+                # Se agrega un filtro por cada palabra, pero todos deben coincidir (AND)
+                query &= (
+                    Q(cliente_anonimo__nombre__icontains=palabra) |
+                    Q(cliente_anonimo__apellido__icontains=palabra)
+                )
     else:
         return redirect('home')
 
@@ -488,10 +510,31 @@ def listar_ventas_manuales(request):
     for venta in ventas_paginadas:
         productos = venta.detalleventamanual_set.filter(producto__isnull=False)
         servicios = venta.detalleventamanual_set.filter(servicio__isnull=False)
+
+        # Formatear precios usando formato_precio
+        venta.total_formateado = formato_precio(venta.total)
+        venta.pago_cliente_formateado = formato_precio(venta.pago_cliente)
+        venta.cambio_formateado = formato_precio(venta.cambio)
+
+        productos_formateados = []
+        for detalle in productos:
+            productos_formateados.append({
+                'nombre': detalle.producto.nombre,
+                'cantidad': detalle.cantidad,
+                'precio_formateado': formato_precio(detalle.producto.precio),
+            })
+
+        servicios_formateados = []
+        for detalle in servicios:
+            servicios_formateados.append({
+                'nombre': detalle.servicio.nombre,
+                'precio_formateado': formato_precio(detalle.servicio.precio),
+            })
+
         ventas_list.append({
             'venta': venta,
-            'productos': productos,
-            'servicios': servicios,
+            'productos': productos_formateados,
+            'servicios': servicios_formateados,
             'tiene_productos': productos.exists(),
             'tiene_servicios': servicios.exists(),
         })
@@ -502,44 +545,62 @@ def listar_ventas_manuales(request):
         'cliente_query': cliente_query,
     })
 
+# Función para agregar una venta de manera manual y asociarla a un cliente anónimo    
 @login_required
 def agregar_venta_manual(request):
     """
-    Permite agregar una nueva venta, verificando la disponibilidad de stock
-    y los permisos del cliente. Calcula el total y maneja pagos y cambios.
+    Permite agregar una nueva venta, verificando la disponibilidad de stock. Calcula el total y maneja pagos y cambios.
     """
-    orden_venta_form = VentaManualForm(request.POST or None)
-    detalle_formset = DetalleVentaManualFormset(request.POST or None, prefix='productos')
+    orden_compra_form = VentaManualForm(request.POST or None)
+    detalle_formset = DetalleVentaManualProductoFormset(request.POST or None, prefix='productos')
     detalle_servicio_formset = DetalleVentaManualServicioFormset(request.POST or None, prefix='servicios')
+    cliente_anonimo_form = ClienteAnonimoForm(request.POST or None)
     query_string = request.GET.urlencode()
 
     if request.method == 'POST':
-        if orden_venta_form.is_valid() and detalle_formset.is_valid() and detalle_servicio_formset.is_valid():
+        if (orden_compra_form.is_valid() and 
+            detalle_formset.is_valid() and 
+            detalle_servicio_formset.is_valid() and 
+            cliente_anonimo_form.is_valid()):
 
-            cliente = orden_venta_form.cleaned_data.get('cliente')
-            if cliente.id == 1 and any(form.cleaned_data for form in detalle_servicio_formset):
-                messages.error(request, 'Este cliente no puede comprar servicios.')
-                return render(request, 'Transaccion/agregar_venta_manual.html', {
-                    'orden_venta_form': orden_venta_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
-                    'query_string': query_string,
-                })
-                
-            total_productos = sum(form.cleaned_data.get('cantidad', 0) * form.cleaned_data.get('producto').precio for form in detalle_formset if form.cleaned_data.get('producto'))
-            total_servicios = sum(form.cleaned_data.get('servicio').precio for form in detalle_servicio_formset if form.cleaned_data.get('servicio'))
+            # Obtener datos del cliente anónimo
+            nombre = cliente_anonimo_form.cleaned_data['nombre']
+            apellido = cliente_anonimo_form.cleaned_data['apellido']
+            email = cliente_anonimo_form.cleaned_data['email']
+            numero_telefono = cliente_anonimo_form.cleaned_data['numero_telefono']
+
+            # Crear siempre un nuevo cliente anónimo
+            cliente_anonimo = ClienteAnonimo.objects.create(
+                nombre=nombre,
+                apellido=apellido,
+                email=email,
+                numero_telefono=numero_telefono,
+                session_key=f"anonimo_{nombre.lower()}{apellido.lower()}{timezone.now().strftime('%Y%m%d%H%M%S')}"
+            )
+
+            # Calcular totales de productos y servicios
+            total_productos = sum(
+                form.cleaned_data.get('cantidad', 0) * form.cleaned_data.get('producto').precio
+                for form in detalle_formset if form.cleaned_data.get('producto')
+            )
+            total_servicios = sum(
+                form.cleaned_data.get('servicio').precio
+                for form in detalle_servicio_formset if form.cleaned_data.get('servicio')
+            )
             total_venta = total_productos + total_servicios
-            pago_cliente = orden_venta_form.cleaned_data.get('pago_cliente')
+            pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente')
 
             if pago_cliente < total_venta:
                 messages.error(request, 'La cantidad ingresada a pagar es inferior al total de la venta.')
                 return render(request, 'Transaccion/agregar_venta_manual.html', {
-                    'orden_venta_form': orden_venta_form,
+                    'orden_compra_form': orden_compra_form,
                     'detalle_formset': detalle_formset,
                     'detalle_servicio_formset': detalle_servicio_formset,
+                    'cliente_anonimo_form': cliente_anonimo_form,
                     'query_string': query_string,
                 })
 
+            # Verificar disponibilidad de stock
             stock_insuficiente = False
             for form in detalle_formset:
                 if form.cleaned_data.get('producto'):
@@ -552,32 +613,35 @@ def agregar_venta_manual(request):
 
             if stock_insuficiente:
                 return render(request, 'Transaccion/agregar_venta_manual.html', {
-                    'orden_venta_form': orden_venta_form,
+                    'orden_compra_form': orden_compra_form,
                     'detalle_formset': detalle_formset,
                     'detalle_servicio_formset': detalle_servicio_formset,
+                    'cliente_anonimo_form': cliente_anonimo_form,
                     'query_string': query_string,
                 })
 
+            # Guardar la venta
             with transaction.atomic():
-                orden_venta = orden_venta_form.save(commit=False)
-                orden_venta.total = total_venta
-                orden_venta.cambio = max(pago_cliente - total_venta, 0)
-                orden_venta.save()
+                orden_compra = orden_compra_form.save(commit=False)
+                orden_compra.cliente_anonimo = cliente_anonimo  # Asignar el cliente anónimo a la venta
+                orden_compra.total = total_venta
+                orden_compra.cambio = max(pago_cliente - total_venta, 0)
+                orden_compra.save()
 
                 for form in detalle_formset:
                     if form.cleaned_data.get('producto'):
                         producto = form.cleaned_data['producto']
                         cantidad = form.cleaned_data['cantidad']
-                        producto.cantidad_stock -= cantidad
+                        producto.cantidad_stock -= cantidad  # Restar del stock
                         producto.save()
                         detalle = form.save(commit=False)
-                        detalle.orden_venta = orden_venta
+                        detalle.orden_compra = orden_compra
                         detalle.save()
 
                 for form in detalle_servicio_formset:
                     if form.cleaned_data.get('servicio'):
                         detalle = form.save(commit=False)
-                        detalle.orden_venta = orden_venta
+                        detalle.orden_compra = orden_compra
                         detalle.save()
 
                 messages.success(request, 'Venta registrada exitosamente.')
@@ -587,9 +651,10 @@ def agregar_venta_manual(request):
             messages.error(request, 'Errores en el formulario de venta')
 
     context = {
-        'orden_venta_form': orden_venta_form,
+        'orden_compra_form': orden_compra_form,
         'detalle_formset': detalle_formset,
         'detalle_servicio_formset': detalle_servicio_formset,
+        'cliente_anonimo_form': cliente_anonimo_form,
         'query_string': query_string,
     }
     return render(request, 'Transaccion/agregar_venta_manual.html', context)

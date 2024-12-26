@@ -10,7 +10,6 @@ from . import views  # Importación de las vistas de la aplicación actual
 urlpatterns = [
     path('', lambda request: render(request, 'index.html'), name='home'),  # Página de inicio
     path('admin/', admin.site.urls),  # Administración de Django
-    path('carro/', views.carro, name='carro'),  # Carrito de compras
     path('contactanos/', views.contactanos, name='contactanos'),  # Contacto
     path('enviar-correo/', views.enviar_correo_formulario, name='enviar_correo_formulario'),  # Enviar correo desde formulario
     path('login/', auth_views.LoginView.as_view(template_name='Usuario/login.html'), name='login'),  # Inicio de sesión
@@ -20,11 +19,8 @@ urlpatterns = [
     path('password-reset-confirm/<uidb64>/<token>/', auth_views.PasswordResetConfirmView.as_view(template_name="Usuario/reset_password_confirm.html", form_class=NewPasswordForm), name="password_reset_confirm"),  # Confirmación de restablecimiento de contraseña
     path('password-reset/done/', auth_views.PasswordResetDoneView.as_view(template_name="Usuario/reset_password_done.html"), name="password_reset_done"),  # Restablecimiento de contraseña hecho
     path('preguntas_frecuentes/', views.preguntas_frecuentes, name='preguntas_frecuentes'),  # Preguntas frecuentes
-    path('proceder_pago/', views.proceder_pago, name='proceder_pago'),  # Proceder con el pago
-    path('producto_tienda/', views.producto_tienda, name='producto_tienda'),  # Producto en tienda
     path('regreso_pago/', views.regreso_pago, name='regreso_pago'),  # Regreso después del pago
     path('sobre_nosotros/', views.sobre_nosotros, name='sobre_nosotros'),  # Página de "sobre nosotros"
-    path('tienda/', views.tienda, name='tienda'),  # Tienda de productos
     path('transaccion/', include('apps.Transaccion.urls')),  # URLs de transacciones
     path('usuario/', include('apps.Usuario.urls')),  # URLs de usuario
 ]

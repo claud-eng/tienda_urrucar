@@ -4,15 +4,21 @@ import uuid  # Importa el módulo 'uuid' para generar identificadores únicos.
 from django.conf import settings  # Importa el módulo de configuración de Django.
 from django.contrib import messages  # Importa el sistema de mensajes de Django para mostrar mensajes a los usuarios.
 from django.core.mail import EmailMessage  # Importa la clase 'EmailMessage' para enviar correos electrónicos.
+from django.core.mail import EmailMultiAlternatives  # Importa 'EmailMultiAlternatives' para enviar correos con formato HTML y texto plano.
 from django.http import HttpResponse  # Importa 'HttpResponse' para devolver respuestas HTTP.
 from django.shortcuts import redirect, render  # Importa 'redirect' y 'render' para redirección y renderizado de plantillas.
-from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
-from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos necesarios para gestionar órdenes y carritos.
-from .views import formato_precio  # Importa 'formato_precio' para formatear precios en vistas.
+from django.template.loader import render_to_string  # Importa 'render_to_string' para renderizar plantillas a cadenas de texto.
+from django.templatetags.static import static  # Importa 'static' para manejar rutas de archivos estáticos.
+from django.utils.html import strip_tags  # Importa 'strip_tags' para eliminar etiquetas HTML de una cadena.
+from django.utils.timezone import localtime  # Importa 'localtime' para trabajar con zonas horarias y convertir fechas a la zona local.
 from transbank.common.integration_type import IntegrationType  # Importa 'IntegrationType' para configurar el entorno de integración de Webpay.
 from transbank.common.options import WebpayOptions  # Importa 'WebpayOptions' para establecer opciones de configuración de Webpay.
 from transbank.error.transbank_error import TransbankError  # Importa 'TransbankError' para manejar errores específicos de Transbank.
 from transbank.webpay.webpay_plus.transaction import Transaction  # Importa 'Transaction' para realizar transacciones de Webpay Plus.
+from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
+from .functions import TIPO_PAGO_CONVERSION  # Importa 'TIPO_PAGO_CONVERSION' desde functions, para convertir tipos de pago.
+from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos necesarios para gestionar órdenes y carritos.
+from .views import formato_precio  # Importa 'formato_precio' para formatear precios en vistas.
 
 # Define las configuraciones de Webpay desde las variables de entorno
 commerce_code = os.getenv('WEBPAY_COMMERCE_CODE')
@@ -194,8 +200,8 @@ def transaccion_finalizada(request):
 
             # Obtener los datos del comprador
             datos_persona = {
-                'nombre': cliente.nombre if cliente else cliente_anonimo.nombre,
-                'apellido': cliente.apellido if cliente else cliente_anonimo.apellido,
+                'nombre': cliente.user.first_name if cliente else cliente_anonimo.nombre,
+                'apellido': cliente.user.last_name if cliente else cliente_anonimo.apellido,
                 'email': cliente.user.email if cliente else cliente_anonimo.email,
                 'numero_telefono': cliente.numero_telefono if cliente else cliente_anonimo.numero_telefono,
             }
@@ -284,16 +290,40 @@ def transaccion_finalizada(request):
         })
 
         if transaccion_exitosa:
-            buffer_pdf = generar_comprobante_pdf_correo(orden)
+            if isinstance(orden, VentaOnline):
+                buffer_pdf = generar_comprobante_pago_pdf(tipo_venta='online', numero_orden=orden.numero_orden)
+            elif isinstance(orden, VentaManual):
+                buffer_pdf = generar_comprobante_pago_pdf(tipo_venta='manual', id_venta=orden.id)
+            else:
+                raise ValueError("Tipo de venta no reconocido")
+
+            # URL del logo
+            logo_url = request.build_absolute_uri(static('images/logo.png'))
+            
+            # Renderizar plantilla HTML
+            email_html = render_to_string('Transaccion/comprobante_pago.html', {
+                'cliente_nombre': cliente.user.first_name if cliente else cliente_anonimo.nombre,
+                'numero_orden': orden.numero_orden,
+                'fecha_compra': localtime(orden.fecha).strftime("%d/%m/%Y %H:%M"),
+                'total': formato_precio(orden.total),
+                'tipo_pago': TIPO_PAGO_CONVERSION.get(orden.tipo_pago, orden.tipo_pago),
+                'logo_url': logo_url,
+            })
+
+            # Convertir HTML a texto plano
+            email_texto = strip_tags(email_html)
+            
             email_subject = f"Comprobante de Pago - Orden {orden.numero_orden}"
-            email_body = f"Aquí está su comprobante de pago para la orden {orden.numero_orden}."
-            email = EmailMessage(
+            
+            email = EmailMultiAlternatives(
                 email_subject,
-                email_body,
+                email_texto,
                 settings.DEFAULT_FROM_EMAIL,
                 [cliente.user.email] if cliente else [cliente_anonimo.email]
             )
-            email.attach(f'comprobante_orden_{orden.numero_orden}.pdf', buffer_pdf.getvalue(), 'application/pdf')
+            
+            email.attach_alternative(email_html, "text/html")
+            email.attach(f'comprobante_pago_{orden.numero_orden}.pdf', buffer_pdf.getvalue(), 'application/pdf')
             email.send()
             print("Comprobante enviado por correo.")
 

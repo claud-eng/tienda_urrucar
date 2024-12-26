@@ -11,6 +11,13 @@
 {% endblock %}
 {% block content %}
 
+<style>
+    .table td, .table th {
+        vertical-align: middle;
+        text-align: center;
+    }
+</style>
+
 <div class="container mt-4">
     <div class="d-flex flex-column mb-3">
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
@@ -22,7 +29,7 @@
         {% endif %}
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
         <div class="d-flex justify-content-start">
-            <a href="{% url 'agregar_venta_manual' %}?{{ request.GET.urlencode }}" class="btn btn-success mb-2">Registrar Venta</a>
+            <a href="{% url 'agregar_venta_manual' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Registrar Venta</a>
         </div>
         {% endif %}
     </div>
@@ -37,21 +44,19 @@
             <label for="search-cliente">Buscar por Cliente:</label>
             <input type="text" class="form-control mx-2" id="search-cliente" name="cliente" placeholder="Nombre del Cliente" value="{{ cliente_query }}">
         </div>
-        <div class="form-group">
-            <button type="submit" class="btn btn-outline-primary">Buscar</button>
-        </div>
-        <div class="form-group">
-            <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-outline-danger mb-2">Quitar filtro</a>
-        </div>
+        <button type="submit" class="btn btn-outline-primary btn-sm mb-2">Filtrar</button>
+        <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-outline-danger btn-sm mb-2">Quitar filtro</a>
     </form>
     {% endif %}    
     
-    <div class="table-responsive">
+    <div class="table-responsive mb-4">  <!-- Añadimos mb-4 aquí para separar la tabla de la paginación -->
         <table class="table table-hover">
             <thead class="thead-dark">
                 <tr>
                     <th>Número de Orden</th>
                     <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
                     <th>Fecha</th>
                     <th>Detalle</th>
                     <th>Total (IVA incluido)</th>
@@ -62,16 +67,46 @@
             </thead>
             <tbody>
                 {% for venta_info in ventas_list %}
-                <tr>
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
                     <td>{{ venta_info.venta.id }}</td>
-                    <td>{{ venta_info.venta.cliente.user.username }}</td>
+            
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.first_name }} {{ venta_info.venta.cliente.user.last_name }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.nombre }} {{ venta_info.venta.cliente_anonimo.apellido }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+            
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.email }}
+                        {% elif venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.email }}
+                        {% endif %}
+                    </td>
+            
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.numero_telefono %}
+                            {{ venta_info.venta.cliente_anonimo.numero_telefono }}
+                        {% elif venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.numero_telefono }}
+                        {% endif %}
+                    </td>
+            
                     <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+            
                     <td>
                         {% if venta_info.tiene_productos %}
                             <strong>Productos:</strong>
                             <ul>
                                 {% for detalle in venta_info.productos %}
-                                    <li>{{ detalle.producto.nombre }} - Cantidad: {{ detalle.cantidad }} - Precio Unitario: ${{ detalle.producto.precio }}</li>
+                                    <li>
+                                        {{ detalle.nombre }} - Cantidad: {{ detalle.cantidad }} - 
+                                        Precio Unitario: ${{ detalle.precio_formateado }}
+                                    </li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
@@ -80,22 +115,27 @@
                             <strong>Servicios:</strong>
                             <ul>
                                 {% for detalle in venta_info.servicios %}
-                                    <li>{{ detalle.servicio.nombre }} - Valor: ${{ detalle.servicio.precio }}</li>
+                                    <li>
+                                        {{ detalle.nombre }} - Valor: ${{ detalle.precio_formateado }}
+                                    </li>
                                 {% endfor %}
                             </ul>
                         {% endif %}
                     </td>
-                    <td>${{ venta_info.venta.total }}</td>
-                    <td>${{ venta_info.venta.pago_cliente }}</td>
-                    <td>${{ venta_info.venta.cambio }}</td>
+            
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
+                    <td>${{ venta_info.venta.cambio_formateado }}</td>
                     <td>
-                        <a href="{% url 'generar_comprobante' venta_info.venta.id %}" class="btn btn-primary btn-sm">Descargar</a>
+                        <a href="{% url 'descargar_comprobante_pago' 'manual' venta_info.venta.id %}" class="btn btn-success btn-sm">Descargar</a>
                     </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
+    </div>    
 
+    <div class="mb-4"> <!-- Separador para dar espacio antes de la paginación -->
         <nav aria-label="Paginación">
             <ul class="pagination">
                 {% if ventas_paginadas.has_previous %}
@@ -123,15 +163,12 @@
                 {% endif %}
             </ul>
         </nav>
+    </div>
 
-    <!-- Botón Volver atrás para clientes -->
-    {% if user.cliente or user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-        <div class="mt-4">
-            <a href="{% url 'gestionar_transacciones' %}"><button class="btn btn-danger">Volver al menú principal</button></a>
-        </div>
-    {% endif %}
-        
+    <div class="mt-4">
+        <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
     </div>
 </div>
 
 {% endblock %}
+

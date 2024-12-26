@@ -31,7 +31,7 @@
               <div class="col-12 mb-3 mb-md-0 col-md-4 order-1 order-md-1 text-center">
                 <div class="new-site-logo">
                   <a href="{% url 'home' %}" class="js-logo-clone">
-                    <img src="{% static 'images/logo.png' %}" alt="Logo" class="new-logo-img" style="width: 125px; height: auto;">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" class="new-logo-img" style="width: 200px; height: auto;">
                   </a>
                 </div>
               </div>
@@ -108,7 +108,37 @@
             </div>
           </div>
         </div>
-        
+
+                <!-- Menú especial para clientes registrados -->
+                {% if user.is_authenticated and user.cliente %}
+                <nav class="site-navigation text-right text-md-center" role="navigation">
+                  <div class="container">
+                    <ul class="site-menu js-clone-nav d-none d-md-block">
+                      <style>
+                        .admin-menu a {
+                          color: black;
+                          font-weight: bold;
+                          text-decoration: none;
+                        }
+                        .admin-menu a:hover {
+                          color: #149ddd;
+                        }
+                      </style>
+                      <li class="admin-menu">
+                        <a href="{% url 'listar_ventas_online' %}">
+                            Ver Historial de Compras Online
+                        </a>
+                      </li>
+                      <li class="admin-menu">
+                        <a href="{% url 'actualizar_datos_personales_cliente' %}">
+                            Actualizar Datos Personales
+                        </a>
+                      </li>
+                    </ul>
+                  </div>
+                </nav>
+                {% endif %}
+
         <!-- Menú especial para administradores -->
         {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
         <nav class="site-navigation text-right text-md-center" role="navigation">
@@ -199,6 +229,19 @@
     align-items: center; /* Alinea los íconos con el texto */
 }
 
+/* 
+  Evita el desplazamiento horizontal no deseado causado por desbordamientos de contenido.
+  overflow-x: hidden asegura que cualquier elemento fuera del ancho de la pantalla se recorte.
+  max-width: 100% en el footer previene que se extienda más allá del ancho del viewport. 
+*/
+html, body {
+  overflow-x: hidden;
+}
+
+.site-footer {
+  max-width: 100%;
+}
+
 @media (max-width: 767.98px) {
   .site-navbar-top .new-site-logo,
   .site-navbar-top .site-search-icon,
@@ -219,81 +262,48 @@
   <footer class="site-footer border-top">
     <div class="container">
       <div class="row">
+        <!-- Redes sociales -->
         <div class="col-lg-6 mb-5 mb-lg-0">
-          <div class="row">
-            <div class="col-md-12">
-              <h3 class="footer-heading mb-4">Síguenos</h3>
-            </div>
-            <!-- Sección de redes sociales -->
-            <div class="col-md-6 col-lg-4 footer-social-icons">
-              <ul class="list-unstyled">
-                <li><a href="#"><span class="icon-facebook icon-contact"></span> Facebook</a></li>
-                <li><a href="#"><span class="icon-instagram icon-contact"></span> Instagram</a></li>
-                <li><a href="#"><span class="icon-twitter icon-contact"></span> Twitter</a></li>
-              </ul>
-            </div>
-            <div class="col-md-6 col-lg-4" style="visibility: hidden;">
-              <ul class="list-unstyled">
-                <li><a href="#">Mobile commerce</a></li>
-                <li><a href="#">Dropshipping</a></li>
-                <li><a href="#">Website development</a></li>
-              </ul>
-            </div>
-            <div class="col-md-6 col-lg-4" style="visibility: hidden;">
-              <ul class="list-unstyled">
-                <li><a href="#">Point of sale</a></li>
-                <li><a href="#">Hardware</a></li>
-                <li><a href="#">Software</a></li>
-              </ul>
-            </div>
-          </div>
+          <h3 class="footer-heading mb-4">Síguenos</h3>
+          <ul class="list-unstyled">
+            <li class="mb-2"><a href="#"><span class="icon-facebook icon-contact"></span> Facebook</a></li>
+            <li class="mb-2"><a href="#"><span class="icon-instagram icon-contact"></span> Instagram</a></li>
+            <li><a href="#"><span class="icon-twitter icon-contact"></span> Twitter</a></li>
+          </ul>
         </div>
-        <div class="col-md-6 col-lg-3 mb-4 mb-lg-0" style="visibility: hidden;">
-          <h3 class="footer-heading mb-4">Promo</h3>
-          <a href="#" class="block-6">
-              <img src="{% static 'images/hero_1.jpg' %}" alt="Image placeholder" class="img-fluid rounded mb-4">
-              <h3 class="font-weight-light mb-0">Finding Your Perfect Shoes</h3>
-              <p>Promo from January 15 &mdash; 25, 2019</p>
-          </a>
-      </div>      
-        <div class="col-md-6 col-lg-3">
+        
+        <!-- Información de contacto -->
+        <div class="col-lg-6 text-lg-end d-flex flex-column align-items-lg-end">
           <div class="block-5 mb-5">
             <h3 class="footer-heading mb-4">Información de contacto</h3>
             <ul class="list-unstyled">
-              <li class="phone"><a href="tel://23923929210">+2 392 3929 210</a></li>
-              <li class="email">emailaddress@domain.com</li>
+              <li class="phone">+569 40635844</a></li>
+              <li class="email">automotriz@urrucar.cl</li>
             </ul>
-          </div>
-
-          <div class="block-7" style="visibility: hidden;">
-            <form action="#" method="post">
-              <label for="email_subscribe" class="footer-heading">Subscribe</label>
-              <div class="form-group">
-                <input type="text" class="form-control py-4" id="email_subscribe" placeholder="Email">
-                <input type="submit" class="btn btn-sm btn-primary" value="Send">
-              </div>
-            </form>
           </div>
         </div>
       </div>
-      <div class="row justify-content-center">
-        <div class="col-md-12 text-center">
-            <p>
-                Copyright ©2024 Todos los derechos reservados | Sitio web desarrollado por 
-                <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
-            </p>
-        </div>
-    </div>    
     </div>
+    
+      <!-- Derechos de autor -->
+      <div class="row justify-content-center mt-5">
+        <div class="col-md-12 text-center">
+          <p>
+            Copyright ©2024 Todos los derechos reservados | Sitio web desarrollado por 
+            <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
+          </p>
+        </div>
+      </div>
+  
     <!-- Botón Flotante de WhatsApp -->
     <a href="https://wa.me/56940635844" class="whatsapp-button" target="_blank">
       <i class="fab fa-whatsapp"></i>
     </a>
-
+  
     <!-- Scroll Top -->
     <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
   </footer>
-
+  
   <script src="{% static 'js/jquery-3.3.1.min.js' %}"></script>
   <script src="{% static 'js/jquery-ui.js' %}"></script>
   <script src="{% static 'js/popper.min.js' %}"></script>

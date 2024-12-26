@@ -38,8 +38,12 @@
               </figure>
               <div class="block-4-text p-4">
                 <h3><a href="{% url 'ver_detalles_producto' producto.id %}">{{ producto.nombre }}</a></h3>
-                <p class="mb-0">{{ producto.descripcion|truncatewords:10 }}</p>
-                <p class="text-primary font-weight-bold">${{ producto.precio_formateado }}</p>
+                
+                {% if producto.categoria == 'Vehículo' and producto.anio %}
+                  <p class="mb-0">Año: {{ producto.anio }}</p>
+                {% endif %}
+                
+                <p class="text-primary font-weight-bold mt-0">${{ producto.precio_formateado }}</p>
               </div>
             </div>
           </div>

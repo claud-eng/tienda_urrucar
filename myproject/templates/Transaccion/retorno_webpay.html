@@ -69,7 +69,7 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                    <a href="{% url 'generar_comprobante_online' orden.numero_orden %}" class="btn btn-secondary">Descargar Comprobante</a>
+                    <a href="{% url 'descargar_comprobante_pago' 'online' orden.numero_orden %}" class="btn btn-primary btn-sm">Descargar Comprobante</a>
                 </div>
             {% else %}
                 <!-- Mensaje de transacción fallida, si no es exitosa y no hay mensaje de error específico -->
@@ -78,7 +78,7 @@
                     <p>Lo sentimos, tu transacción no se pudo completar.</p>
                 </div>
             {% endif %}
-            <a href="{% url 'catalogo_productos' %}" class="btn btn-primary">Volver al Catálogo</a>
+            <a href="{% url 'catalogo_productos' %}" class="btn btn-secondary btn-sm">Volver al Catálogo</a>
         </div>
     </div>
 </div>

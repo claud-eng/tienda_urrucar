@@ -20,6 +20,38 @@
         padding: 20px;  /* Espaciado interno */
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);  /* Sombra ligera */
     }
+
+  /* Estilo base (Escritorio y pantallas grandes) */
+  .container .btn {
+      margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
+      width: auto;  /* Ancho automático en pantallas grandes */
+  }
+  
+  /* Tablets (pantallas medianas) */
+  @media (max-width: 991.98px) {
+      .container .btn {
+          display: block;  /* Los botones se apilan verticalmente */
+          width: 100%;  /* Ocupan todo el ancho del contenedor */
+          margin-bottom: 10px;  /* Espaciado entre botones */
+      }
+  }
+  
+  /* Móviles (pantallas pequeñas) */
+  @media (max-width: 767.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: 15px;  /* Espaciado más amplio para móviles */
+      }
+  }
+  
+  /* Dispositivos muy pequeños (menos de 480px) */
+  @media (max-width: 480px) {
+      .container .btn {
+          width: 100%;
+          margin-bottom: 12px;
+      }
+  }
 </style>
 
 <div class="bg-light py-3">
@@ -78,13 +110,15 @@
             <h3>
                 Top 5 productos registrados manualmente más vendidos
                 {% if tipo_filtro == 'mes' %}
-                    en {{ nombre_mes }}
+                    en {{ nombre_mes }} de {{ anio_seleccionado }}
                 {% elif tipo_filtro == 'trimestre' %}
-                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre de {{ anio_seleccionado }}
                 {% elif tipo_filtro == 'semestre' %}
-                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre de {{ anio_seleccionado }}
+                {% elif tipo_filtro == 'anual' %}
+                    en {{ anio_seleccionado }}
                 {% endif %}
-            </h3>
+                </h3>
             {% if mensaje_productos %}
                 <p>{{ mensaje_productos }}</p>
             {% else %}
@@ -113,13 +147,15 @@
             <h3>
                 Top 5 servicios registrados manualmente más vendidos
                 {% if tipo_filtro == 'mes' %}
-                    en {{ nombre_mes }}
+                    en {{ nombre_mes }} de {{ anio_seleccionado }}
                 {% elif tipo_filtro == 'trimestre' %}
-                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% elif valor_filtro == 2 %}do{% elif valor_filtro == 3 %}er{% else %}to{% endif %} Trimestre de {{ anio_seleccionado }}
                 {% elif tipo_filtro == 'semestre' %}
-                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre
+                    en el {{ valor_filtro }}{% if valor_filtro == 1 %}er{% else %}do{% endif %} Semestre de {{ anio_seleccionado }}
+                {% elif tipo_filtro == 'anual' %}
+                    en {{ anio_seleccionado }}
                 {% endif %}
-            </h3>
+                </h3>
             {% if mensaje_servicios %}
                 <p>{{ mensaje_servicios }}</p>
             {% else %}

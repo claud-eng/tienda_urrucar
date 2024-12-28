@@ -1,21 +1,101 @@
 {% extends 'base.html' %}
-
 {% block title %}Borrar Cliente{% endblock %}
-
 {% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <h2>Confirmar Borrado</h2>
-            <p>¿Estás seguro de que deseas eliminar al cliente "{{ cliente.user.username }}"?</p>
-            <p>Nombre: {{ cliente.user.first_name }}</p>
-            <p>Primer Apellido: {{ cliente.user.last_name }}</p>
-            <p>Segundo Apellido: {{ cliente.second_last_name }}</p>
-            <p>Fecha de Nacimiento: {{ cliente.fecha_nacimiento }}</p>
-            <p>Número de Teléfono: {{ cliente.numero_telefono }}</p>
-            <a href="{% url 'borrar_cliente' cliente.id %}" class="btn btn-danger btn-sm">Confirmar Borrado</a>
-            <a href="{% url 'listar_clientes' %}" class="btn btn-secondary btn-sm">Cancelar</a>
+
+<style>
+  /* Estilo base para botones (Escritorio y pantallas grandes) */
+  .container .btn {
+      margin-right: 10px;  /* Espaciado horizontal entre botones */
+      width: auto;  /* Ancho automático */
+  }
+
+  /* Tablets (pantallas medianas) */
+  @media (max-width: 991.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;  /* Ocupan todo el ancho */
+          margin-bottom: 10px;  /* Espaciado vertical entre botones */
+      }
+  }
+
+  /* Móviles (pantallas pequeñas) */
+  @media (max-width: 767.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: 15px;  /* Mayor espaciado entre botones */
+      }
+  }
+
+  /* Dispositivos muy pequeños (menos de 480px) */
+  @media (max-width: 480px) {
+      .container .btn {
+          width: 100%;
+          margin-bottom: 12px;
+      }
+  }
+  
+  /* Centrado del contenido de confirmación */
+  .confirmation-box {
+      width: 100%;
+      max-width: 700px;  /* Limitar el ancho del contenedor */
+      margin: 0 auto;  /* Centrar horizontalmente */
+      text-align: center;  /* Centrar texto y botones */
+      padding: 30px;
+      border-radius: 10px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+      background-color: #fff;
+  }
+
+  .confirmation-box p {
+      margin-bottom: 15px;
+  }
+
+  /* Botones responsivos */
+  .confirmation-box .btn {
+      margin: 10px 5px;
+  }
+
+  @media (max-width: 767.98px) {
+      .confirmation-box .btn {
+          display: block;
+          width: 100%;
+          margin: 10px 0;
+      }
+  }
+</style>
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a>
+                <span class="mx-2 mb-0">/</span>
+                <a href="{% url 'gestionar_cuentas' %}">Gestionar Cuentas</a>
+                <span class="mx-2 mb-0">/</span>
+                <a href="{% url 'listar_clientes' %}">Lista de Clientes</a>
+                <span class="mx-2 mb-0">/</span>
+                <strong class="text-black">Confirmar Borrado</strong>
+            </div>
         </div>
     </div>
 </div>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="confirmation-box">
+                <p>¿Estás seguro de que deseas eliminar al cliente "<strong>{{ cliente.user.username }}</strong>"?</p>
+                <p>Nombre: {{ cliente.user.first_name }}</p>
+                <p>Primer Apellido: {{ cliente.user.last_name }}</p>
+                <p>Segundo Apellido: {{ cliente.second_last_name }}</p>
+                <p>Fecha de Nacimiento: {{ cliente.fecha_nacimiento }}</p>
+                <p>Número de Teléfono: {{ cliente.numero_telefono }}</p>
+                <a href="{% url 'borrar_cliente' cliente.id %}" class="btn btn-danger btn-sm">Confirmar Borrado</a>
+                <a href="{% url 'listar_clientes' %}" class="btn btn-secondary btn-sm">Cancelar</a>
+            </div>
+        </div>
+    </div>
+</div>
+
 {% endblock %}

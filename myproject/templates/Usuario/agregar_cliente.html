@@ -1,5 +1,4 @@
 {% extends 'base.html' %}
-
 {% block title %}
     {% if user.is_authenticated %}
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
@@ -11,18 +10,76 @@
         Registrarse
     {% endif %}
 {% endblock %}
-
 {% block content %}
+
+<style>
+/* Estilo base (Escritorio y pantallas grandes) */
+form .btn {
+    margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
+}
+
+/* Tablets (pantallas medianas) */
+@media (max-width: 991.98px) {
+    form .btn {
+        display: block;  /* Los botones se apilan verticalmente */
+        width: 100%;  /* Ocupan todo el ancho del contenedor */
+        margin-bottom: 10px;  /* Espaciado entre botones */
+    }
+
+    #toggle-password {
+        margin-top: 10px;  /* Espaciado para botón de mostrar contraseña */
+    }
+}
+
+/* Móviles (pantallas pequeñas) */
+@media (max-width: 767.98px) {
+    form .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;  /* Aumentamos más el espacio entre botones */
+    }
+
+    #toggle-password {
+        margin-top: 15px;
+    }
+}
+
+/* Dispositivos muy pequeños (menos de 480px) */
+@media (max-width: 480px) {
+    form .btn {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+}
+</style>
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a>
+                {% if user.is_authenticated %}
+                    {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                        <span class="mx-2 mb-0">/</span>
+                        <a href="{% url 'gestionar_cuentas' %}">Gestionar Cuentas</a>
+                        <span class="mx-2 mb-0">/</span>
+                        <a href="{% url 'listar_clientes' %}">Lista de Clientes</a>
+                        <span class="mx-2 mb-0">/</span>
+                        <strong class="text-black">Agregar Cliente</strong>
+                    {% else %}
+                        <span class="mx-2 mb-0">/</span>
+                        <strong class="text-black">Registrarse</strong>
+                    {% endif %}
+                {% else %}
+                    <span class="mx-2 mb-0">/</span>
+                    <strong class="text-black">Registrarse</strong>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
     <div class="container mt-5">
-        {% if user.is_authenticated %}
-            {% if user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
-                <h2>Agregar cliente</h2>
-            {% else %}
-                <h2>Registrarse</h2>
-            {% endif %}
-        {% else %}
-            <h2>Registrarse</h2>
-        {% endif %}
 
         <form method="post">
             {% csrf_token %}
@@ -30,7 +87,7 @@
             
             <!-- Si el usuario está logeado como empleado aparece el botón de agregar, en caso contrario Registrarse -->
             <button type="submit" class="btn btn-success btn-sm">
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     Agregar
                 {% else %}
                     Registrarse
@@ -39,7 +96,7 @@
             <!-- Botón para mostrar/ocultar contraseña -->
             <button type="button" id="toggle-password" class="btn btn-info btn-sm">Mostrar Contraseña</button>
             {% if user.is_authenticated %}
-                {% if user.empleado and user.empleado.rol == 'Administrador' or user.empleado.rol == 'Vendedor' %}
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
                     <a href="{% url 'listar_clientes' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
                 {% else %}
                     <a href="{% url 'login' %}" class="btn btn-secondary btn-sm">Volver atrás</a>

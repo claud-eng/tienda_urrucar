@@ -2,8 +2,58 @@
 {% block title %}Agregar Servicio{% endblock %}
 {% block content %}
 
-<div class="container">
-  <h1>Agregar Servicio</h1>
+<style>
+  /* Estilo base (Escritorio y pantallas grandes) */
+  form .btn {
+      margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
+  }
+  
+  /* Tablets (pantallas medianas) */
+  @media (max-width: 991.98px) {
+      form .btn {
+          display: block;  /* Los botones se apilan verticalmente */
+          width: 100%;  /* Ocupan todo el ancho del contenedor */
+          margin-bottom: 10px;  /* Espaciado entre botones */
+      }
+  
+  }
+  
+  /* Móviles (pantallas pequeñas) */
+  @media (max-width: 767.98px) {
+      form .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: 15px;  /* Aumentamos más el espacio entre botones */
+      }
+  
+  }
+  
+  /* Dispositivos muy pequeños (menos de 480px) */
+  @media (max-width: 480px) {
+      form .btn {
+          width: 100%;
+          margin-bottom: 12px;
+      }
+  }
+  </style>
+  
+<div class="bg-light py-3">
+  <div class="container">
+  <div class="row">
+      <div class="col-md-12 mb-0">
+      <a href="{% url 'home' %}">Inicio</a> 
+      <span class="mx-2 mb-0">/</span> 
+      <a href="{% url 'gestionar_inventario' %}">Gestionar Inventario</a> 
+      <span class="mx-2 mb-0">/</span> 
+      <a href="{% url 'listar_servicios' %}">Lista de Servicios</a> 
+      <span class="mx-2 mb-0">/</span> 
+      <strong class="text-black">Agregar Servicio</strong></div>
+      </div>
+  </div>
+  </div>
+
+<div class="container mt-5 mb-2">
+
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     

@@ -36,13 +36,8 @@
                 </div>
               </div>
         
-              <div class="col-6 col-md-4 order-2 order-md-2 site-search-icon text-left" style="visibility: hidden;">
-                <form action="" class="site-block-top-search">
-                  <span class="icon icon-search2"></span>
-                  <input type="text" class="form-control border-0" placeholder="Search">
-                </form>
-              </div>
-              
+              <div class="col-6 col-md-4 order-2 order-md-2 empty-placeholder"></div>
+
               <div class="col-6 col-md-4 order-3 order-md-3 text-right">
                 <div class="site-top-icons">
                   <ul style="list-style: none; padding: 0; margin: 0; display: flex; justify-content: flex-end; align-items: center;">
@@ -191,7 +186,9 @@
             </ul>
           </div>
         </nav>
+        
       </header>
+    </div>
 
 <style>
   .site-navbar-top {
@@ -242,6 +239,7 @@ html, body {
   max-width: 100%;
 }
 
+/* Estilos específicos para móviles - Solo hasta 767.98px (por debajo de tablets en vertical) */
 @media (max-width: 767.98px) {
   .site-navbar-top .new-site-logo,
   .site-navbar-top .site-search-icon,
@@ -254,6 +252,103 @@ html, body {
   .site-navbar-top .site-top-icons {
     text-align: center;
   }
+  .site-navigation {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: #fff;
+        z-index: 9999;
+        overflow-y: auto;
+        transform: translateX(100%);
+        transition: transform 0.3s ease-in-out;
+    }
+
+    .site-navigation.active {
+        transform: translateX(0);
+    }
+
+    .menu-close-btn {
+        position: absolute;
+        top: 15px;
+        right: 20px;
+        font-size: 30px;
+        cursor: pointer;
+        color: #333;
+        z-index: 10001;
+    }
+
+    .menu-close-btn:hover {
+        color: #149ddd;
+    }
+
+    .site-navigation ul {
+        padding: 40px 20px 20px;
+        margin: 0;
+        list-style: none;
+    }
+
+    .site-navigation ul li {
+        margin-bottom: 15px;
+    }
+
+    .site-navigation a {
+        font-size: 1.1em;
+        color: #333;
+        text-decoration: none;
+        display: block;
+        padding: 10px 0;
+    }
+
+    .site-mobile-menu {
+        max-height: 100%;
+        overflow-y: auto;
+    }
+    .site-top-icons ul {
+        display: flex;
+        justify-content: center;  /* Centra los elementos horizontalmente */
+        align-items: center;
+        flex-wrap: nowrap;  /* Evita que se rompa en varias líneas */
+    }
+
+    .navbar-top {
+        margin: 0 10px;  /* Añade margen para evitar que se pegue a los bordes */
+    }
+
+    .site-cart {
+        margin-right: 15px;  /* Alinea el carrito correctamente */
+    }
+
+    .navbar-top span {
+        white-space: nowrap;  /* Evita que se dividan los textos largos */
+    }
+}
+
+/* Para pantallas entre 768px y 991.98px (Tablets y laptops pequeñas) - Mostrar el menú de escritorio */
+@media (min-width: 768px) and (max-width: 991.98px) {
+    .site-navbar .site-top-icons {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .site-navigation {
+        position: static; /* Se mantiene normal */
+        height: auto;
+        transform: translateX(0); /* Elimina el deslizamiento del menú */
+        background-color: transparent;
+        box-shadow: none;
+    }
+
+    .site-navigation ul {
+        display: flex;
+        justify-content: center;
+        padding: 0;
+    }
+
+    .site-navigation ul li {
+        margin: 0 15px;
+    }
 }
 </style>
       
@@ -267,7 +362,7 @@ html, body {
           <h3 class="footer-heading mb-4">Síguenos</h3>
           <ul class="list-unstyled">
             <li class="mb-2"><a href="#"><span class="icon-facebook icon-contact"></span> Facebook</a></li>
-            <li class="mb-2"><a href="#"><span class="icon-instagram icon-contact"></span> Instagram</a></li>
+            <li class="mb-2"><a href="https://www.instagram.com/urrucar_automotriz/" target="_blank"><span class="icon-instagram icon-contact"></span> Instagram</a></li>
             <li><a href="#"><span class="icon-twitter icon-contact"></span> Twitter</a></li>
           </ul>
         </div>
@@ -277,7 +372,7 @@ html, body {
           <div class="block-5 mb-5">
             <h3 class="footer-heading mb-4">Información de contacto</h3>
             <ul class="list-unstyled">
-              <li class="phone">+569 40635844</a></li>
+              <li class="phone">+569 61923925</a></li>
               <li class="email">automotriz@urrucar.cl</li>
             </ul>
           </div>
@@ -289,14 +384,14 @@ html, body {
       <div class="row justify-content-center mt-5">
         <div class="col-md-12 text-center">
           <p>
-            Copyright ©2024 Todos los derechos reservados | Sitio web desarrollado por 
+            Copyright ©2025 Todos los derechos reservados | Sitio web desarrollado por 
             <a href="https://portafolio.claudev.cl/" target="_blank" class="text-primary">Claudio Zamorano Urrutia</a>
           </p>
         </div>
       </div>
   
     <!-- Botón Flotante de WhatsApp -->
-    <a href="https://wa.me/56940635844" class="whatsapp-button" target="_blank">
+    <a href="https://wa.me/56961923925" class="whatsapp-button" target="_blank">
       <i class="fab fa-whatsapp"></i>
     </a>
   

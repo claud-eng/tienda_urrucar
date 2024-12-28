@@ -7,10 +7,48 @@
         vertical-align: middle;
         text-align: center;
     }
+
+  /* Tablets (pantallas medianas) */
+  @media (max-width: 991.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;  /* Ancho completo */
+          margin-bottom: 10px;  /* Espaciado entre botones */
+      }
+  }
+
+  /* Móviles (pantallas pequeñas) */
+  @media (max-width: 767.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: 15px;  /* Más espacio entre botones */
+      }
+  }
+
+  /* Dispositivos muy pequeños (menos de 480px) */
+  @media (max-width: 480px) {
+      .container .btn {
+          width: 100%;
+          margin-bottom: 12px;
+      }
+  }
 </style>
 
+<div class="bg-light py-3">
+    <div class="container">
+    <div class="row">
+        <div class="col-md-12 mb-0">
+        <a href="{% url 'home' %}">Inicio</a> 
+        <span class="mx-2 mb-0">/</span> 
+        <a href="{% url 'gestionar_inventario' %}">Gestionar Inventario</a> 
+        <span class="mx-2 mb-0">/</span> 
+        <strong class="text-black">Lista de Servicios</strong></div>
+        </div>
+    </div>
+    </div>
+
 <div class="container mt-5">
-    <h2>Lista de Servicios</h2>
 
     <!-- Agregar mensajes de éxito o error -->
     {% if messages %}
@@ -30,9 +68,9 @@
             <label for="search-nombre">Buscar por Nombre:</label>
             <input type="text" class="form-control" id="search-nombre" name="nombre" placeholder="Nombre del Servicio">
         </div>
-        <div class="mt-2">
-            <button type="submit" class="btn btn-outline-primary btn-sm">Filtrar</button>
-            <a href="{% url 'listar_servicios' %}" class="btn btn-outline-danger btn-sm ml-2">Quitar Filtro</a>
+        <div>
+            <button type="submit" class="btn btn-outline-primary btn-sm mb-2">Filtrar</button>
+            <a href="{% url 'listar_servicios' %}" class="btn btn-outline-danger btn-sm mb-2">Quitar Filtro</a>
         </div>
     </form>
     

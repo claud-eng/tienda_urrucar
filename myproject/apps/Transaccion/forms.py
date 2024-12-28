@@ -117,7 +117,7 @@ class DetalleVentaOnlineForm(forms.ModelForm):
 class VentaManualForm(forms.ModelForm):
     class Meta:
         model = VentaManual
-        fields = ['pago_cliente']  # Eliminamos el campo cliente
+        fields = ['pago_cliente']
         widgets = {
             'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),
         }

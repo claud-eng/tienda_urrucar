@@ -1,12 +1,25 @@
 import re  # Importar el módulo 're' (expresiones regulares), que se utiliza para realizar validaciones basadas en patrones.
 from datetime import date  # Importar el módulo 'date' desde 'datetime', que se usa para manipular fechas.
 from django import forms  # Importar la clase 'forms' de Django, que se utiliza para crear formularios.
-from apps.Usuario.models import Cliente, Empleado  # Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
 from django.contrib.auth import password_validation  # Importar herramientas de validación de contraseñas proporcionadas por Django.
-from django.contrib.auth.hashers import make_password  # Importar las herramientas para manejar contraseñas de Django.
-from django.core.exceptions import ValidationError  # Importar la excepción 'ValidationError' de Django, que se utiliza para manejar errores de validación.
-from django.contrib.auth.forms import (AuthenticationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm, UserChangeForm, UserCreationForm)  # Importar formularios para autenticación, cambio y restablecimiento de contraseñas, y edición y creación de usuarios.
+from django.contrib.auth.forms import (
+    AuthenticationForm,  # Formulario de autenticación de Django.
+    PasswordChangeForm,  # Formulario para cambiar la contraseña del usuario.
+    PasswordResetForm,  # Formulario para solicitar el restablecimiento de contraseña.
+    SetPasswordForm,  # Formulario para establecer una nueva contraseña después de un restablecimiento.
+    UserChangeForm,  # Formulario para actualizar datos de usuario.
+    UserCreationForm  # Formulario para crear un nuevo usuario.
+)
+from django.contrib.auth.hashers import make_password  # Importar la función para encriptar contraseñas de Django.
 from django.contrib.auth.models import User  # Importar el modelo 'User' de Django, que se utiliza para gestionar usuarios.
+from django.contrib.auth.tokens import default_token_generator  # Generador de tokens que se usa para verificar enlaces de restablecimiento de contraseña.
+from django.core.exceptions import ValidationError  # Importar la excepción 'ValidationError' para manejar errores de validación.
+from django.core.mail import send_mail  # Función para enviar correos electrónicos desde Django.
+from django.template.loader import render_to_string  # Función para renderizar plantillas HTML en formato de cadena de texto.
+from django.utils.encoding import force_bytes  # Codifica datos en bytes (usado para generar tokens seguros).
+from django.utils.html import strip_tags  # Elimina etiquetas HTML de una cadena, dejando solo el texto plano.
+from django.utils.http import urlsafe_base64_encode  # Codifica datos en base64 de forma segura para URLs.
+from apps.Usuario.models import Cliente, Empleado  # Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
 
 def validate_username(value):
     """
@@ -522,6 +535,7 @@ class EditarEmpleadoForm(forms.ModelForm):
 
         return empleado
 
+# Formulario estándar para restablecer la contraseña
 class ResetPasswordForm(PasswordResetForm):
     def __init__(self, *args, **kwargs):
         # Inicializa el formulario de restablecimiento de contraseña
@@ -534,6 +548,52 @@ class ResetPasswordForm(PasswordResetForm):
         widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@gmail.com'}),
     )
 
+# Formulario personalizado que envía un HTML específico para restablecer la contraseña
+class CustomPasswordResetForm(PasswordResetForm):
+    email = forms.EmailField(
+        max_length=150,
+        required=True,
+        label='Correo Electrónico',
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su email'}),
+    )
+
+    def send_mail(self, subject_template_name, email_template_name,
+                  context, from_email, to_email, html_email_template_name=None):
+        html_message = render_to_string(html_email_template_name, context)
+        plain_message = strip_tags(html_message)
+
+        send_mail(
+            subject='Restablecimiento de contraseña',
+            message=plain_message,
+            from_email=from_email,
+            recipient_list=[to_email],
+            html_message=html_message
+        )
+
+    def save(self, domain_override=None,
+             subject_template_name='registration/password_reset_subject.txt',
+             email_template_name='registration/password_reset_email.html',
+             use_https=False, token_generator=default_token_generator,
+             from_email=None, request=None, html_email_template_name=None, extra_email_context=None):
+
+        email = self.cleaned_data["email"]
+        for user in User.objects.filter(email=email):
+            context = {
+                'email': user.email,
+                'domain': domain_override or request.get_host(),
+                'site_name': 'Urrucar Automotriz',
+                'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+                'user': user,
+                'token': token_generator.make_token(user),
+                'protocol': 'https' if use_https else 'http',
+            }
+            if extra_email_context:
+                context.update(extra_email_context)
+
+            self.send_mail(subject_template_name, email_template_name,
+                           context, from_email, user.email,
+                           html_email_template_name='Usuario/password_reset_email.html')
+            
 class NewPasswordForm(SetPasswordForm):
     def __init__(self, *args, **kwargs):
         # Inicializa el formulario de nueva contraseña

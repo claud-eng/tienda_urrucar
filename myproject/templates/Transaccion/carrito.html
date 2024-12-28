@@ -2,6 +2,14 @@
 {% block title %}Carrito de Compras{% endblock %}
 {% block content %}
 
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Carrito</strong></div>
+      </div>
+    </div>
+  </div>  
+
 <div class="container my-5">
     <!-- Mensajes de error -->
     {% if messages %}
@@ -14,13 +22,70 @@
         </div>
     {% endif %}
 
-    <div class="row">
-        <!-- Formulario de datos antes de pagar -->
-        <div class="col-md-4">
-            <div class="shadow p-4 bg-light rounded">
-                <h3 class="mb-4 text-center">Datos del Comprador</h3>
-                <form method="post" action="{% url 'iniciar_transaccion' %}">
-                    {% csrf_token %}
+    <!-- Carrito -->
+    <div class="shadow p-4 bg-light rounded mb-5">
+        <div class="text-center mt-4">
+            <h1>Carrito de Compras</h1>
+        </div>
+        <div class="table-responsive mt-4">
+            <table class="table table-striped">
+                <thead class="thead-dark">
+                    <tr>
+                        <th>Producto/Servicio</th>
+                        <th>Cantidad</th>
+                        <th>Precio Unitario (IVA incluido)</th>
+                        <th>Precio de Reserva</th>
+                        <th>Total (IVA incluido)</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in carrito_items %}
+                    <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                        <td>{{ item.item.nombre }}</td>
+                        <td>{{ item.cantidad }}</td>
+                        <td>${{ item.precio_formateado }}</td>
+                        <td>
+                            {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %} 
+                                ${{ item.precio_unitario }}
+                            {% endif %}
+                        </td>
+                        
+                        <td>${{ item.precio_total_formateado }}</td>
+                        <td>
+                            {% if not item.es_servicio and item.item.categoria != "Vehículo" %}
+                                <form method="post" action="{% url 'aumentar_cantidad' item.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                                </form>
+                                <form method="post" action="{% url 'disminuir_cantidad' item.id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-sm">-</button>
+                                </form>
+                            {% endif %}
+                            <form method="post" action="{% url 'eliminar_del_carrito' item.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Formulario de datos antes de pagar -->
+    <div class="shadow p-4 bg-light rounded">
+        <h3 class="mb-4 text-center">Datos del Comprador</h3>
+        <form method="post" action="{% url 'iniciar_transaccion' %}">
+            {% csrf_token %}
+            <div class="row">
+                {% if contiene_servicios %}
+                <div class="col-md-6">
+                {% else %}
+                <div class="col-md-12">
+                {% endif %}
                     <div class="form-group">
                         <label for="nombre">Nombre</label>
                         <input type="text" class="form-control" id="nombre" name="nombre" value="{% if user.is_authenticated %}{{ user.first_name }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
@@ -37,127 +102,48 @@
                         <label for="numero_telefono">Número de Teléfono</label>
                         <input type="text" class="form-control" id="numero_telefono" name="numero_telefono" value="{% if user.is_authenticated %}{{ user.cliente.numero_telefono }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
                     </div>
-                
-                    <!-- Mostrar campos adicionales solo si el carrito contiene servicios -->
-                    {% if contiene_servicios %}
+                </div>
+                {% if contiene_servicios %}
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="nombre_vehiculo">Nombre del Vehículo</label>
+                        <input type="text" class="form-control" id="nombre_vehiculo" name="nombre_vehiculo" {% if contiene_servicios %}required{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="marca">Marca</label>
+                        <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
+                    </div>
+                    <div class="form-group">
+                        <label for="ano">Año</label>
+                        <input type="number" class="form-control" id="ano" name="ano" {% if contiene_servicios %}required{% endif %}>
+                    </div>
+                    {% for item in carrito_items %}
+                    {% if "Desabolladura" in item.item.nombre or "Mecánico" in item.item.nombre %}
                         <div class="form-group">
-                            <label for="nombre_vehiculo">Nombre del Vehículo</label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="nombre_vehiculo" 
-                                name="nombre_vehiculo" 
-                                {% if contiene_servicios %}required{% endif %}>
+                            <label for="retiro_domicilio">¿Deseas que retiremos el vehículo en tu domicilio?</label>
+                            <select class="form-control" id="retiro_domicilio" name="retiro_domicilio" required>
+                                <option value="No" selected>No</option>
+                                <option value="Si">Si</option>
+                            </select>
                         </div>
-                        <div class="form-group">
-                            <label for="marca">Marca</label>
-                            <input 
-                                type="text" 
-                                class="form-control" 
-                                id="marca" 
-                                name="marca" 
-                                {% if contiene_servicios %}required{% endif %}>
+                        <div class="form-group" id="direccion_field" style="display:none;">
+                            <label for="direccion">Dirección</label>
+                            <input type="text" class="form-control" id="direccion" name="direccion">
                         </div>
-                        <div class="form-group">
-                            <label for="ano">Año</label>
-                            <input 
-                                type="number" 
-                                class="form-control" 
-                                id="ano" 
-                                name="ano" 
-                                {% if contiene_servicios %}required{% endif %}>
-                        </div>
-                        {% for item in carrito_items %}
-                        {% if "Desabolladura" in item.item.nombre or "Mecánico" in item.item.nombre %}
-                            <div class="form-group">
-                                <label for="retiro_domicilio">¿Deseas que retiremos el vehículo en tu domicilio?</label>
-                                <select class="form-control" id="retiro_domicilio" name="retiro_domicilio" required>
-                                    <option value="No" selected>No</option>
-                                    <option value="Si">Si</option>
-                                </select>
-                            </div>
-                            <div class="form-group" id="direccion_field" style="display:none;">
-                                <label for="direccion">Dirección</label>
-                                <input type="text" class="form-control" id="direccion" name="direccion">
-                            </div>
-                            <script>
-                                document.getElementById('retiro_domicilio').addEventListener('change', function () {
-                                    var direccionField = document.getElementById('direccion_field');
-                                    direccionField.style.display = this.value === 'Si' ? 'block' : 'none';
-                                });
-                            </script>
-                        {% endif %}
-                        {% if "Consignación Virtual" in item.item.nombre %}
-                            <div class="form-group">
-                                <label for="descripcion_vehiculo">Danos una descripción de tu vehículo</label>
-                                <textarea class="form-control" id="descripcion_vehiculo" name="descripcion_vehiculo" rows="3" required></textarea>
-                            </div>
-                        {% endif %}
-                    {% endfor %}
-                    
+                        <script>
+                            document.getElementById('retiro_domicilio').addEventListener('change', function () {
+                                var direccionField = document.getElementById('direccion_field');
+                                direccionField.style.display = this.value === 'Si' ? 'block' : 'none';
+                            });
+                        </script>
                     {% endif %}
-
-                
-                    <button type="submit" class="btn btn-primary btn-block">Pagar</button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Carrito -->
-        <div class="col-md-8">
-            <div class="shadow p-4 bg-light rounded">
-                <div class="text-center mt-4">
-                    <h1>Carrito de Compras</h1>
+                    {% endfor %}
                 </div>
-                <div class="table-responsive mt-4">
-                    <table class="table table-striped">
-                        <thead class="thead-dark">
-                            <tr>
-                                <th>Producto/Servicio</th>
-                                <th>Cantidad</th>
-                                <th>Precio Unitario (IVA incluido)</th>
-                                <th>Precio de Reserva</th>
-                                <th>Total (IVA incluido)</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for item in carrito_items %}
-                            <tr class="{% cycle 'table-light' 'table-secondary' %}">
-                                <td>{{ item.item.nombre }}</td>
-                                <td>{{ item.cantidad }}</td>
-                                <td>${{ item.precio_formateado }}</td>
-                                <td>
-                                    {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %} 
-                                        ${{ item.precio_unitario }}
-                                    {% endif %}
-                                </td>
-                                
-                                <td>${{ item.precio_total_formateado }}</td>
-                                <td>
-                                    <!-- Botones para acciones en el carrito -->
-                                    {% if not item.es_servicio and item.item.categoria != "Vehículo" %}
-                                        <form method="post" action="{% url 'aumentar_cantidad' item.id %}" style="display:inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                                        </form>
-                                        <form method="post" action="{% url 'disminuir_cantidad' item.id %}" style="display:inline;">
-                                            {% csrf_token %}
-                                            <button type="submit" class="btn btn-secondary btn-sm">-</button>
-                                        </form>
-                                    {% endif %}
-                                    <form method="post" action="{% url 'eliminar_del_carrito' item.id %}" style="display:inline;">
-                                        {% csrf_token %}
-                                        <button type="submit" class="btn btn-danger btn-sm">Eliminar</button>
-                                    </form>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+                {% endif %}
             </div>
-        </div>
+            
+            <button type="submit" class="btn btn-primary btn-block">Pagar</button>
+        </form>
     </div>
 </div>
 

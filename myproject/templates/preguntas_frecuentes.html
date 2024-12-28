@@ -3,6 +3,64 @@
 {% block title %}Sobre Nosotros{% endblock %}
 {% block content %}
 
+<style>
+    @media (max-width: 767.98px) {
+        .card-header button {
+            font-size: 1em;  /* Tamaño más pequeño */
+            padding: 10px;
+            white-space: normal;  /* Permitir que el texto se divida en varias líneas */
+            width: 100%;  /* Asegura que el botón no se salga del contenedor */
+            text-align: left;  /* Alinear el texto a la izquierda */
+        }
+    
+        .card-body {
+            font-size: 0.9em;
+            padding: 12px;
+            text-align: justify;
+        }
+    
+        h2 {
+            font-size: 1.4em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+    
+        .container {
+            padding: 0 15px;
+        }
+    
+        .bg-light {
+            padding: 15px 0;
+        }
+    
+        .col-md-12.mb-0 {
+            font-size: 0.9em;
+            text-align: center;
+        }
+    }
+    
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .card-header button {
+            font-size: 0.9em;  /* Botón compacto */
+            padding: 8px 10px;
+        }
+    
+        .card-body {
+            font-size: 0.85em;
+            padding: 10px;
+        }
+    
+        h2 {
+            font-size: 1.3em;
+        }
+    
+        .col-md-12.mb-0 {
+            font-size: 0.85em;
+        }
+    }
+    </style>
+    
 <div class="bg-light py-3">
     <div class="container">
       <div class="row">
@@ -12,7 +70,6 @@
   </div>  
 
 <section class="container my-5">
-    <h2>Preguntas Frecuentes</h2>
     <div class="accordion" id="faqAccordion">
         <!-- Pregunta 1 -->
         <div class="card">
@@ -126,7 +183,6 @@
                 </div>
             </div>            
         </div>
-
     </div>
 </section>
 

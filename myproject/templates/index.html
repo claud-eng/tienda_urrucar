@@ -2,164 +2,6 @@
 {% load static %}
 {% block content %}
 
-  <div class="site-blocks-cover" id="auto_banner" data-aos="fade">
-    <div class="container">
-      <div class="row align-items-start align-items-md-center justify-content-end">
-        <div class="col-md-5 text-center text-md-left pt-5 pt-md-0">
-          <h1 class="mb-2" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
-            ¡Bienvenido a Urrucar Automotriz!
-          </h1>
-          <div class="intro-text text-center text-md-left">
-            <p class="mb-4" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
-              Todo para tu vehículo en un solo lugar. Compra y venta de autos y repuestos, consignación, mecánica y más.
-            </p>
-            <p>
-              <a href="{% url 'catalogo_productos' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
-                Ir al catálogo de productos
-              </a>
-            </p>
-            <p>
-              <a href="{% url 'catalogo_servicios' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
-                Ir al catálogo de servicios
-              </a>
-            </p>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-<div class="site-section block-3 site-blocks-2 bg-light" style="margin-top: -0.5rem" id="productos_principales">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-7 site-section-heading text-center pt-4">
-        <h2 class="neon-blue" style="font-family: 'Poppins', sans-serif; font-weight: 700;">PRODUCTOS PRINCIPALES</h2>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-md-12">
-          <div class="nonloop-block-3 owl-carousel">
-              <div class="item neon-box-blue">
-                  <div class="block-4 text-center bg-dark">
-                      <figure class="block-4-image">
-                          <a href="{% url 'ver_detalles_producto' 1 %}">
-                              <img src="{% static 'images/productos/auto_1_O0eQpzb_wB1C1RB.jpg' %}" alt="Hyundai i30" class="img-fluid">
-                          </a>
-                      </figure>
-                      <div class="block-4-text p-4 bg-dark" style="color: white;">
-                        <h3><a href="{% url 'ver_detalles_producto' 1 %}" style="color: white !important;">Hyundai</a></h3>
-                        <p class="mb-0">30.000 de kilometraje</p>
-                        <p class="text-primary font-weight-bold" style="color: white !important;">$11.180.000</p>
-                      </div>
-                  </div>
-              </div>
-              <div class="item neon-box-blue">
-                <div class="block-4 text-center bg-dark">
-                      <figure class="block-4-image">
-                          <a href="{% url 'ver_detalles_producto' 2 %}">
-                              <img src="{% static 'images/productos/auto_2_ohvAJZN_9pbJxrt.jpg' %}" alt="Hyundai Santa Fe" class="img-fluid">
-                          </a>
-                      </figure>
-                      <div class="block-4-text p-4 bg-dark" style="color: white;">
-                          <h3><a href="{% url 'ver_detalles_producto' 2 %}" style="color: white !important;">Hyundai</a></h3>
-                          <p class="mb-0">30.000 de kilometraje</p>
-                          <p class="text-primary font-weight-bold" style="color: white !important;">$13.590.000</p>
-                      </div>
-                  </div>
-              </div>
-              <div class="item neon-box-blue">
-                <div class="block-4 text-center bg-dark">
-                      <figure class="block-4-image">
-                          <a href="{% url 'ver_detalles_producto' 3 %}">
-                              <img src="{% static 'images/productos/auto_3_uxMaQ7p_ViouFKA.jpg' %}" alt="Subaru Outback" class="img-fluid">
-                          </a>
-                      </figure>
-                      <div class="block-4-text p-4 bg-dark" style="color: white;">
-                          <h3><a href="{% url 'ver_detalles_producto' 3 %}" style="color: white !important;">Subaru</a></h3>
-                          <p class="mb-0">30.000 de kilometraje</p>
-                          <p class="text-primary font-weight-bold" style="color: white !important;">$25.900.000</p>
-                      </div>
-                  </div>
-              </div>
-              <div class="item neon-box-blue">
-                <div class="block-4 text-center bg-dark">
-                      <figure class="block-4-image">
-                          <a href="{% url 'ver_detalles_producto' 4 %}">
-                              <img src="{% static 'images/productos/auto_4_nUMqeJx_dwbxKLb.jpg' %}" alt="Peugeot 3008" class="img-fluid">
-                          </a>
-                      </figure>
-                      <div class="block-4-text p-4 bg-dark" style="color: white;">
-                          <h3><a href="{% url 'ver_detalles_producto' 4 %}" style="color: white !important;">Peugeot</a></h3>
-                          <p class="mb-0">30.000 de kilometraje</p>
-                          <p class="text-primary font-weight-bold" style="color: white !important;">$21.900.000</p>
-                      </div>
-                  </div>
-              </div>
-              <div class="item neon-box-blue">
-                <div class="block-4 text-center bg-dark">
-                      <figure class="block-4-image">
-                          <a href="{% url 'ver_detalles_producto' 5 %}">
-                              <img src="{% static 'images/productos/auto_5.jpg' %}" alt="Nissan X Trail" class="img-fluid">
-                          </a>
-                      </figure>
-                      <div class="block-4-text p-4 bg-dark" style="color: white;">
-                          <h3><a href="{% url 'ver_detalles_producto' 5 %}" style="color: white !important;">Nissan</a></h3>
-                          <p class="mb-0">30.000 de kilometraje</p>
-                          <p class="text-primary font-weight-bold" style="color: white !important;">$17.990.000</p>
-                      </div>
-                  </div>
-              </div>
-          </div>
-      </div>
-  </div>  
-  </div>
-</div>
-
-<div class="site-section site-blocks-2" id="servicios_principales">
-  <div class="container">
-    <div class="row justify-content-center">
-      <div class="col-md-7 site-section-heading text-center pt-4">
-        <h2 class="neon-orange" style="font-family: 'Poppins', sans-serif; font-weight: 700;">SERVICIOS PRINCIPALES</h2>
-      </div>
-    </div>
-    <div class="row">
-      <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="">
-        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 1 %}">
-          <figure class="image">
-            <img src="{% static 'images/Desabolladura.jpg' %}" alt="" class="img-fluid">
-          </figure>
-          <div class="text">
-            <span class="neon-orange text-uppercase">Taller</span>
-            <h2 class="neon-orange">Desabolladura & <br> Pintura</h2>
-          </div>
-        </a>
-      </div>
-      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="100">
-        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 2 %}">
-          <figure class="image">
-            <img src="{% static 'images/Venta.jpg' %}" alt="" class="img-fluid">
-          </figure>
-          <div class="text">
-            <span class="neon-orange text-uppercase">Quiero vender mi vehículo</span>
-            <h2 class="neon-orange">Consignación <br> Virtual</h2>
-          </div>
-        </a>
-      </div>
-      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
-        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 4 %}">
-          <figure class="image">
-            <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
-          </figure>
-          <div class="text">
-            <span class="neon-orange text-uppercase">Taller</span>
-            <h2 class="neon-orange">Mecánico <br> Automotriz</h2>
-          </div>
-        </a>
-      </div>
-    </div>
-  </div>
-</div>
-
 <style>
   #productos_principales {
       background-image: url('{% static "images/auto_banner2.jpg" %}');
@@ -240,6 +82,124 @@
     background: #ed913f; /* Cambia el color de fondo a naranja */
   }
 </style>
+
+  <div class="site-blocks-cover" id="auto_banner" data-aos="fade">
+    <div class="container">
+      <div class="row align-items-start align-items-md-center justify-content-end">
+        <div class="col-md-5 text-center text-md-left pt-5 pt-md-0">
+          <h1 class="mb-2" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
+            ¡Bienvenido a Urrucar Automotriz!
+          </h1>
+          <div class="intro-text text-center text-md-left">
+            <p class="mb-4" style="color: white; text-shadow: 0 0 5px #ff2400, 0 0 10px #ff2400, 0 0 15px #ff2400, 0 0 20px #ff2400, 0 0 25px #ff2400, 0 0 30px #ff2400;">
+              Todo para tu vehículo en un solo lugar. Compra y venta de autos y repuestos, consignación, mecánica y más.
+            </p>
+            <p>
+              <a href="{% url 'catalogo_productos' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
+                Ir al catálogo de productos
+              </a>
+            </p>
+            <p>
+              <a href="{% url 'catalogo_servicios' %}" class="btn btn-sm btn-primary" style="display: inline-block; width: 300px; text-align: center; background-color: black; color: white; border: 2px solid #ed913f; text-shadow: 0 0 5px #ed913f, 0 0 10px #ed913f, 0 0 15px #ed913f;">
+                Ir al catálogo de servicios
+              </a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="site-section block-3 site-blocks-2 bg-light" style="margin-top: -0.5rem" id="productos_principales">
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-7 site-section-heading text-center pt-4">
+          <h2 class="neon-blue" style="font-family: 'Poppins', sans-serif; font-weight: 700;">PRODUCTOS PRINCIPALES</h2>
+        </div>
+      </div>
+      
+      <div class="row">
+        <div class="col-md-12">
+            <!-- Añadimos clase condicional para centrar si hay solo 1 producto -->
+            <div class="nonloop-block-3 owl-carousel {% if productos_principales|length == 1 %}solo-un-producto{% endif %}">
+                {% for producto in productos_principales %}
+                <div class="item neon-box-blue">
+                    <div class="block-4 text-center bg-dark">
+                        <figure class="block-4-image">
+                            <a href="{% url 'ver_detalles_producto' producto.id %}">
+                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid">
+                            </a>
+                        </figure>
+                        <div class="block-4-text p-4 bg-dark" style="color: white;">
+                          <h3>
+                            <a href="{% url 'ver_detalles_producto' producto.id %}" style="color: white !important;">
+                              {{ producto.nombre }}
+                            </a>
+                          </h3>
+                          {% if producto.categoria == 'Vehículo' and producto.anio %}
+                          <p class="mb-0">Año: {{ producto.anio }}</p>
+                          {% else %}
+                          <p class="mb-0">&nbsp;</p>  <!-- Espacio en blanco si no hay año -->
+                          {% endif %}
+                          <p class="text-primary font-weight-bold" style="color: white !important;">
+                            ${{ producto.precio_formateado }}
+                          </p>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="text-center">No hay productos disponibles en este momento.</p>
+                {% endfor %}
+            </div>
+        </div>
+      </div>  
+    </div>
+  </div>  
+
+<div class="site-section site-blocks-2" id="servicios_principales">
+  <div class="container">
+    <div class="row justify-content-center">
+      <div class="col-md-7 site-section-heading text-center pt-4">
+        <h2 class="neon-orange" style="font-family: 'Poppins', sans-serif; font-weight: 700;">SERVICIOS PRINCIPALES</h2>
+      </div>
+    </div>
+    <div class="row">
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-4 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="">
+        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 1 %}">
+          <figure class="image">
+            <img src="{% static 'images/Desabolladura.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Taller</span>
+            <h2 class="neon-orange">Desabolladura & <br> Pintura</h2>
+          </div>
+        </a>
+      </div>
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="100">
+        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 2 %}">
+          <figure class="image">
+            <img src="{% static 'images/Venta.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Quiero vender mi vehículo</span>
+            <h2 class="neon-orange">Consignación <br> Virtual</h2>
+          </div>
+        </a>
+      </div>
+      <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
+        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 4 %}">
+          <figure class="image">
+            <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
+          </figure>
+          <div class="text">
+            <span class="neon-orange text-uppercase">Taller</span>
+            <h2 class="neon-orange">Mecánico <br> Automotriz</h2>
+          </div>
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
   document.getElementById('auto_banner').style.backgroundImage = "url('{% static 'images/auto_banner.jpg' %}')";

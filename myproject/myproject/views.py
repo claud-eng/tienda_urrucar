@@ -1,3 +1,5 @@
+from apps.Transaccion.context_processors import formato_precio # Importa la función formato_precio de la aplicación Transacción
+from apps.Transaccion.models import Producto # Importa la clase Producto de la aplicación Transacción
 from django.conf import settings  # Configuración del proyecto, incluyendo parámetros de correo electrónico
 from django.core.mail import send_mail  # Función para enviar correos electrónicos
 from django.shortcuts import render, redirect  # Funciones para renderizar plantillas y redirigir URLs
@@ -7,10 +9,15 @@ def home(request):
     # Renderiza la plantilla de la página principal
     return render(request, 'base/index.html')
 
-# Vista para la página principal con un contexto de imagen de héroe
+# Vista para la página principal
 def index(request):
-    # Renderiza la plantilla 'index.html' con el contexto dado
-    return render(request, 'index.html')
+    productos_principales = Producto.objects.filter(
+        cantidad_stock__gte=0,
+        categoria='Vehículo'  # Filtro para solo traer vehículos
+    ).order_by('id')[:5]
+    for producto in productos_principales:
+        producto.precio_formateado = formato_precio(producto.precio)
+    return render(request, 'index.html', {'productos_principales': productos_principales})
 
 # Vista para la página "Sobre Nosotros"
 def sobre_nosotros(request):
@@ -21,11 +28,6 @@ def sobre_nosotros(request):
 def contactanos(request):
     # Renderiza la plantilla 'contact.html'
     return render(request, 'contact.html')
-
-# Vista para la página de agradecimiento tras un pago exitoso
-def regreso_pago(request):
-    # Renderiza la plantilla 'thankyou.html'
-    return render(request, 'thankyou.html')
 
 # Vista para la página de preguntas frecuentes
 def preguntas_frecuentes(request):

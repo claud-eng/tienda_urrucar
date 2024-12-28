@@ -2,20 +2,97 @@
 {% block title %}Confirmar Borrado de Servicio{% endblock %}
 {% block content %}
 
+<style>
+    /* Estilo base para botones (Escritorio y pantallas grandes) */
+    .container .btn {
+        margin-right: 10px;  /* Espaciado horizontal entre botones */
+        width: auto;  /* Ancho automático */
+    }
+  
+    /* Tablets (pantallas medianas) */
+    @media (max-width: 991.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;  /* Ocupan todo el ancho */
+            margin-bottom: 10px;  /* Espaciado vertical entre botones */
+        }
+    }
+  
+    /* Móviles (pantallas pequeñas) */
+    @media (max-width: 767.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Mayor espaciado entre botones */
+        }
+    }
+  
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .container .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
+    
+    /* Centrado del contenido de confirmación */
+    .confirmation-box {
+        width: 100%;
+        max-width: 700px;  /* Limitar el ancho del contenedor */
+        margin: 0 auto;  /* Centrar horizontalmente */
+        text-align: center;  /* Centrar texto y botones */
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+    }
+  
+    .confirmation-box p {
+        margin-bottom: 15px;
+    }
+  
+    /* Botones responsivos */
+    .confirmation-box .btn {
+        margin: 10px 5px;
+    }
+  
+    @media (max-width: 767.98px) {
+        .confirmation-box .btn {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+        }
+    }
+</style>
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a>
+                <span class="mx-2 mb-0">/</span>
+                <a href="{% url 'gestionar_inventario' %}">Gestionar Servicios</a>
+                <span class="mx-2 mb-0">/</span>
+                <a href="{% url 'listar_servicios' %}">Lista de Servicios</a>
+                <span class="mx-2 mb-0">/</span>
+                <strong class="text-black">Confirmar Borrado</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
 <div class="container mt-5">
     <div class="row justify-content-center">
         <div class="col-md-8">
-            <h2>Confirmar Borrado</h2>
-            <p>¿Estás seguro de que deseas eliminar el servicio "{{ servicio.nombre }}" de la base de datos?</p>
-            <p><strong>Nombre:</strong> {{ servicio.nombre }}</p>
-            <p><strong>Descripción:</strong> {{ servicio.descripcion }}</p>
-            <p><strong>Precio:</strong> {{ servicio.precio }}</p>
+            <div class="confirmation-box">
+                <p>¿Estás seguro de que deseas eliminar el servicio "<strong>{{ servicio.nombre }}</strong>" de la base de datos?</p>
+                <p><strong>Nombre:</strong> {{ servicio.nombre }}</p>
+                <p><strong>Descripción:</strong> {{ servicio.descripcion }}</p>
+                <p><strong>Precio:</strong> {{ servicio.precio }}</p>
 
-            <form method="post">
-                {% csrf_token %}
                 <a href="{% url 'borrar_servicio' servicio.id %}" class="btn btn-danger btn-sm">Confirmar Borrado</a>
                 <a href="{% url 'listar_servicios' %}" class="btn btn-secondary btn-sm">Cancelar</a>
-            </form>
+            </div>
         </div>
     </div>
 </div>

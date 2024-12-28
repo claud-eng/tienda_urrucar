@@ -1,10 +1,36 @@
 {% extends 'base.html' %}
-
 {% block title %}
 Iniciar sesión
 {% endblock %}
-
 {% block content %}
+
+<style>
+/* Ajuste para pantallas medianas (tablets) */
+@media (max-width: 991.98px) {
+    .form-group .btn {
+        display: block; /* Forzar que los botones se muestren en bloque (uno debajo del otro) */
+        width: 100%;  /* Hacer que ocupen todo el ancho disponible */
+        margin-bottom: 10px; /* Espacio entre los botones */
+    }
+
+    #togglePassword {
+        margin-top: 10px; /* Espaciado entre los botones */
+    }
+}
+
+/* Ajuste para pantallas pequeñas (móviles) */
+@media (max-width: 767.98px) {
+    .form-group .btn {
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;  /* Aumentamos un poco más el espacio entre los botones */
+    }
+
+    #togglePassword {
+        margin-top: 15px;
+    }
+}
+</style>
 
 <div class="bg-light py-3">
     <div class="container">
@@ -88,4 +114,5 @@ Iniciar sesión
         }
     });
 </script>
+
 {% endblock %}

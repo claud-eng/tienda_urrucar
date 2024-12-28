@@ -1,7 +1,5 @@
 {% extends 'base.html' %}
-
 {% block title %}Lista de clientes{% endblock %}
-
 {% block content %}
 
 <style>
@@ -9,10 +7,54 @@
       vertical-align: middle;
       text-align: center;
   }
+
+  /* Estilo base para botones (Escritorio y pantallas grandes) */
+  .container .btn {
+      margin-right: 10px;  /* Espaciado entre botones */
+      width: auto;  /* Ancho automático */
+  }
+
+  /* Tablets (pantallas medianas) */
+  @media (max-width: 991.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;  /* Ancho completo */
+          margin-bottom: 10px;  /* Espaciado entre botones */
+      }
+  }
+
+  /* Móviles (pantallas pequeñas) */
+  @media (max-width: 767.98px) {
+      .container .btn {
+          display: block;
+          width: 100%;
+          margin-bottom: 15px;  /* Más espacio entre botones */
+      }
+  }
+
+  /* Dispositivos muy pequeños (menos de 480px) */
+  @media (max-width: 480px) {
+      .container .btn {
+          width: 100%;
+          margin-bottom: 12px;
+      }
+  }
 </style>
 
+<div class="bg-light py-3">
+  <div class="container">
+  <div class="row">
+      <div class="col-md-12 mb-0">
+      <a href="{% url 'home' %}">Inicio</a> 
+      <span class="mx-2 mb-0">/</span> 
+      <a href="{% url 'gestionar_cuentas' %}">Gestionar Cuentas</a> 
+      <span class="mx-2 mb-0">/</span> 
+      <strong class="text-black">Lista de Clientes</strong></div>
+      </div>
+  </div>
+  </div>
+
 <div class="container mt-5">
-    <h2>Lista de clientes</h2>
 
     <!-- Agregar mensajes de éxito -->
     {% if messages %}

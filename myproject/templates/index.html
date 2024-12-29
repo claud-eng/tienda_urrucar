@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block content %}
-
+{% block extra_css %}
 <style>
   #productos_principales {
       background-image: url('{% static "images/auto_banner2.jpg" %}');
@@ -17,6 +16,7 @@
     background-position: center;
     padding: 40px 0;
   }
+
   /* Efecto de neón rojo para el título */
   .neon-red {
     color: white;
@@ -68,7 +68,7 @@
   #productos_principales .owl-nav .owl-prev,
   #productos_principales .owl-nav .owl-next {
     color: white; /* Cambia el color de las flechas */
-}
+  }
   /* Aumenta el espacio entre productos */
   #productos_principales .owl-carousel .item {
     margin-right: 10px; /* Espacio a la derecha entre productos */
@@ -78,10 +78,13 @@
   #servicios_principales .block-2-item {
     margin-bottom: 20px; /* Espacio vertical entre servicios */
   }
+
   #servicios_principales .site-section-heading:before {
     background: #ed913f; /* Cambia el color de fondo a naranja */
   }
 </style>
+{% endblock %}
+{% block content %}
 
   <div class="site-blocks-cover" id="auto_banner" data-aos="fade">
     <div class="container">
@@ -187,7 +190,7 @@
         </a>
       </div>
       <div class="col-sm-6 col-md-6 col-lg-4 mb-5 mb-lg-0 pt-4" data-aos="fade" data-aos-delay="200">
-        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 4 %}">
+        <a class="block-2-item neon-box" href="{% url 'ver_detalles_servicio' 3 %}">
           <figure class="image">
             <img src="{% static 'images/Mecanico.jpg' %}" alt="" class="img-fluid">
           </figure>

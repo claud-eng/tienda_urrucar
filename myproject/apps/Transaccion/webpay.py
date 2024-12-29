@@ -386,6 +386,11 @@ def transaccion_finalizada(request):
             )
             print(f"Nuevo cliente anónimo creado (error): {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
 
-        contexto = {'mensaje_error': f"Error al procesar la transacción: {e.message}"}
+        # Modificar el mensaje de error solo si el token es nulo
+        if "'token' can't be null or white space" in e.message:
+            contexto = {'mensaje_error': "La compra ha sido anulada por el usuario."}
+        else:
+            contexto = {'mensaje_error': f"Error al procesar la transacción: {e.message}"}
+
         return render(request, 'Transaccion/retorno_webpay.html', contexto)
 

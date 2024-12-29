@@ -1,45 +1,46 @@
 {% extends 'base.html' %}
 {% block title %}Lista de clientes{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
-  .table td, .table th {
-      vertical-align: middle;
-      text-align: center;
-  }
+    .table td, .table th {
+        vertical-align: middle;
+        text-align: center;
+    }
 
-  /* Estilo base para botones (Escritorio y pantallas grandes) */
-  .container .btn {
-      margin-right: 10px;  /* Espaciado entre botones */
-      width: auto;  /* Ancho automático */
-  }
+    /* Estilo base para botones (Escritorio y pantallas grandes) */
+    .container .btn {
+        margin-right: 10px;  /* Espaciado entre botones */
+        width: auto;  /* Ancho automático */
+    }
 
-  /* Tablets (pantallas medianas) */
-  @media (max-width: 991.98px) {
-      .container .btn {
-          display: block;
-          width: 100%;  /* Ancho completo */
-          margin-bottom: 10px;  /* Espaciado entre botones */
-      }
-  }
+    /* Tablets (pantallas medianas) */
+    @media (max-width: 991.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;  /* Ancho completo */
+            margin-bottom: 10px;  /* Espaciado entre botones */
+        }
+    }
 
-  /* Móviles (pantallas pequeñas) */
-  @media (max-width: 767.98px) {
-      .container .btn {
-          display: block;
-          width: 100%;
-          margin-bottom: 15px;  /* Más espacio entre botones */
-      }
-  }
+    /* Móviles (pantallas pequeñas) */
+    @media (max-width: 767.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Más espacio entre botones */
+        }
+    }
 
-  /* Dispositivos muy pequeños (menos de 480px) */
-  @media (max-width: 480px) {
-      .container .btn {
-          width: 100%;
-          margin-bottom: 12px;
-      }
-  }
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .container .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
 </style>
+{% endblock %}
+{% block content %}
 
 <div class="bg-light py-3">
   <div class="container">

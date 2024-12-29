@@ -1,54 +1,55 @@
 {% extends 'base.html' %}
 {% load static %}
-{% block content %}
-
+{% block extra_css %}
 <style>
-.block-4 {
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    height: 100%;  /* Asegura que todas las tarjetas tengan la misma altura */
-}
+    .block-4 {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        height: 100%;  /* Asegura que todas las tarjetas tengan la misma altura */
+    }
 
-.block-4 .block-4-text {
-    flex-grow: 1;  /* Permite que el texto se expanda y empuje el contenido hacia abajo */
-    display: flex;
-    flex-direction: column;
-    justify-content: flex-end;
-}
+    .block-4 .block-4-text {
+        flex-grow: 1;  /* Permite que el texto se expanda y empuje el contenido hacia abajo */
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+    }
 
-.block-4-image img {
-    max-height: 200px;  /* Limita la altura de la imagen para evitar desbordamientos */
-    object-fit: cover;  /* Mantiene las proporciones de la imagen */
-    width: 100%;
-}
+    .block-4-image img {
+        max-height: 200px;  /* Limita la altura de la imagen para evitar desbordamientos */
+        object-fit: cover;  /* Mantiene las proporciones de la imagen */
+        width: 100%;
+    }
 
-  /* Tablets (pantallas medianas) */
-  @media (max-width: 991.98px) {
-      .container .btn {
-          display: block;
-          width: 100%;  /* Ancho completo */
-          margin-bottom: 10px;  /* Espaciado entre botones */
-      }
-  }
+    /* Tablets (pantallas medianas) */
+    @media (max-width: 991.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;  /* Ancho completo */
+            margin-bottom: 10px;  /* Espaciado entre botones */
+        }
+    }
 
-  /* Móviles (pantallas pequeñas) */
-  @media (max-width: 767.98px) {
-      .container .btn {
-          display: block;
-          width: 100%;
-          margin-bottom: 15px;  /* Más espacio entre botones */
-      }
-  }
+    /* Móviles (pantallas pequeñas) */
+    @media (max-width: 767.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Más espacio entre botones */
+        }
+    }
 
-  /* Dispositivos muy pequeños (menos de 480px) */
-  @media (max-width: 480px) {
-      .container .btn {
-          width: 100%;
-          margin-bottom: 12px;
-      }
-  }
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .container .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
 </style>
+{% endblock %}
+{% block content %}
 
 <div class="bg-light py-3">
   <div class="container">

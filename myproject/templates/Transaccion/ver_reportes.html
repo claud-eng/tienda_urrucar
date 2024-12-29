@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 {% block title %}Ver Reportes{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
   /* Estilo base (Escritorio y pantallas grandes) */
   .container .btn {
@@ -36,6 +35,8 @@
       }
   }
 </style>
+{% endblock %}
+{% block content %}
 
 <div class="bg-light py-3">
     <div class="container">

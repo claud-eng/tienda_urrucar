@@ -23,12 +23,12 @@ from apps.Usuario.models import Cliente, Empleado  # Importar los modelos 'Clien
 
 def validate_username(value):
     """
-    Valida que 'value' sea un correo electrónico con el dominio @claudev.cl.
+    Valida que 'value' sea un correo electrónico con el dominio @urrucar.cl.
     Lanza una excepción forms.ValidationError si no cumple con el formato esperado.
     """
-    if not value.endswith('@claudev.cl'):
+    if not value.endswith('@urrucar.cl'):
         # Si el correo no termina en el dominio especificado, lanza un error de validación.
-        raise forms.ValidationError('El nombre de usuario debe ser un correo electrónico con el dominio @claudev.cl.')
+        raise forms.ValidationError('El nombre de usuario debe ser un correo electrónico con el dominio @urrucar.cl.')
 
 def validate_rut_chileno(value):
     """
@@ -59,9 +59,9 @@ class ClienteForm(forms.ModelForm):
         # Validación adicional: asegura que el nombre de usuario no esté en uso.
         username = self.cleaned_data['username']
     
-        # Verificar si el dominio es "@claudev.cl"
-        if username.endswith('@claudev.cl'):
-            raise forms.ValidationError('No se permite registrar un cliente con el dominio @claudev.cl.')
+        # Verificar si el dominio es "@urrucar.cl"
+        if username.endswith('@urrucar.cl'):
+            raise forms.ValidationError('No se permite registrar un cliente con el dominio @urrucar.cl.')
 
         # Verificar si el nombre de usuario ya está en uso.
         if User.objects.filter(username=username).exists():
@@ -168,9 +168,9 @@ class EditarClienteForm(forms.ModelForm):
         # solo si el valor ha cambiado
         username = self.cleaned_data['username']
         if username != self.instance.user.username:
-            # Verificar si el dominio es "@claudev.cl"
-            if username.endswith('@claudev.cl'):
-                raise forms.ValidationError('No se permite registrar un cliente con el dominio @claudev.cl.')
+            # Verificar si el dominio es "@urrucar.cl"
+            if username.endswith('@urrucar.cl'):
+                raise forms.ValidationError('No se permite registrar un cliente con el dominio @urrucar.cl.')
 
             # Verificar si el nombre de usuario ya está en uso.
             if User.objects.filter(username=username).exists():
@@ -262,9 +262,9 @@ class CustomClienteForm(forms.ModelForm):
         # solo si el valor ha cambiado
         username = self.cleaned_data['username']
         if username != self.instance.user.username:
-            # Verificar si el dominio es "@claudev.cl"
-            if username.endswith('@claudev.cl'):
-                raise forms.ValidationError('No se permite registrar un cliente con el dominio @claudev.cl.')
+            # Verificar si el dominio es "@urrucar.cl"
+            if username.endswith('@urrucar.cl'):
+                raise forms.ValidationError('No se permite registrar un cliente con el dominio @urrucar.cl.')
 
             # Verificar si el nombre de usuario ya está en uso.
             if User.objects.filter(username=username).exists():
@@ -325,7 +325,7 @@ class EmpleadoForm(forms.ModelForm):
         max_length=150,
         required=True,
         label='Usuario (Correo Electrónico)',
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@claudev.cl'}),
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@urrucar.cl'}),
         validators=[validate_username],  # Validación personalizada
     )
 
@@ -445,7 +445,7 @@ class EditarEmpleadoForm(forms.ModelForm):
         max_length=150,
         required=True,
         label='Usuario (Correo Electrónico)',
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@claudev.cl'}),
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@urrucar.cl'}),
         validators=[validate_username],  # Validación personalizada
     )
 
@@ -554,7 +554,7 @@ class CustomPasswordResetForm(PasswordResetForm):
         max_length=150,
         required=True,
         label='Correo Electrónico',
-        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Ingrese su email'}),
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'usuario@gmail.com'}),
     )
 
     def send_mail(self, subject_template_name, email_template_name,

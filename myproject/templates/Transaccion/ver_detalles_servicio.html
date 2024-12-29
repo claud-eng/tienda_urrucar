@@ -1,8 +1,7 @@
 {% extends 'base.html' %}
 {% load static %}
 {% block title %}Detalles del Servicio{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
   /* Tablets (pantallas medianas) */
   @media (max-width: 991.98px) {
@@ -99,6 +98,8 @@
       }
   }
 </style>
+{% endblock %}
+{% block content %}
 
 <div class="bg-light py-3">
   <div class="container">

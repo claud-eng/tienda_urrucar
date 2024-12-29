@@ -522,7 +522,7 @@ def envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito
             nombre_legible = mapeo_campos.get(campo, campo)
             mensaje += f"{nombre_legible}: {valor if valor else 'N/A'}\n"
 
-    destinatario = "czamorano@claudev.cl"
+    destinatario = "automotriz@urrucar.cl"
     
     # Enviar el correo
     send_mail(

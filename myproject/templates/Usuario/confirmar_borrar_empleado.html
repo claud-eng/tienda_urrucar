@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Borrar Empleado{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
     /* Estilo base para botones (Escritorio y pantallas grandes) */
     .container .btn {
@@ -35,36 +34,38 @@
         }
     }
 
-  /* Centrado del contenido de confirmación */
-  .confirmation-box {
-      width: 100%;
-      max-width: 700px;  /* Limitar el ancho del contenedor */
-      margin: 0 auto;  /* Centrar horizontalmente */
-      text-align: center;  /* Centrar texto y botones */
-      padding: 30px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
-      background-color: #fff;
-  }
+    /* Centrado del contenido de confirmación */
+    .confirmation-box {
+        width: 100%;
+        max-width: 700px;  /* Limitar el ancho del contenedor */
+        margin: 0 auto;  /* Centrar horizontalmente */
+        text-align: center;  /* Centrar texto y botones */
+        padding: 30px;
+        border-radius: 10px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        background-color: #fff;
+    }
 
-  .confirmation-box p {
-      margin-bottom: 15px;
-  }
+    .confirmation-box p {
+        margin-bottom: 15px;
+    }
 
-  /* Botones responsivos */
-  .confirmation-box .btn {
-      margin: 10px 5px;
-  }
+    /* Botones responsivos */
+    .confirmation-box .btn {
+        margin: 10px 5px;
+    }
 
-  @media (max-width: 767.98px) {
-      .confirmation-box .btn {
-          display: block;
-          width: 100%;
-          margin: 10px 0;
-      }
-  }
+    @media (max-width: 767.98px) {
+        .confirmation-box .btn {
+            display: block;
+            width: 100%;
+            margin: 10px 0;
+        }
+    }
 </style>
-  
+{% endblock %}
+{% block content %}
+
   <div class="bg-light py-3">
       <div class="container">
           <div class="row">

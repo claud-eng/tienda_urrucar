@@ -1,7 +1,6 @@
 {% extends 'base.html' %}
 {% block title %}Editar empleado{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
     /* Estilo base para botones (Escritorio y pantallas grandes) */
     .container form .btn {
@@ -35,7 +34,9 @@
         }
     }
 </style>
-  
+{% endblock %}
+{% block content %}
+
 <div class="bg-light py-3">
     <div class="container">
         <div class="row">

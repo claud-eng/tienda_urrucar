@@ -1,40 +1,41 @@
 {% extends 'base.html' %}
 {% block title %}Editar Producto{% endblock %}
-{% block content %}
-
+{% block extra_css %}
 <style>
-  /* Estilo base para botones (Escritorio y pantallas grandes) */
-  .container form .btn {
-      margin-right: 10px;  /* Espaciado horizontal entre botones */
-      width: auto;  /* Ancho automático en pantallas grandes */
-  }
+    /* Estilo base para botones (Escritorio y pantallas grandes) */
+    .container form .btn {
+        margin-right: 10px;  /* Espaciado horizontal entre botones */
+        width: auto;  /* Ancho automático en pantallas grandes */
+    }
 
-  /* Tablets (pantallas medianas) */
-  @media (max-width: 991.98px) {
-      .container form .btn {
-          display: block;  /* Botones apilados verticalmente */
-          width: 100%;  /* Ancho completo */
-          margin-bottom: 10px;  /* Espaciado vertical entre botones */
-      }
-  }
+    /* Tablets (pantallas medianas) */
+    @media (max-width: 991.98px) {
+        .container form .btn {
+            display: block;  /* Botones apilados verticalmente */
+            width: 100%;  /* Ancho completo */
+            margin-bottom: 10px;  /* Espaciado vertical entre botones */
+        }
+    }
 
-  /* Móviles (pantallas pequeñas) */
-  @media (max-width: 767.98px) {
-      .container form .btn {
-          display: block;
-          width: 100%;
-          margin-bottom: 15px;  /* Mayor espaciado entre botones */
-      }
-  }
+    /* Móviles (pantallas pequeñas) */
+    @media (max-width: 767.98px) {
+        .container form .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Mayor espaciado entre botones */
+        }
+    }
 
-  /* Dispositivos muy pequeños (menos de 480px) */
-  @media (max-width: 480px) {
-      .container form .btn {
-          width: 100%;
-          margin-bottom: 12px;
-      }
-  }
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .container form .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
 </style>
+{% endblock %}
+{% block content %}
 
 <div class="bg-light py-3">
   <div class="container">

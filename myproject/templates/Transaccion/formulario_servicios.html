@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}Solicitar Servicio - {{ servicio.nombre }}{% endblock %}
+
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+      <div class="row">
+        <div class="col-md-12 mb-0">
+          <a href="{% url 'home' %}">Inicio</a> 
+          <span class="mx-2 mb-0">/</span> 
+          <a href="{% url 'catalogo_servicios' %}">Servicios</a> 
+          <span class="mx-2 mb-0">/</span> 
+          <a href="javascript:history.back()">{{ servicio.nombre }}</a>
+          <span class="mx-2 mb-0">/</span> 
+          <strong class="text-black">Formulario</strong>
+        </div>
+      </div>
+    </div>
+  </div>  
+
+<div class="container my-5">
+    
+    <!-- Mensajes de éxito -->
+    {% if success %}
+        <div class="alert alert-success text-center">
+            ¡Tu solicitud ha sido enviada con éxito! Te contactaremos a la brevedad.
+        </div>
+    {% endif %}
+
+    <!-- Mensajes de error -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-danger text-center">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        <div class="card shadow">
+            <div class="card-body">
+                <div class="row">
+                    <!-- Columna izquierda: Datos del comprador -->
+                    <div class="col-md-6">
+                        <h5>Datos del Comprador</h5>
+                        {% for pregunta in preguntas %}
+                            {% if pregunta.nombre == "nombre" or pregunta.nombre == "apellido" or pregunta.nombre == "rut" or pregunta.nombre == "telefono" or pregunta.nombre == "correo" %}
+                                <div class="form-group">
+                                    <label for="{{ pregunta.nombre }}">{{ pregunta.etiqueta }}</label>
+                                    {% if pregunta.tipo == "file" %}
+                                        <input type="file" class="form-control-file" id="{{ pregunta.nombre }}" name="{{ pregunta.nombre }}" 
+                                               {% if pregunta.obligatorio %}required{% endif %} multiple>
+                                    {% else %}
+                                        <input type="{{ pregunta.tipo|default:"text" }}" class="form-control" 
+                                               id="{{ pregunta.nombre }}" name="{{ pregunta.nombre }}" 
+                                               value="{{ pregunta.valor|default:'' }}" 
+                                               {% if pregunta.obligatorio %}required{% endif %}
+                                               {% if pregunta.readonly %}readonly{% endif %}>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>                    
+
+                    <!-- Columna derecha: Datos del vehículo -->
+                    <div class="col-md-6">
+                        <h5>Datos del Vehículo</h5>
+                        {% for pregunta in preguntas %}
+                            {% if pregunta.nombre != "nombre" and pregunta.nombre != "apellido" and pregunta.nombre != "rut" and pregunta.nombre != "telefono" and pregunta.nombre != "correo" and pregunta.nombre != "observaciones" %}
+                                <div class="form-group">
+                                    <label for="{{ pregunta.nombre }}">{{ pregunta.etiqueta }}</label>
+                                    {% if pregunta.tipo == "file" %}
+                                        <input type="file" class="form-control-file" id="{{ pregunta.nombre }}" name="{{ pregunta.nombre }}" 
+                                            {% if pregunta.obligatorio %}required{% endif %} multiple>
+                                        {% if pregunta.minimo or pregunta.maximo %}
+                                            <small class="form-text text-muted">
+                                                {% if pregunta.minimo %}Mínimo: {{ pregunta.minimo }} imágenes. {% endif %}
+                                                {% if pregunta.maximo %}Máximo: {{ pregunta.maximo }} imágenes.{% endif %}
+                                            </small>
+                                        {% endif %}
+                                    {% else %}
+                                        <input type="{{ pregunta.tipo|default:"text" }}" class="form-control" id="{{ pregunta.nombre }}" name="{{ pregunta.nombre }}" 
+                                            {% if pregunta.obligatorio %}required{% endif %}>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Campo de observaciones ocupa el ancho completo -->
+                {% for pregunta in preguntas %}
+                    {% if pregunta.nombre == "observaciones" %}
+                        <div class="form-group mt-4">
+                            <label for="{{ pregunta.nombre }}">{{ pregunta.etiqueta }}</label>
+                            <textarea class="form-control" id="{{ pregunta.nombre }}" name="{{ pregunta.nombre }}" rows="4" 
+                                {% if pregunta.obligatorio %}required{% endif %}></textarea>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+                <button type="submit" class="btn btn-primary btn-block mt-4">Enviar Solicitud</button>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-block">Volver atrás</a>
+            </div>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
+

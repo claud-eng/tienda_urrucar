@@ -98,7 +98,7 @@
                     <th>Cliente</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
-                    <th>Fecha</th>
+                    <th>Fecha de la Transacción</th>
                     <th>Detalle</th>
                     <th>Total (IVA incluido)</th>
                     <th>Pagó</th>
@@ -164,7 +164,14 @@
                         {% endif %}
                     </td>
             
-                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    <td>
+                        {% if venta_info.venta.total == 0 %}
+                            ${{ venta_info.venta.precio_personalizado|default:0 }}
+                        {% else %}
+                            ${{ venta_info.venta.total_formateado }}
+                        {% endif %}
+                    </td>
+                    
                     <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
                     <td>${{ venta_info.venta.cambio_formateado }}</td>
                     <td>

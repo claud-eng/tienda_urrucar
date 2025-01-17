@@ -3,20 +3,27 @@ import json  # Importa el módulo json para manejar datos en formato JSON.
 import matplotlib.pyplot as plt  # Importa pyplot de matplotlib para crear gráficos.
 from datetime import datetime, timedelta  # Importa datetime y timedelta para manejar fechas y tiempos.
 from django.conf import settings  # Importa la configuración de Django.
+from django.contrib.auth.decorators import login_required, user_passes_test  # Importa 'login_required' y 'user_passes_test' para proteger vistas que requieren autenticación y permisos.
 from django.contrib.staticfiles import finders  # Permite localizar archivos estáticos.
 from django.core.mail import send_mail  # Importa la función para enviar correos electrónicos.
 from django.core.serializers.json import DjangoJSONEncoder  # Importa el codificador JSON específico de Django.
-from django.db.models import Sum  # Importa Sum para realizar sumas agregadas en consultas de modelos.
+from django.db import models  # Importa las herramientas principales para definir modelos en Django.
+from django.db.models import Case, When, F, Sum, DecimalField, Q  # Importa herramientas para expresiones condicionales y cálculos agregados en consultas.
 from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse  # Importa clases de respuesta y redirección HTTP.
 from django.shortcuts import get_object_or_404, redirect, render  # Importa funciones de atajos para renderizar y redireccionar vistas.
 from django.utils import timezone  # Importa el módulo timezone para manejar zonas horarias.
-from io import BytesIO  # Importa BytesIO para manejo de flujos de datos en memoria.
+from io import BytesIO  # Importa BytesIO para manejar flujos de datos en memoria.
 from reportlab.lib import colors  # Importa colores de ReportLab para crear gráficos y personalizar PDFs.
 from reportlab.lib.pagesizes import A4, letter  # Importa tamaños de página 'A4' y 'letter' de ReportLab.
 from reportlab.lib.utils import ImageReader  # Importa ImageReader de ReportLab para manejar imágenes en PDFs.
 from reportlab.pdfgen import canvas  # Importa canvas de ReportLab para generar documentos PDF.
 from reportlab.platypus import Table, TableStyle  # Importa Table y TableStyle de ReportLab para crear tablas en PDFs.
+from .context_processors import formato_precio  # Importa la función de formateo de precios desde los context_processors de la aplicación.
 from .models import Carrito, DetalleVentaOnline, DetalleVentaManual, VentaOnline, VentaManual, Producto, Servicio  # Importa modelos de la aplicación actual.
+
+# Validación para que solo el administrador tenga acceso a las plantillas
+def es_administrador(user):
+    return user.is_authenticated and hasattr(user, 'empleado') and user.empleado.rol == 'Administrador'
 
 # Diccionario de meses en español
 MES_ESPANOL = {
@@ -123,14 +130,22 @@ def generar_comprobante_pago_pdf(tipo_venta, id_venta=None, numero_orden=None, e
         if hasattr(detalle, 'precio'):  # DetalleVentaOnline
             precio_unitario = detalle.precio
         else:  # DetalleVentaManual
-            precio_unitario = (
-                detalle.producto.precio if detalle.producto
-                else detalle.servicio.precio if detalle.servicio
-                else 0
-            )
+            if detalle.producto:
+                precio_unitario = detalle.producto.precio
+            elif detalle.servicio:
+                # Si el precio del servicio es 0, usar el precio personalizado
+                precio_unitario = detalle.servicio.precio if detalle.servicio.precio > 0 else venta.precio_personalizado or 0
+            else:
+                precio_unitario = 0
 
         precio_formateado = format(int(precio_unitario), ',').replace(',', '.')
-        p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio: ${precio_formateado}")
+        
+        # Condición para productos de categoría "Vehículo"
+        if detalle.producto and detalle.producto.categoria == "Vehículo":
+            p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio de Reserva: ${precio_formateado}")
+        else:
+            p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio: ${precio_formateado}")
+        
         y -= 20
         if y < 50:
             p.showPage()
@@ -241,6 +256,7 @@ def top_cinco_servicios_manuales(anio, mes):
     fecha_fin = datetime(anio, mes + 1, 1) if mes < 12 else datetime(anio + 1, 1, 1)
     return Servicio.objects.filter(detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
+@user_passes_test(es_administrador, login_url='home')
 def reporte_ventas_manuales(request):
     """
     Genera el contexto para la vista de reportes de ventas manuales.
@@ -258,7 +274,7 @@ def reporte_ventas_manuales(request):
     # Calcular rango de fechas según el filtro
     fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
 
-    # Calcular el total de ventas (productos y servicios) en general
+    # Calcular el total de ventas (productos y servicios)
     total_productos = Producto.objects.filter(
         detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
@@ -266,6 +282,19 @@ def reporte_ventas_manuales(request):
     total_servicios = Servicio.objects.filter(
         detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
+
+    # Calcular las ganancias totales directamente desde las ventas manuales
+    ventas = VentaManual.objects.filter(fecha_creacion__range=[fecha_inicio, fecha_fin])
+
+    total_ganancias = 0
+    for venta in ventas:
+        if venta.total == 0:
+            total_ganancias += venta.precio_personalizado or 0
+        else:
+            total_ganancias += venta.total
+
+    # Formatear el total de ganancias
+    total_ganancias_formateado = formato_precio(total_ganancias)
 
     # Obtener datos de ventas en ese rango de fechas
     top_cinco_productos = Producto.objects.filter(
@@ -324,6 +353,7 @@ def reporte_ventas_manuales(request):
         'datos_servicios_json': datos_servicios,
         'total_productos': total_productos,
         'total_servicios': total_servicios,
+        'total_ganancias_formateado': total_ganancias_formateado,
         'mensaje_productos': mensaje_productos,
         'mensaje_servicios': mensaje_servicios,
         'rango_anios': range(2022, 2028),
@@ -369,6 +399,7 @@ def top_cinco_servicios_online(anio, mes):
         total_vendido=Sum('detalleventaonline__cantidad')
     ).order_by('-total_vendido')[:5]
 
+@user_passes_test(es_administrador, login_url='home')
 def reporte_ventas_online(request):
     """
     Genera el contexto para el reporte de ventas online.
@@ -385,7 +416,7 @@ def reporte_ventas_online(request):
     # Calcular rango de fechas según el filtro
     fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
 
-    # Obtener el total general de ventas (productos y servicios)
+    # Calcular el total general de ventas (productos y servicios)
     total_productos = Producto.objects.filter(
         detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
@@ -393,6 +424,38 @@ def reporte_ventas_online(request):
     total_servicios = Servicio.objects.filter(
         detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
+
+    # Calcular total de ganancias
+    detalles = DetalleVentaOnline.objects.filter(
+        orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+    )
+
+    total_ganancias = 0
+    for detalle in detalles:
+        ganancia_detalle = 0
+
+        # Verificar si es un producto
+        if detalle.producto:
+            if detalle.producto.categoria == "Vehículo":
+                # Vehículo: Ganancia depende del estado
+                if detalle.estado_reserva == "Vendida":
+                    # Permitir mostrar pérdida como valor negativo
+                    ganancia_detalle = (detalle.producto.precio - 
+                                    (detalle.producto.precio_costo + detalle.producto.costo_extra)) * detalle.cantidad
+                else:
+                    # En proceso o Desistida: ganancia es 0
+                    ganancia_detalle = 0
+            else:
+                # No es vehículo: Usar el total pagado como ganancia
+                ganancia_detalle = detalle.precio * detalle.cantidad
+        else:
+            # Servicios: Usar el total pagado como ganancia
+            ganancia_detalle = detalle.precio * detalle.cantidad
+
+        total_ganancias += ganancia_detalle
+
+    # Formatear el total de ganancias
+    total_ganancias_formateado = formato_precio(total_ganancias)
 
     # Obtener datos de ventas online dentro del rango
     top_cinco_productos = Producto.objects.filter(
@@ -451,6 +514,7 @@ def reporte_ventas_online(request):
         'datos_servicios_json': datos_servicios,
         'total_productos': total_productos,
         'total_servicios': total_servicios,
+        'total_ganancias_formateado': total_ganancias_formateado,
         'mensaje_productos': mensaje_productos,
         'mensaje_servicios': mensaje_servicios,
         'rango_anios': range(2022, 2028),
@@ -477,50 +541,74 @@ def envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito
     """
     asunto = "Has recibido una nueva compra por Webpay"
     
+    # Verifica si hay servicios en el carrito
+    contiene_servicios = any(isinstance(item.item, Servicio) for item in carrito_items)
+
     # Agregar los datos de la persona al mensaje
     mensaje = "Datos del comprador:\n"
     mensaje += f"Nombre: {datos_persona.get('nombre', 'N/A')}\n"
     mensaje += f"Apellido: {datos_persona.get('apellido', 'N/A')}\n"
     mensaje += f"Correo: {datos_persona.get('email', 'N/A')}\n"
-    mensaje += f"Teléfono: {datos_persona.get('numero_telefono', 'N/A')}\n\n"
+    mensaje += f"Teléfono: {datos_persona.get('numero_telefono', 'N/A')}\n"
+    if contiene_servicios:
+        mensaje += f"RUT: {datos_formulario.get('rut', 'N/A')}\n"  # Incluir RUT solo si hay servicios
+    mensaje += "\n"
 
     # Agregar los productos adquiridos al mensaje
     mensaje += "Productos adquiridos:\n"
     productos_adquiridos = [
         f"- {item.item.nombre}" for item in carrito_items if isinstance(item.item, Producto)
     ]
-    if productos_adquiridos:
-        mensaje += "\n".join(productos_adquiridos) + "\n\n"
-    else:
-        mensaje += "Ninguno\n\n"
+    mensaje += "\n".join(productos_adquiridos) + "\n\n" if productos_adquiridos else "Ninguno\n\n"
 
     # Agregar los servicios contratados al mensaje
     mensaje += "Servicios contratados:\n"
     servicios_contratados = [
         f"- {item.item.nombre}" for item in carrito_items if isinstance(item.item, Servicio)
     ]
-    if servicios_contratados:
-        mensaje += "\n".join(servicios_contratados) + "\n\n"
-    else:
-        mensaje += "Ninguno\n\n"
+    mensaje += "\n".join(servicios_contratados) + "\n\n" if servicios_contratados else "Ninguno\n\n"
 
-    # Incluir la información del formulario dinámico solo si hay servicios contratados
+    # Incluir la información del formulario dinámica por servicio
     if servicios_contratados:
-        mensaje += "Información del vehículo al contratar uno o más servicios:\n"
-        
-        # Mapeo de campos a nombres legibles
-        mapeo_campos = {
-            'nombre_vehiculo': "Nombre del Vehículo",
-            'marca': "Marca",
-            'ano': "Año",
-            'retiro_domicilio': "Retiro a Domicilio",
-            'direccion': "Dirección",
-            'descripcion_vehiculo': "Descripción del Vehículo",
-        }
+        mensaje += "Información específica por servicio contratado:\n\n"
+        for item in carrito_items:
+            if isinstance(item.item, Servicio):
+                # Determinar campos relevantes según el servicio
+                if item.item.nombre == "Revisión precompra":
+                    campos_relevantes = {
+                        'patente': "Patente",
+                        'marca': "Marca",
+                        'modelo': "Modelo",
+                        'ano': "Año",
+                        'direccion_inspeccion': "Dirección de Inspección",
+                        'comuna': "Comuna",
+                        'fecha_inspeccion': "Fecha de Inspección",
+                    }
+                elif item.item.nombre == "Solicitar revisión técnica":
+                    campos_relevantes = {
+                        'patente': "Patente",
+                        'marca': "Marca",
+                        'modelo': "Modelo",
+                        'ano': "Año",
+                        'direccion_retiro': "Dirección de Retiro",
+                        'comuna': "Comuna",
+                        'fecha_servicio': "Fecha del Servicio",
+                    }
+                elif item.item.nombre in ["Sacar tag", "Asesoría en realizar la transferencia de un vehículo"]:
+                    campos_relevantes = {
+                        'patente': "Patente",
+                        'marca': "Marca",
+                        'modelo': "Modelo",
+                        'direccion': "Dirección",
+                        'comuna': "Comuna",
+                    }
+                else:
+                    campos_relevantes = {}
 
-        for campo, valor in datos_formulario.items():
-            nombre_legible = mapeo_campos.get(campo, campo)
-            mensaje += f"{nombre_legible}: {valor if valor else 'N/A'}\n"
+                # Agregar solo los campos relevantes al mensaje
+                for campo, nombre_legible in campos_relevantes.items():
+                    mensaje += f"{nombre_legible}: {datos_formulario.get(campo, 'N/A')}\n"
+                mensaje += "\n"
 
     destinatario = "automotriz@urrucar.cl"
     
@@ -532,5 +620,6 @@ def envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito
         [destinatario],
         fail_silently=False
     )
+
 
 

@@ -1,14 +1,18 @@
 from apps.Usuario.models import Cliente, Empleado  # Importa los modelos Cliente y Empleado de la aplicación Usuario
 from django.contrib import messages  # Importa la clase para trabajar con mensajes de Django
 from django.contrib.auth import logout  # Importa la función logout para cerrar la sesión de un usuario
-from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import login_required, user_passes_test  # Importa 'login_required' y 'user_passes_test' para proteger vistas que requieren autenticación y permisos.
 from django.contrib.auth.hashers import make_password  # Importa la función para crear contraseñas seguras
 from django.contrib.auth.models import User  # Importa el modelo User
 from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator  # Importa clases y funciones para paginación
 from django.shortcuts import redirect, render  # Importa funciones para redirigir y renderizar plantillas HTML
-from .forms import CambiarContraseñaClienteForm, ClienteForm, CustomClienteForm, EditarClienteForm, EditarEmpleadoForm, EmpleadoForm  # Importa los formularios definidos en este directorio
+from .forms import CambiarContraseñaUsuarioForm, ClienteForm, CustomClienteForm, EditarClienteForm, EditarEmpleadoForm, EmpleadoForm  # Importa los formularios definidos en este directorio
 
-@login_required
+# Validación para que solo el administrador tenga acceso a las plantillas
+def es_administrador(user):
+    return user.is_authenticated and hasattr(user, 'empleado') and user.empleado.rol == 'Administrador'
+
+@user_passes_test(es_administrador, login_url='home')
 def listar_clientes(request):
     """
     Lista todos los clientes en la base de datos con opciones de búsqueda
@@ -60,7 +64,7 @@ def agregar_cliente(request):
         form = ClienteForm()
     return render(request, "Usuario/agregar_cliente.html", {'form': form})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def confirmar_borrar_cliente(request, cliente_id):
     """
     Muestra una página de confirmación antes de eliminar un cliente.
@@ -68,7 +72,7 @@ def confirmar_borrar_cliente(request, cliente_id):
     cliente = Cliente.objects.get(id=cliente_id)
     return render(request, 'Usuario/confirmar_borrar_cliente.html', {'cliente': cliente})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def borrar_cliente(request, cliente_id):
     """
     Elimina un cliente de la base de datos y redirige a la lista de clientes.
@@ -81,7 +85,7 @@ def borrar_cliente(request, cliente_id):
         pass  # Si el cliente no existe, no se hace nada
     return redirect('listar_clientes')
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def editar_cliente(request, cliente_id):
     """
     Permite editar la información de un cliente, incluyendo su nombre de usuario,
@@ -141,24 +145,24 @@ def actualizar_datos_personales_cliente(request):
     return render(request, 'Usuario/actualizar_datos_personales_cliente.html', {'form': form})
 
 @login_required
-def cambiar_contraseña_cliente(request):
+def cambiar_contraseña_usuario(request):
     """
-    Permite al cliente cambiar su contraseña y cierra su sesión automáticamente
+    Permite al usuario cambiar su contraseña y cierra su sesión automáticamente
     después de cambiarla.
     """
     if request.method == 'POST':
-        form = CambiarContraseñaClienteForm(request.user, request.POST)
+        form = CambiarContraseñaUsuarioForm(request.user, request.POST)
         if form.is_valid():
             form.save()
             messages.success(request, 'Contraseña cambiada con éxito.')
             logout(request)  # Cierra la sesión del usuario
             return redirect('login')
     else:
-        form = CambiarContraseñaClienteForm(request.user)
+        form = CambiarContraseñaUsuarioForm(request.user)
 
-    return render(request, 'Usuario/cambiar_contraseña_cliente.html', {'form': form})
+    return render(request, 'Usuario/cambiar_contraseña_usuario.html', {'form': form})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def listar_empleados(request):
     """
     Lista todos los empleados en la base de datos con opciones de búsqueda y
@@ -192,7 +196,7 @@ def listar_empleados(request):
         'has_search_query_rut': has_search_query_rut,
     })
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def agregar_empleado(request):
     """
     Permite agregar un nuevo empleado mediante un formulario y configura su correo electrónico
@@ -211,7 +215,7 @@ def agregar_empleado(request):
         form = EmpleadoForm()
     return render(request, "Usuario/agregar_empleado.html", {'form': form})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def confirmar_borrar_empleado(request, empleado_id):
     """
     Muestra una página de confirmación antes de eliminar un empleado.
@@ -219,7 +223,7 @@ def confirmar_borrar_empleado(request, empleado_id):
     empleado = Empleado.objects.get(id=empleado_id)
     return render(request, 'Usuario/confirmar_borrar_empleado.html', {'empleado': empleado})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def borrar_empleado(request, empleado_id):
     """
     Elimina un empleado de la base de datos y redirige a la lista de empleados.
@@ -232,7 +236,7 @@ def borrar_empleado(request, empleado_id):
         pass
     return redirect('listar_empleados')
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def editar_empleado(request, empleado_id):
     """
     Permite editar la información de un empleado, incluyendo su nombre de usuario,
@@ -261,7 +265,7 @@ def editar_empleado(request, empleado_id):
 
     return render(request, "Usuario/editar_empleado.html", {'form': form})
 
-@login_required
+@user_passes_test(es_administrador, login_url='home')
 def gestionar_cuentas(request):
     """
     Muestra la página de gestión de cuentas para administradores o usuarios

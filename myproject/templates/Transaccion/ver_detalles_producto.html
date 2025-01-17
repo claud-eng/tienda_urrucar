@@ -2,6 +2,7 @@
 {% load static %}
 {% block title %}Detalles del Producto{% endblock %}
 {% block extra_css %}
+<link href="{% static 'css/lightbox.min.css' %}" rel="stylesheet">
 <style>
 /* Tablets (pantallas medianas) */
 @media (max-width: 991.98px) {
@@ -131,7 +132,9 @@
             <!-- Imágenes adicionales -->
             {% for imagen in imagenes_adicionales %}
             <div class="carousel-item">
-              <img src="{{ imagen.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="Imagen de {{ producto.nombre }}">
+              <a href="{{ imagen.imagen.url }}" data-lightbox="product-gallery" data-title="Imagen de {{ producto.nombre }}">
+                <img src="{{ imagen.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="Imagen de {{ producto.nombre }}">
+              </a>
             </div>
             {% endfor %}
           </div>
@@ -150,6 +153,11 @@
       <!-- Detalles del producto -->
       <div class="col-md-6">
         <h2 class="text-black">{{ producto.nombre }}</h2>
+        {% if producto.categoria == 'Vehículo' and producto.anio %}
+        <p class="mb-0">Año: {{ producto.anio }}</p>
+        {% else %}
+        <p class="mb-0">&nbsp;</p>  <!-- Espacio en blanco si no hay año -->
+        {% endif %}
         <p>{{ producto.descripcion }}</p>
         <p><strong class="text-primary h4">${{ producto.precio_formateado }}</strong></p>
         {% if producto.precio_reserva_formateado %}
@@ -158,21 +166,33 @@
         <p>Cantidad en Stock: {{ producto.cantidad_stock }}</p>
         
         {% if not user.empleado %}
-        <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
-          {% csrf_token %}
-          <div class="mb-5">
-            <div class="input-group mb-3" style="max-width: 120px;">
-              <div class="input-group-prepend">
-                <button class="btn btn-outline-primary js-btn-minus" type="button">&minus;</button>
+          {% if producto.cantidad_stock > 0 %}
+            {% if producto.categoria != 'Vehículo' %}
+            <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
+              {% csrf_token %}
+              <div class="mb-5">
+                <div class="input-group mb-3" style="max-width: 120px;">
+                  <div class="input-group-prepend">
+                    <button class="btn btn-outline-primary js-btn-minus" type="button">&minus;</button>
+                  </div>
+                  <input type="number" id="cantidad" name="cantidad" min="1" max="{{ producto.cantidad_stock }}" value="1" class="form-control text-center">
+                  <div class="input-group-append">
+                    <button class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
+                  </div>
+                </div>
               </div>
-              <input type="number" id="cantidad" name="cantidad" min="1" max="{{ producto.cantidad_stock }}" value="1" class="form-control text-center">
-              <div class="input-group-append">
-                <button class="btn btn-outline-primary js-btn-plus" type="button">&plus;</button>
-              </div>
-            </div>
-          </div>
-          <p><button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button></p>
-        </form>
+              <p><button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button></p>
+            </form>
+            {% else %}
+            <form method="post" action="{% url 'agregar_producto_al_carrito' producto.id %}">
+              {% csrf_token %}
+              <input type="hidden" name="cantidad" value="1">
+              <p><button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button></p>
+            </form>
+            {% endif %}
+          {% else %}
+          <p class="text-danger">Producto no disponible</p>
+          {% endif %}
         {% else %}
         <p>No puedes realizar compras con una cuenta de empleado.</p>
         {% endif %}
@@ -181,5 +201,14 @@
     </div>
   </div>
 </div>
+
+<!-- Lightbox2 JavaScript -->
+<script src="{% static 'js/lightbox.min.js' %}"></script>
+<script>
+  lightbox.option({
+    'resizeDuration': 200,
+    'wrapAround': true
+  });
+</script>
 
 {% endblock %}

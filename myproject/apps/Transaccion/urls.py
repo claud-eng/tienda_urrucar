@@ -35,6 +35,7 @@ urlpatterns = [
     path('realizar_compra/', realizar_compra, name='realizar_compra'),  # Realizar compra
     path('reporte_ventas_manuales', views.reporte_ventas_manuales, name='reporte_ventas_manuales'),  # Reportes de ventas manuales
     path('reporte_ventas_online', views.reporte_ventas_online, name='reporte_ventas_online'),  # Reportes de ventas online
+    path('servicio/<int:id>/solicitar/', views.formulario_servicios, name='formulario_servicios'),  # Ruta para ir al formulario de servicios
     path('transaccion_finalizada/', transaccion_finalizada, name='transaccion_finalizada'),  # Finalización de transacción de pago
     path('vaciar_carrito/', vaciar_carrito, name='vaciar_carrito'),  # Vaciar el carrito
     path('ver_detalles_producto/<int:producto_id>/', ver_detalles_producto, name='ver_detalles_producto'),  # Ver detalles del producto

@@ -1,8 +1,13 @@
 {% extends 'base.html' %}
+{% load static %}
 {% load widget_tweaks %}
 {% block title %}Agregar Venta Manual{% endblock %}
 {% block extra_css %}
 <style>
+    /* Ocultar la sección de Productos de forma temporal */
+    #productos-section.d-none, #servicios-form-container.d-none {
+    display: none !important;
+}
     /* Tablets (pantallas medianas) */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -53,12 +58,14 @@
     <form method="post" id="ventaForm" class="needs-validation" novalidate>
         {% csrf_token %}
 
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }}" role="alert">
-                {{ message }}
-            </div>
-        {% endfor %}
-
+        <div>
+            {% for message in messages %}
+                <div class="alert alert-danger" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        </div>            
+        
         <!-- Formulario para Cliente Anónimo -->
         <h3>Datos del Cliente</h3>
         <div class="form-group">
@@ -101,7 +108,8 @@
             {% endif %}
         </div>
 
-        <!-- Productos -->
+    <!-- Productos -->
+    <div id="productos-section" class="d-none">
         <h3>Productos</h3>
         <div id="productos-form-container">
             {{ detalle_formset.management_form }}
@@ -130,6 +138,7 @@
             <button type="button" id="add-more-productos" class="btn btn-info btn-sm mb-3">Agregar otro producto</button>
             <a href="{% url 'listar_productos' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
         </div>
+    </div>
 
         <!-- Servicios -->
         <h3>Servicios</h3>
@@ -153,9 +162,19 @@
                     </div>
                 </div>
             {% endfor %}
-            <button type="button" id="add-more-servicios" class="btn btn-info btn-sm mb-3">Agregar otro servicio</button>
-            <a href="{% url 'listar_productos' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
+            <!-- Ocultar el botón de agregar servicios -->
+            <button type="button" id="add-more-servicios" class="btn btn-info btn-sm mb-3 d-none">Agregar otro servicio</button>
+            <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
+        </div>        
 
+        <div class="form-group">
+            {{ orden_compra_form.precio_personalizado.label_tag }}
+            {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
+            {% if orden_compra_form.precio_personalizado.errors %}
+                <div class="alert alert-danger">
+                    {{ orden_compra_form.precio_personalizado.errors.as_text }}
+                </div>
+            {% endif %}
         </div>
 
         <!-- Pago del Cliente -->

@@ -16,8 +16,8 @@ class ProductoForm(forms.ModelForm):
         model = Producto  # Especifica el modelo asociado
         fields = [
             'nombre', 'marca', 'modelo', 'version', 'anio',
-            'categoria', 'descripcion', 'precio', 'precio_reserva',
-            'cantidad_stock', 'imagen'
+            'categoria', 'descripcion', 'precio_reserva', 'precio',
+            'precio_costo', 'costo_extra', 'cantidad_stock', 'imagen',
         ]
         widgets = {
             'categoria': forms.Select(attrs={'class': 'form-control'}),  # Usa un select con clases Bootstrap
@@ -117,13 +117,13 @@ class DetalleVentaOnlineForm(forms.ModelForm):
 class VentaManualForm(forms.ModelForm):
     class Meta:
         model = VentaManual
-        fields = ['pago_cliente']
+        fields = ['pago_cliente', 'precio_personalizado']
         widgets = {
             'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),
+            'precio_personalizado': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': 'Precio personalizado (opcional)'}),
         }
 
     def save(self, commit=True):
-        # Lógica para asociar a cliente anónimo
         venta = super().save(commit=False)
         if commit:
             venta.save()
@@ -157,9 +157,11 @@ class DetalleVentaManualServicioForm(forms.ModelForm):
     class Meta:
         model = DetalleVentaManual
         fields = ['servicio']
-    
+
     def clean_servicio(self):
         id_servicio = self.cleaned_data['servicio']
+        if not id_servicio or id_servicio <= 0:
+            raise ValidationError("El ID del servicio debe ser mayor a 0.")
         try:
             return Servicio.objects.get(id=id_servicio)
         except Servicio.DoesNotExist:

@@ -98,13 +98,23 @@
         </div>
 
         <div class="form-group">
-          <label for="{{ form.precio.id_for_label }}">Precio</label>
+          <label for="{{ form.precio_reserva.id_for_label }}">Precio de Reserva</label>
+          <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'' }}">
+        </div>
+        
+        <div class="form-group">
+          <label for="{{ form.precio.id_for_label }}">Precio de Venta</label>
           <input type="number" class="form-control" id="{{ form.precio.id_for_label }}" name="{{ form.precio.name }}" value="{{ form.precio.value|default:'' }}">
         </div>
 
         <div class="form-group">
-          <label for="{{ form.precio_reserva.id_for_label }}">Precio de Reserva</label>
-          <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'' }}">
+          <label for="{{ form.precio_costo.id_for_label }}">Precio de Costo</label>
+          <input type="number" class="form-control" id="{{ form.precio_costo.id_for_label }}" name="{{ form.precio_costo.name }}" value="{{ form.precio_costo.value|default:'' }}">
+        </div>
+      
+        <div class="form-group">
+          <label for="{{ form.costo_extra.id_for_label }}">Costo Extra</label>
+          <input type="number" class="form-control" id="{{ form.costo_extra.id_for_label }}" name="{{ form.costo_extra.name }}" value="{{ form.costo_extra.value|default:'' }}">
         </div>
 
         <div class="form-group">

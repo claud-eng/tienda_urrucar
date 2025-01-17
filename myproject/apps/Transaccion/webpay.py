@@ -32,6 +32,7 @@ def iniciar_transaccion(request):
     """
     cliente = None
     cliente_anonimo = None
+    carrito_items = []
 
     if request.method == 'POST':
         # Captura los datos básicos del formulario
@@ -42,35 +43,33 @@ def iniciar_transaccion(request):
 
         # Captura datos adicionales del formulario dinámico
         datos_formulario_dinamico = {
-            'nombre_vehiculo': request.POST.get('nombre_vehiculo'),
+            'rut': request.POST.get('rut'),
+            'patente': request.POST.get('patente'),
             'marca': request.POST.get('marca'),
+            'modelo': request.POST.get('modelo'),
             'ano': request.POST.get('ano'),
-            'retiro_domicilio': request.POST.get('retiro_domicilio'),
+            'direccion_inspeccion': request.POST.get('direccion_inspeccion'),
+            'direccion_retiro': request.POST.get('direccion_retiro'),
             'direccion': request.POST.get('direccion'),
-            'descripcion_vehiculo': request.POST.get('descripcion_vehiculo'),
+            'comuna': request.POST.get('comuna'),
+            'fecha_inspeccion': request.POST.get('fecha_inspeccion'),
+            'fecha_servicio': request.POST.get('fecha_servicio'),
+            'observaciones': request.POST.get('observaciones'),
         }
 
         # Obtiene la bandera desde la sesión
         contiene_servicios = request.session.get('contiene_servicios', False)
         print(f"Contiene servicios desde sesión: {contiene_servicios}")
 
-        # Validar los campos adicionales solo si el carrito contiene servicios
-        if contiene_servicios:
-            campos_obligatorios = ['nombre_vehiculo', 'marca', 'ano']
-            if datos_formulario_dinamico.get('retiro_domicilio') == 'Si':
-                campos_obligatorios.append('direccion')
-            for campo in campos_obligatorios:
-                if not datos_formulario_dinamico.get(campo):
-                    messages.error(request, "Por favor, completa todos los campos obligatorios del formulario.")
-                    return redirect('carrito')
-
-        # Guarda los datos adicionales en la sesión
-        request.session['datos_formulario'] = datos_formulario_dinamico
-
+        # Manejo de carrito según el tipo de usuario
         if request.user.is_authenticated:
             # Cliente autenticado
-            cliente = Cliente.objects.get(user=request.user)
-            carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
+            try:
+                cliente = Cliente.objects.get(user=request.user)
+                carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
+            except Cliente.DoesNotExist:
+                messages.error(request, "Tu cuenta no está asociada a un cliente.")
+                return redirect('carrito')
         else:
             # Cliente anónimo
             session_key = request.session.session_key
@@ -88,6 +87,34 @@ def iniciar_transaccion(request):
             cliente_anonimo.save()
 
             carrito_items = Carrito.objects.filter(session_key=session_key, carrito=1)
+
+        # Validar que el carrito no esté vacío
+        if not carrito_items.exists():
+            messages.error(request, "Tu carrito está vacío.")
+            return redirect('carrito')
+
+        # Validar los campos adicionales solo si contiene servicios
+        if contiene_servicios:
+            # Inicializa una lista vacía para los campos obligatorios
+            campos_obligatorios = []
+
+            # Inspecciona los ítems del carrito para identificar los servicios presentes
+            for item in carrito_items:
+                if item.item.nombre == "Revisión precompra":
+                    campos_obligatorios += ['rut', 'patente', 'marca', 'modelo', 'ano', 'comuna', 'direccion_inspeccion', 'fecha_inspeccion']
+                elif item.item.nombre == "Solicitar revisión técnica":
+                    campos_obligatorios += ['rut', 'patente', 'marca', 'modelo', 'ano', 'comuna', 'direccion_retiro', 'fecha_servicio']
+                elif item.item.nombre in ["Sacar tag", "Asesoría en realizar la transferencia de un vehículo"]:
+                    campos_obligatorios += ['rut', 'patente', 'marca', 'modelo', 'direccion', 'comuna']
+
+            # Validar los campos obligatorios
+            for campo in campos_obligatorios:
+                if not datos_formulario_dinamico.get(campo):
+                    messages.error(request, "Por favor, completa todos los campos obligatorios del formulario.")
+                    return redirect('carrito')
+
+        # Guarda los datos adicionales en la sesión
+        request.session['datos_formulario'] = datos_formulario_dinamico
 
         # Calcula el total del carrito
         total = sum(item.obtener_precio_total() for item in carrito_items)

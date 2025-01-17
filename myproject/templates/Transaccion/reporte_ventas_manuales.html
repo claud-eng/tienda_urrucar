@@ -8,6 +8,11 @@
         background-color: #f2f2f2;
     }
 
+    /* Ocultar completamente secciones específicas */
+    .ocultar-productos {
+        display: none !important;
+    }
+
     #graficoProductosMasVendidos, #graficoServiciosMasVendidos {
         max-width: 50%;
         height: auto;
@@ -103,13 +108,14 @@
 
         <!-- Mostrar el total de ventas -->
         <div class="mt-4">
-            <h4>Total de Productos Vendidos: {{ total_productos }}</h4>
+            <h4 class="ocultar-productos">Total de Productos Vendidos: {{ total_productos }}</h4>
             <h4>Total de Servicios Vendidos: {{ total_servicios }}</h4>
+            <h4>Total de Ganancias: ${{ total_ganancias_formateado }}</h4>
         </div>
 
     <div class="row mt-4">
         <!-- Productos -->
-        <div class="col-md-6">
+    <div class="col-md-6 ocultar-productos">
             <h3>
                 Top 5 productos registrados manualmente más vendidos
                 {% if tipo_filtro == 'mes' %}
@@ -130,7 +136,7 @@
             </div>
             {% endif %}
         </div>
-        <div class="col-md-6 mt-2">
+        <div class="col-md-6 mt-3 ocultar-productos">
             {% if datos_productos_json %}
                 <table class="table" id="tablaProductos">
                     <thead>
@@ -146,7 +152,7 @@
         </div>
 
         <!-- Servicios -->
-        <div class="col-md-6 mt-4">
+        <div class="col-md-6 mt-3">
             <h3>
                 Top 5 servicios registrados manualmente más vendidos
                 {% if tipo_filtro == 'mes' %}
@@ -167,7 +173,7 @@
             </div>
             {% endif %}
         </div>
-        <div class="col-md-6 mt-2">
+        <div class="col-md-6 mt-3">
             {% if datos_servicios_json %}
                 <table class="table" id="tablaServicios">
                     <thead>

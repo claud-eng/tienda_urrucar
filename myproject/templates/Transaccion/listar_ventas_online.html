@@ -13,7 +13,7 @@
         vertical-align: middle;
         text-align: center;
     }
-
+    
     /* Tablets (pantallas medianas) */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -42,6 +42,7 @@
 </style>
 {% endblock %}
 {% block content %}
+
 
 <div class="bg-light py-3">
     <div class="container">
@@ -85,18 +86,25 @@
                 <th>Número de Orden</th>
                 <th>Cliente</th>
                 <th>Correo</th>
-                <th>¿Usuario registrado?</th>   
-                <th>Fecha</th>
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <th>¿Usuario registrado?</th>
+            {% endif %}
+                <th>Fecha de la Transacción</th>
+                <th>Fecha Modificación Estado de la Reserva</th>
+                <th>Estado de la Reserva</th>
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <th>Acciones</th>
+                {% endif %}
+                <th>Días Transcurridos entre la Reserva y Venta</th>
                 <th>Detalle</th>
                 <th>Tipo de Pago</th>
                 <th>Monto de Cuotas</th>
                 <th>Número de Cuotas</th>
                 <th>Total (IVA incluido)</th>
-                <th>Emitir Comprobante</th>
                 {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                    <th>Estado</th>
-                    <th>Acciones</th>
-                {% endif %}
+                <th>Ganancia o Pérdida</th>
+            {% endif %}
+                <th>Emitir Comprobante</th>
             </tr>
         </thead>
         <tbody>
@@ -124,6 +132,7 @@
                     {% endif %}
                 </td>
 
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                 <td>
                     {% if orden.cliente %}
                         Sí
@@ -133,19 +142,54 @@
                         N/A
                     {% endif %}
                 </td>
+                {% endif %}
 
                 <td>{{ orden.fecha|date:"d/m/Y H:i" }}</td>
                 
                 <td>
-                    {% for detalle in orden.detalles_formateados %}
-                        {% if detalle.es_producto %}
-                            {{ detalle.nombre }} - Cantidad: {{ detalle.cantidad }} - Precio: ${{ detalle.precio_formateado }}<br>
-                        {% else %}
-                            {{ detalle.nombre }} - Valor: ${{ detalle.precio_formateado }}<br>
+                    {% for detalle in orden.detalleventaonline_set.all %}
+                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                            {% if detalle.fecha_estado_final %}
+                                {{ detalle.fecha_estado_final|date:"d/m/Y H:i" }}
+                            {% else %}
+                            {% endif %}
                         {% endif %}
                     {% endfor %}
                 </td>
-        
+
+                <td>
+                    {% for detalle in orden.detalleventaonline_set.all %}
+                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                            {% if detalle.estado_reserva %}
+                                {{ detalle.estado_reserva }}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </td>
+
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <td>
+                    <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
+                </td>
+                {% endif %}
+
+                <td>
+                    {% for detalle in orden.detalleventaonline_set.all %}
+                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                            {% if detalle.calculo_tiempo_transcurrido is not None %}
+                                {{ detalle.calculo_tiempo_transcurrido }} días
+                            {% else %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                
+                <td>
+                    {% for detalle in orden.detalles_formateados %}
+                        {{ detalle.nombre }}{% if not forloop.last %} - {% endif %}
+                    {% endfor %}
+                </td>
+                
                 <td>
                     {% if orden.tipo_pago == 'VD' %}
                         Venta Débito
@@ -169,24 +213,14 @@
                 <td>${{ orden.monto_cuotas|default:'0' }}</td>
                 <td>{{ orden.numero_cuotas }}</td>
                 <td>${{ orden.total_formateado }}</td>
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <td>${{ orden.ganancia_formateada }}</td>
+                {% endif %}
+                
                 <td>
                     <a href="{% url 'descargar_comprobante_pago' 'online' orden.numero_orden %}" class="btn btn-success btn-sm">Descargar</a>
                 </td>
         
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
-                            {% if detalle.estado_reserva %}
-                                {{ detalle.estado_reserva }}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-                <td>
-                    <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
-                </td>
-                {% endif %}
             </tr>
             {% endfor %}
         </tbody>        
@@ -225,9 +259,13 @@
 </div>
 
 <div class="mt-4">
-    <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
+    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+        <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
+    {% else %}
+        <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
+    {% endif %}
 </div>
-    
+
 </div>
 
 {% endblock %}

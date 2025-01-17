@@ -130,8 +130,11 @@
                 <th>Año</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
-                <th>Precio Normal</th>
                 <th>Precio de Reserva</th>
+                <th>Precio de Venta</th>
+                <th>Precio de Costo</th>
+                <th>Costo Extra</th>
+                <th>Futura Ganancia o Pérdida</th>
                 <th>Cantidad en Stock</th>
                 <th class="estado-column">Estado</th>
                 <th>Imagen</th>
@@ -151,8 +154,23 @@
                     <td>{% if producto.anio %}{{ producto.anio }}{% endif %}</td>
                     <td>{{ producto.categoria }}</td>
                     <td style="text-align: justify;">{{ producto.descripcion }}</td>
-                    <td>${{ producto.precio_formateado }}</td>
                     <td>{% if producto.precio_reserva_formateado %}${{ producto.precio_reserva_formateado }}{% endif %}</td>
+                    <td>${{ producto.precio_formateado }}</td>
+                    <td>
+                        {% if producto.precio_costo_formateado %}
+                            ${{ producto.precio_costo_formateado }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if producto.costo_extra_formateado %}
+                            ${{ producto.costo_extra_formateado }}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if producto.ganancia_formateada %}
+                            ${{ producto.ganancia_formateada }}
+                        {% endif %}
+                    </td>                    
                     <td>{{ producto.cantidad_stock }}</td>
                     <td class="estado-column">
                         {% if producto.cantidad_stock >= 10 %}

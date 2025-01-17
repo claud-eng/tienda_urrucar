@@ -312,7 +312,7 @@ class CustomClienteForm(forms.ModelForm):
         model = Cliente
         fields = ['username', 'first_name', 'last_name', 'second_last_name', 'fecha_nacimiento', 'numero_telefono']
 
-class CambiarContraseñaClienteForm(PasswordChangeForm):
+class CambiarContraseñaUsuarioForm(PasswordChangeForm):
     class Meta:
         model = User  # Utiliza el modelo User de Django
         fields = ('old_password', 'new_password1', 'new_password2')  # Campos para cambiar la contraseña

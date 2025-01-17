@@ -101,8 +101,13 @@
                 <div class="spacer">&nbsp;</div>
         
                 <p class="text-primary font-weight-bold mt-2" style="color: white !important;">
-                  ${{ servicio.precio_formateado }}
+                  {% if servicio.precio > 0 %}
+                    ${{ servicio.precio_formateado }}
+                  {% else %}
+                    Precio a consultar
+                  {% endif %}
                 </p>
+                
               </div>
             </div>
           </div>

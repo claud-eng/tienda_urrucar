@@ -130,18 +130,25 @@
       <!-- Detalles del servicio -->
       <div class="col-md-6">
         <h2 class="text-black">{{ servicio.nombre }}</h2>
-        <p class="mb-4">{{ servicio.descripcion }}</p>
-        <p><strong class="text-primary h4">${{ servicio.precio_formateado }}</strong></p>
-
-        {% if not user.empleado %}
-          <form method="post" action="{% url 'agregar_servicio_al_carrito' servicio.id %}">
-            {% csrf_token %}
-            <button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button>
-          </form>
-        {% else %}
-          <p>No puedes realizar compras con una cuenta de empleado.</p>
-        {% endif %}
+        <p class="mb-4" style="text-align: justify;">{{ servicio.descripcion }}</p>
         
+        {% if servicio.precio > 0 %}
+          <p><strong class="text-primary h4">${{ servicio.precio_formateado }}</strong></p>
+          {% if not user.empleado %}
+            <form method="post" action="{% url 'agregar_servicio_al_carrito' servicio.id %}">
+              {% csrf_token %}
+              <button type="submit" class="buy-now btn btn-sm btn-primary">Agregar al Carrito</button>
+            </form>
+          {% else %}
+            <p>No puedes realizar compras con una cuenta de empleado.</p>
+          {% endif %}
+        {% else %}
+          {% if not user.empleado %}
+          <p><a href="{% url 'formulario_servicios' servicio.id %}" class="btn btn-sm btn-primary">Solicitar Servicio</a></p>
+          {% else %}
+            <p>No puedes realizar solicitudes con una cuenta de empleado.</p>
+          {% endif %}
+        {% endif %}
         <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
       </div>
     </div>

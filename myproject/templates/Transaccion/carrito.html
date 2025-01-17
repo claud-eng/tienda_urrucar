@@ -4,22 +4,26 @@
 
 <div class="bg-light py-3">
     <div class="container">
-      <div class="row">
-        <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Carrito</strong></div>
-      </div>
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <strong class="text-black">Carrito</strong>
+            </div>
+        </div>
     </div>
-  </div>  
+</div>  
 
 <div class="container my-5">
     <!-- Mensajes de error -->
     {% if messages %}
-        <div class="alert alert-danger">
-            <ul>
-                {% for message in messages %}
-                    <li>{{ message }}</li>
-                {% endfor %}
-            </ul>
-        </div>
+    <div class="alert alert-danger">
+        <ul>
+            {% for message in messages %}
+            <li>{{ message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
     {% endif %}
 
     <!-- Carrito -->
@@ -47,21 +51,20 @@
                         <td>${{ item.precio_formateado }}</td>
                         <td>
                             {% if item.item.categoria == "Vehículo" and item.item.precio_reserva %} 
-                                ${{ item.precio_unitario }}
+                            ${{ item.precio_unitario }}
                             {% endif %}
                         </td>
-                        
                         <td>${{ item.precio_total_formateado }}</td>
                         <td>
                             {% if not item.es_servicio and item.item.categoria != "Vehículo" %}
-                                <form method="post" action="{% url 'aumentar_cantidad' item.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-secondary btn-sm">+</button>
-                                </form>
-                                <form method="post" action="{% url 'disminuir_cantidad' item.id %}" style="display:inline;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn btn-secondary btn-sm">-</button>
-                                </form>
+                            <form method="post" action="{% url 'aumentar_cantidad' item.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">+</button>
+                            </form>
+                            <form method="post" action="{% url 'disminuir_cantidad' item.id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-secondary btn-sm">-</button>
+                            </form>
                             {% endif %}
                             <form method="post" action="{% url 'eliminar_del_carrito' item.id %}" style="display:inline;">
                                 {% csrf_token %}
@@ -71,94 +74,191 @@
                     </tr>
                     {% endfor %}
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="4" class="text-right"><strong>Total a Pagar:</strong></td>
+                        <td colspan="2"><strong>${{ total }}</strong></td>
+                    </tr>
+                </tfoot>
             </table>
         </div>
     </div>
 
     <!-- Formulario de datos antes de pagar -->
     <div class="shadow p-4 bg-light rounded">
-        <h3 class="mb-4 text-center">Datos del Comprador</h3>
-        <form method="post" action="{% url 'iniciar_transaccion' %}">
-            {% csrf_token %}
-            <div class="row">
-                {% if contiene_servicios %}
-                <div class="col-md-6">
-                {% else %}
-                <div class="col-md-12">
-                {% endif %}
-                    <div class="form-group">
-                        <label for="nombre">Nombre</label>
-                        <input type="text" class="form-control" id="nombre" name="nombre" value="{% if user.is_authenticated %}{{ user.first_name }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
-                    </div>
-                    <div class="form-group">
-                        <label for="apellido">Apellido</label>
-                        <input type="text" class="form-control" id="apellido" name="apellido" value="{% if user.is_authenticated %}{{ user.last_name }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
-                    </div>
-                    <div class="form-group">
-                        <label for="email">Correo Electrónico</label>
-                        <input type="email" class="form-control" id="email" name="email" value="{% if user.is_authenticated %}{{ user.email }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
-                    </div>
-                    <div class="form-group">
-                        <label for="numero_telefono">Número de Teléfono</label>
-                        <input type="text" class="form-control" id="numero_telefono" name="numero_telefono" value="{% if user.is_authenticated %}{{ user.cliente.numero_telefono }}{% endif %}" {% if user.is_authenticated %}readonly{% endif %} required>
-                    </div>
-                </div>
-                {% if contiene_servicios %}
-                <div class="col-md-6">
-                    <div class="form-group">
-                        <label for="nombre_vehiculo">Nombre del Vehículo</label>
-                        <input type="text" class="form-control" id="nombre_vehiculo" name="nombre_vehiculo" {% if contiene_servicios %}required{% endif %}>
-                    </div>
-                    <div class="form-group">
-                        <label for="marca">Marca</label>
-                        <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
-                    </div>
-                    <div class="form-group">
-                        <label for="ano">Año</label>
-                        <input type="number" class="form-control" id="ano" name="ano" {% if contiene_servicios %}required{% endif %}>
-                    </div>
-                    {% for item in carrito_items %}
-                    {% if "Desabolladura" in item.item.nombre or "Mecánico" in item.item.nombre %}
+            <form method="post" action="{% url 'iniciar_transaccion' %}">
+                {% csrf_token %}
+                <div class="row">
+                    <!-- Columna izquierda -->
+                    <div class="{% if contiene_servicios %}col-md-6{% else %}col-md-12{% endif %}">
+                        <div class="text-center mb-3">
+                            <h5><strong>Datos del Comprador</strong></h5>
+                        </div>
                         <div class="form-group">
-                            <label for="retiro_domicilio">¿Deseas que retiremos el vehículo en tu domicilio?</label>
-                            <select class="form-control" id="retiro_domicilio" name="retiro_domicilio" required>
-                                <option value="No" selected>No</option>
-                                <option value="Si">Si</option>
-                            </select>
+                            <label for="nombre">Nombre</label>
+                            <input type="text" class="form-control" id="nombre" name="nombre" 
+                                value="{% if user.is_authenticated %}{{ user.first_name }}{% endif %}" 
+                                {% if user.is_authenticated %}readonly{% endif %} required>
                         </div>
-                        <div class="form-group" id="direccion_field" style="display:none;">
-                            <label for="direccion">Dirección</label>
-                            <input type="text" class="form-control" id="direccion" name="direccion">
+                        <div class="form-group">
+                            <label for="apellido">Apellido</label>
+                            <input type="text" class="form-control" id="apellido" name="apellido" 
+                                value="{% if user.is_authenticated %}{{ user.last_name }}{% endif %}" 
+                                {% if user.is_authenticated %}readonly{% endif %} required>
                         </div>
-                        <script>
-                            document.getElementById('retiro_domicilio').addEventListener('change', function () {
-                                var direccionField = document.getElementById('direccion_field');
-                                direccionField.style.display = this.value === 'Si' ? 'block' : 'none';
-                            });
-                        </script>
+                        {% if contiene_servicios %}
+                        <div class="form-group">
+                            <label for="rut">RUT</label>
+                            <input type="text" class="form-control" id="rut" name="rut" {% if contiene_servicios %}required{% endif %}>
+                        </div>
+                        {% endif %}
+                        <div class="form-group">
+                            <label for="email">Correo Electrónico</label>
+                            <input type="email" class="form-control" id="email" name="email" 
+                                value="{% if user.is_authenticated %}{{ user.email }}{% endif %}" 
+                                {% if user.is_authenticated %}readonly{% endif %} required>
+                        </div>
+                        <div class="form-group">
+                            <label for="numero_telefono">Número de Teléfono</label>
+                            <input type="text" class="form-control" id="numero_telefono" name="numero_telefono" 
+                                value="{% if user.is_authenticated %}{{ user.cliente.numero_telefono }}{% endif %}" 
+                                {% if user.is_authenticated %}readonly{% endif %} required>
+                        </div>                    
+                    </div>
+                    <!-- Columna derecha, solo si hay servicios -->
+                    {% if contiene_servicios %}
+                    <div class="col-md-6">
+                        <div class="text-center mb-3">
+                            <h5><strong>Datos del Vehículo</strong></h5>
+                        </div>
+                        {% for item in carrito_items %}
+                            {% if item.item.nombre == "Revisión precompra" %}
+                            <!-- Campos para Revisión precompra -->
+                            <div class="form-group">
+                                <label for="patente">Patente</label>
+                                <input type="text" class="form-control" id="patente" name="patente" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="marca">Marca</label>
+                                <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" class="form-control" id="modelo" name="modelo" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="ano">Año</label>
+                                <input type="number" class="form-control" id="ano" name="ano" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion_inspeccion">Dirección de Inspección</label>
+                                <input type="text" class="form-control" id="direccion_inspeccion" name="direccion_inspeccion" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="comuna">Comuna</label>
+                                <input type="text" class="form-control" id="comuna" name="comuna" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_inspeccion">Fecha de Inspección</label>
+                                <input type="date" class="form-control" id="fecha_inspeccion" name="fecha_inspeccion" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            {% endif %}
+                            {% if item.item.nombre == "Solicitar revisión técnica" %}
+                            <!-- Campos para Solicitar revisión técnica -->
+                            <div class="form-group">
+                                <label for="patente">Patente</label>
+                                <input type="text" class="form-control" id="patente" name="patente" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="marca">Marca</label>
+                                <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" class="form-control" id="modelo" name="modelo" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="ano">Año</label>
+                                <input type="number" class="form-control" id="ano" name="ano" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion_retiro">Dirección de Retiro</label>
+                                <input type="text" class="form-control" id="direccion_retiro" name="direccion_retiro" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="comuna">Comuna</label>
+                                <input type="text" class="form-control" id="comuna" name="comuna" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="fecha_servicio">Fecha del Servicio</label>
+                                <input type="date" class="form-control" id="fecha_servicio" name="fecha_servicio" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            {% endif %}
+                            {% if item.item.nombre == "Sacar tag" %}
+                            <!-- Campos para Sacar tag -->
+                            <div class="form-group">
+                                <label for="patente">Patente</label>
+                                <input type="text" class="form-control" id="patente" name="patente" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="marca">Marca</label>
+                                <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" class="form-control" id="modelo" name="modelo" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion">Dirección</label>
+                                <input type="text" class="form-control" id="direccion" name="direccion" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="comuna">Comuna</label>
+                                <input type="text" class="form-control" id="comuna" name="comuna" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            {% endif %}
+                            {% if item.item.nombre == "Asesoría en realizar la transferencia de un vehículo" %}
+                            <!-- Campos para Asesoría en transferencias -->
+                            <div class="form-group">
+                                <label for="patente">Patente</label>
+                                <input type="text" class="form-control" id="patente" name="patente" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="marca">Marca</label>
+                                <input type="text" class="form-control" id="marca" name="marca" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="modelo">Modelo</label>
+                                <input type="text" class="form-control" id="modelo" name="modelo" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="direccion">Dirección</label>
+                                <input type="text" class="form-control" id="direccion" name="direccion" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            <div class="form-group">
+                                <label for="comuna">Comuna</label>
+                                <input type="text" class="form-control" id="comuna" name="comuna" {% if contiene_servicios %}required{% endif %}>
+                            </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
                     {% endif %}
-                    {% endfor %}
+                </div>
+                {% if contiene_servicios %}
+                <!-- Campo Observaciones ocupa todo el ancho -->
+                <div class="form-group">
+                    <label for="observaciones">Observaciones</label>
+                    <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
                 </div>
                 {% endif %}
-            </div>
-            
-            <button type="submit" class="btn btn-primary btn-block">Pagar</button>
-        </form>
-    </div>
+                <button type="submit" class="btn btn-primary btn-block">Pagar</button>
+                <a href="javascript:history.back()" class="btn btn-outline-secondary btn-block">Volver atrás</a>
+            </form>
+        </div>
 </div>
 
-<script>
-    document.addEventListener("DOMContentLoaded", function() {
-        var volverAtrasBtn = document.getElementById("volverAtrasBtn");
-        if (volverAtrasBtn) {
-            volverAtrasBtn.addEventListener("click", function() {
-                window.history.back();
-            });
-        }
-    });
-</script>
-
 {% endblock %}
+
 
 
 

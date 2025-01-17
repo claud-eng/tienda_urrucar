@@ -149,7 +149,8 @@ def ver_detalles_servicio(request, servicio_id):
 def agregar_al_carrito(request, id, tipo):
     """
     Agrega un producto o servicio al carrito. Si el producto pertenece a la categoría
-    'Vehículo', utiliza el precio de reserva y establece la cantidad en 1.
+    'Vehículo', utiliza el precio de reserva y establece la cantidad en 1. 
+    Solo se permite un producto de categoría 'Vehículo' en el carrito.
     """
     cantidad = int(request.POST.get('cantidad', 1))
     cliente = None
@@ -181,11 +182,48 @@ def agregar_al_carrito(request, id, tipo):
     # Verificar el tipo de ítem (producto o servicio)
     if tipo == 'producto':
         item = get_object_or_404(Producto, id=id)
-        content_type = ContentType.objects.get_for_model(Producto)
+
+        # Validar que solo haya un producto de categoría 'Vehículo' en el carrito
         if item.categoria == "Vehículo":
             cantidad = 1
+            # Obtener productos en el carrito
+            productos_en_carrito = Carrito.objects.filter(
+                cliente=cliente,
+                cliente_anonimo=cliente_anonimo,
+                session_key=request.session.session_key,
+                content_type=ContentType.objects.get_for_model(Producto),
+                carrito=1,
+            )
+
+            # Verificar si algún producto en el carrito es de categoría 'Vehículo'
+            for carrito_item in productos_en_carrito:
+                producto = Producto.objects.get(id=carrito_item.object_id)
+                if producto.categoria == "Vehículo":
+                    messages.error(request, 'Solo puedes tener un producto de categoría "Vehículo" en el carrito.')
+                    return redirect('carrito')
+
+        content_type = ContentType.objects.get_for_model(Producto)
+
     elif tipo == 'servicio':
         item = get_object_or_404(Servicio, id=id)
+
+        # Validar que el precio del servicio sea mayor a 0
+        if item.precio <= 0:
+            messages.error(request, 'No se pueden agregar servicios con precio 0 al carrito.')
+            return redirect('carrito')
+
+        # Validar que no haya más de un servicio en el carrito
+        servicios_en_carrito = Carrito.objects.filter(
+            cliente=cliente,
+            cliente_anonimo=cliente_anonimo,
+            session_key=request.session.session_key,
+            content_type__model='servicio',
+            carrito=1,
+        )
+        if servicios_en_carrito.exists():
+            messages.error(request, 'Solo puedes agregar un servicio al carrito.')
+            return redirect('carrito')
+
         content_type = ContentType.objects.get_for_model(Servicio)
     else:
         raise Http404("Tipo no válido")

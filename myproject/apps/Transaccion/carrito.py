@@ -35,16 +35,32 @@ def ver_detalles_producto(request, producto_id):
     Muestra los detalles de un producto y permite agregarlo al carrito.
     Si se realiza una solicitud POST, se agrega al carrito con lógica especial
     para productos de categoría 'Vehículo'.
+    También establece la imagen activa en el carrusel basada en la última imagen vista.
     """
     producto = get_object_or_404(Producto, id=producto_id)
     producto.precio_formateado = formato_precio(producto.precio)
+
     if producto.precio_reserva:
         producto.precio_reserva_formateado = formato_precio(producto.precio_reserva)
     else:
         producto.precio_reserva_formateado = None
 
     # Recuperar imágenes adicionales relacionadas
-    imagenes_adicionales = producto.imagenes.all()
+    imagenes_adicionales = list(producto.imagenes.all())
+
+    # Manejar la imagen activa desde la URL
+    imagen_id = request.GET.get("imagen_id", None)
+    imagen_index = 0  # Por defecto, la imagen principal
+
+    if imagen_id:
+        try:
+            imagen_id = int(imagen_id)  # Convertir a entero
+            for index, imagen in enumerate(imagenes_adicionales):
+                if imagen.id == imagen_id:
+                    imagen_index = index + 1  # +1 porque la imagen principal está en la posición 0
+                    break
+        except ValueError:
+            imagen_index = 0  # Si hay un error, usar la imagen principal
 
     if request.method == 'POST':
         cantidad = int(request.POST.get('cantidad', 1))
@@ -56,6 +72,7 @@ def ver_detalles_producto(request, producto_id):
             return render(request, 'Transaccion/ver_detalles_producto.html', {
                 'producto': producto,
                 'imagenes_adicionales': imagenes_adicionales,
+                'imagen_index': imagen_index,
                 'error_message': 'Cantidad no válida',
             })
 
@@ -93,7 +110,38 @@ def ver_detalles_producto(request, producto_id):
 
     return render(request, 'Transaccion/ver_detalles_producto.html', {
         'producto': producto,
-        'imagenes_adicionales': imagenes_adicionales
+        'imagenes_adicionales': imagenes_adicionales,
+        'imagen_index': imagen_index,  # Pasamos el índice de la imagen activa
+    })
+
+def carrusel_completo(request, producto_id, imagen_id=None):
+    producto = get_object_or_404(Producto, id=producto_id)
+    
+    # Obtener todas las imágenes adicionales del producto
+    imagenes = list(producto.imagenes.all())  # Lista de imágenes adicionales
+    
+    # Agregar la imagen principal al inicio con un identificador especial
+    if producto.imagen:
+        imagen_principal = {
+            'url': producto.imagen.url,
+            'is_main': True,  # Marcar como imagen principal
+        }
+        imagenes.insert(0, imagen_principal)  # Agregar la imagen principal primero
+
+    # Determinar la imagen inicial en el carrusel
+    imagen_index = 0
+    if imagen_id and imagen_id != 0:
+        for index, img in enumerate(imagenes):
+            if isinstance(img, dict):  # La imagen principal no tiene ID
+                continue
+            if str(img.id) == str(imagen_id):  # Comparar ID de imágenes adicionales
+                imagen_index = index
+                break
+
+    return render(request, 'Transaccion/carrusel_completo.html', {
+        'producto': producto,
+        'imagenes': imagenes,
+        'imagen_index': imagen_index
     })
 
 def ver_detalles_servicio(request, servicio_id):
@@ -148,9 +196,10 @@ def ver_detalles_servicio(request, servicio_id):
 
 def agregar_al_carrito(request, id, tipo):
     """
-    Agrega un producto o servicio al carrito. Si el producto pertenece a la categoría
-    'Vehículo', utiliza el precio de reserva y establece la cantidad en 1. 
-    Solo se permite un producto de categoría 'Vehículo' en el carrito.
+    Agrega un producto o servicio al carrito. 
+    - Si el producto pertenece a la categoría 'Vehículo', usa el precio de reserva y cantidad 1.
+    - Solo se permite un producto de categoría 'Vehículo' en el carrito.
+    - Solo se permite un producto o un servicio en el carrito a la vez.
     """
     cantidad = int(request.POST.get('cantidad', 1))
     cliente = None
@@ -169,7 +218,6 @@ def agregar_al_carrito(request, id, tipo):
         cliente_anonimo = ClienteAnonimo.objects.filter(session_key=session_key).first()
 
         if not cliente_anonimo:
-            # Crear un nuevo cliente anónimo si no existe
             cliente_anonimo = ClienteAnonimo.objects.create(
                 nombre="Anónimo",
                 apellido="",
@@ -179,13 +227,31 @@ def agregar_al_carrito(request, id, tipo):
             )
             request.session['cliente_anonimo_id'] = cliente_anonimo.id
 
-    # Verificar el tipo de ítem (producto o servicio)
+    # Obtener todos los elementos en el carrito del usuario
+    items_en_carrito = Carrito.objects.filter(
+        cliente=cliente,
+        cliente_anonimo=cliente_anonimo,
+        session_key=request.session.session_key,
+        carrito=1,
+    )
+
+    # Validación para permitir solo un producto o un servicio en el carrito
+    if items_en_carrito.exists():
+        primer_item = items_en_carrito.first()
+        primer_item_tipo = primer_item.content_type.model  # 'producto' o 'servicio'
+
+        if (tipo == 'producto' and primer_item_tipo == 'servicio') or (tipo == 'servicio' and primer_item_tipo == 'producto'):
+            messages.error(request, "No puedes agregar un producto si ya tienes un servicio en el carrito, y viceversa.")
+            return redirect('carrito')
+
+    # Lógica para productos
     if tipo == 'producto':
         item = get_object_or_404(Producto, id=id)
 
-        # Validar que solo haya un producto de categoría 'Vehículo' en el carrito
+        # Si el producto es de categoría 'Vehículo', solo se permite 1 en el carrito
         if item.categoria == "Vehículo":
-            cantidad = 1
+            cantidad = 1  # Asegurar que la cantidad sea 1 para vehículos
+
             # Obtener productos en el carrito
             productos_en_carrito = Carrito.objects.filter(
                 cliente=cliente,
@@ -195,7 +261,7 @@ def agregar_al_carrito(request, id, tipo):
                 carrito=1,
             )
 
-            # Verificar si algún producto en el carrito es de categoría 'Vehículo'
+            # Verificar si ya hay un vehículo en el carrito
             for carrito_item in productos_en_carrito:
                 producto = Producto.objects.get(id=carrito_item.object_id)
                 if producto.categoria == "Vehículo":
@@ -204,10 +270,11 @@ def agregar_al_carrito(request, id, tipo):
 
         content_type = ContentType.objects.get_for_model(Producto)
 
+    # Lógica para servicios
     elif tipo == 'servicio':
         item = get_object_or_404(Servicio, id=id)
 
-        # Validar que el precio del servicio sea mayor a 0
+        # No permitir agregar servicios con precio 0
         if item.precio <= 0:
             messages.error(request, 'No se pueden agregar servicios con precio 0 al carrito.')
             return redirect('carrito')
@@ -228,7 +295,7 @@ def agregar_al_carrito(request, id, tipo):
     else:
         raise Http404("Tipo no válido")
 
-    # Buscar el ítem en el carrito
+    # Buscar si el ítem ya está en el carrito
     carrito_item = Carrito.objects.filter(
         cliente=cliente,
         cliente_anonimo=cliente_anonimo,
@@ -238,6 +305,7 @@ def agregar_al_carrito(request, id, tipo):
         carrito=1,
     ).first()
 
+    # Si ya existe en el carrito, modificar la cantidad
     if carrito_item:
         if tipo == 'producto' and item.categoria == "Vehículo":
             messages.warning(request, 'El vehículo ya está en el carrito y no se puede modificar la cantidad.')
@@ -245,6 +313,7 @@ def agregar_al_carrito(request, id, tipo):
             carrito_item.cantidad += cantidad
             carrito_item.save()
     else:
+        # Agregar nuevo ítem al carrito
         Carrito.objects.create(
             cliente=cliente,
             cliente_anonimo=cliente_anonimo,

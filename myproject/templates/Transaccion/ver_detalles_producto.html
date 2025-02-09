@@ -119,34 +119,38 @@
 <div class="site-section">
   <div class="container">
     <div class="row">
-      <!-- Carrusel de imágenes -->
+      <!-- Contenedor del carrusel -->
       <div class="col-md-6">
         <div id="productCarousel" class="carousel slide" data-ride="carousel">
           <div class="carousel-inner">
-            <!-- Imagen principal -->
-            {% if producto.imagen %}
-            <div class="carousel-item active">
-              <img src="{{ producto.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="{{ producto.nombre }}">
-            </div>
-            {% endif %}
-            <!-- Imágenes adicionales -->
-            {% for imagen in imagenes_adicionales %}
-            <div class="carousel-item">
-              <a href="{{ imagen.imagen.url }}" data-lightbox="product-gallery" data-title="Imagen de {{ producto.nombre }}">
-                <img src="{{ imagen.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="Imagen de {{ producto.nombre }}">
-              </a>
-            </div>
-            {% endfor %}
+              <!-- Imagen principal -->
+              {% if producto.imagen %}
+              <div class="carousel-item {% if imagen_index == 0 %}active{% endif %}">
+                  <a href="{% url 'carrusel_completo' producto.id 0 %}">
+                      <img src="{{ producto.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="{{ producto.nombre }}">
+                  </a>
+              </div>
+              {% endif %}
+      
+              <!-- Imágenes adicionales -->
+              {% for imagen in imagenes_adicionales %}
+              <div class="carousel-item {% if forloop.counter == imagen_index %}active{% endif %}">
+                  <a href="{% url 'carrusel_completo' producto.id imagen.id %}">
+                      <img src="{{ imagen.imagen.url }}" style="width: 600px; height: 450px; object-fit: cover;" class="d-block w-100 carousel-image" alt="Imagen de {{ producto.nombre }}">
+                  </a>
+              </div>
+              {% endfor %}
           </div>
-          <!-- Controles de navegación -->
-          <a class="carousel-control-prev" href="#productCarousel" role="button" data-slide="prev">
-            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
-            <span class="sr-only">Previous</span>
-          </a>
-          <a class="carousel-control-next" href="#productCarousel" role="button" data-slide="next">
-            <span class="carousel-control-next-icon" aria-hidden="true"></span>
-            <span class="sr-only">Next</span>
-          </a>
+
+            <!-- Controles de navegación del carrusel -->
+            <a class="carousel-control-prev" href="#productCarousel" role="button" data-slide="prev">
+                <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                <span class="sr-only">Previous</span>
+            </a>
+            <a class="carousel-control-next" href="#productCarousel" role="button" data-slide="next">
+                <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                <span class="sr-only">Next</span>
+            </a>
         </div>
       </div>
 
@@ -196,7 +200,7 @@
         {% else %}
         <p>No puedes realizar compras con una cuenta de empleado.</p>
         {% endif %}
-        <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
+        <p><a href="{% url 'catalogo_productos' %}" class="btn btn-secondary btn-sm mt-2">Volver al catálogo</a></p>
       </div>
     </div>
   </div>
@@ -204,10 +208,26 @@
 
 <!-- Lightbox2 JavaScript -->
 <script src="{% static 'js/lightbox.min.js' %}"></script>
+
 <script>
   lightbox.option({
     'resizeDuration': 200,
     'wrapAround': true
+  });
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      let urlParams = new URLSearchParams(window.location.search);
+      let imagenId = urlParams.get("imagen_id");
+
+      if (imagenId) {
+          let targetImage = document.querySelector(`.carousel-item[data-imagen-id='${imagenId}']`);
+          if (targetImage) {
+              document.querySelector(".carousel-item.active").classList.remove("active");
+              targetImage.classList.add("active");
+          }
+      }
   });
 </script>
 

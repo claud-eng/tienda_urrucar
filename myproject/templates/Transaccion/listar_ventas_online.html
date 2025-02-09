@@ -95,8 +95,12 @@
                 {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                 <th>Acciones</th>
                 {% endif %}
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <th>Días Transcurridos entre la Adquisición y Venta</th>
+                {% endif %}
                 <th>Días Transcurridos entre la Reserva y Venta</th>
                 <th>Detalle</th>
+                <th>Consignado</th>
                 <th>Tipo de Pago</th>
                 <th>Monto de Cuotas</th>
                 <th>Número de Cuotas</th>
@@ -118,7 +122,6 @@
                     {% elif orden.cliente_anonimo %}
                         {{ orden.cliente_anonimo.nombre }} {{ orden.cliente_anonimo.apellido }}
                     {% else %}
-                        N/A
                     {% endif %}
                 </td>
         
@@ -128,7 +131,6 @@
                     {% elif orden.cliente_anonimo %}
                         {{ orden.cliente_anonimo.email }}
                     {% else %}
-                        N/A
                     {% endif %}
                 </td>
 
@@ -139,7 +141,6 @@
                     {% elif orden.cliente_anonimo %}
                         No
                     {% else %}
-                        N/A
                     {% endif %}
                 </td>
                 {% endif %}
@@ -169,10 +170,31 @@
 
                 {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                 <td>
-                    <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
+                    {% with show_button=False %}
+                        {% for detalle in orden.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and not show_button %}
+                                <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
+                                {% with True as show_button %}
+                                {% endwith %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endwith %}
                 </td>
-                {% endif %}
-
+                {% endif %}  
+                
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <td>
+                    {% for detalle in orden.detalleventaonline_set.all %}
+                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                            {% if detalle.dias_desde_adquisicion is not None %}
+                                {{ detalle.dias_desde_adquisicion }} días
+                            {% else %}
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                </td>
+                {% endif %}  
+                
                 <td>
                     {% for detalle in orden.detalleventaonline_set.all %}
                         {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
@@ -187,6 +209,19 @@
                 <td>
                     {% for detalle in orden.detalles_formateados %}
                         {{ detalle.nombre }}{% if not forloop.last %} - {% endif %}
+                    {% endfor %}
+                </td>
+                
+                <td>
+                    {% for detalle in orden.detalleventaonline_set.all %}
+                        {% if detalle.producto %}
+                            {% if detalle.producto.consignado %}
+                                Sí
+                            {% else %}
+                                No
+                            {% endif %}
+                            {% if not forloop.last %} - {% endif %}
+                        {% endif %}
                     {% endfor %}
                 </td>
                 
@@ -258,13 +293,13 @@
     </nav>
 </div>
 
-<div class="mt-4">
-    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-        <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
-    {% else %}
-        <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
-    {% endif %}
-</div>
+    <div class="mt-4">
+        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+            <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
+        {% else %}
+            <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
+        {% endif %}
+    </div>
 
 </div>
 

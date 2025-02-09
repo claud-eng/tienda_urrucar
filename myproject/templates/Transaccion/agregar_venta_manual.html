@@ -2,13 +2,10 @@
 {% load static %}
 {% load widget_tweaks %}
 {% block title %}Agregar Venta Manual{% endblock %}
+
 {% block extra_css %}
 <style>
-    /* Ocultar la sección de Productos de forma temporal */
-    #productos-section.d-none, #servicios-form-container.d-none {
-    display: none !important;
-}
-    /* Tablets (pantallas medianas) */
+    /* Estilos personalizados para botones en pantallas pequeñas */
     @media (max-width: 991.98px) {
         .container .btn {
             display: block;
@@ -17,7 +14,6 @@
         }
     }
 
-    /* Móviles (pantallas pequeñas) */
     @media (max-width: 767.98px) {
         .container .btn {
             display: block;
@@ -26,7 +22,6 @@
         }
     }
 
-    /* Dispositivos muy pequeños (menos de 480px) */
     @media (max-width: 480px) {
         .container .btn {
             width: 100%;
@@ -35,6 +30,7 @@
     }
 </style>
 {% endblock %}
+
 {% block content %}
 
 <div class="bg-light py-3">
@@ -54,27 +50,29 @@
 </div>
 
 <div class="container mt-5">
-
     <form method="post" id="ventaForm" class="needs-validation" novalidate>
         {% csrf_token %}
 
+        <!-- Mostrar mensajes de error -->
+        {% if messages %}
         <div>
             {% for message in messages %}
-                <div class="alert alert-danger" role="alert">
-                    {{ message }}
-                </div>
+            <div class="alert alert-danger" role="alert">
+                {{ message }}
+            </div>
             {% endfor %}
-        </div>            
-        
+        </div>
+        {% endif %}
+
         <!-- Formulario para Cliente Anónimo -->
         <h3>Datos del Cliente</h3>
         <div class="form-group">
             {{ cliente_anonimo_form.nombre.label_tag }}
             {{ cliente_anonimo_form.nombre|add_class:"form-control" }}
             {% if cliente_anonimo_form.nombre.errors %}
-                <div class="alert alert-danger">
-                    {{ cliente_anonimo_form.nombre.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.nombre.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
@@ -82,9 +80,9 @@
             {{ cliente_anonimo_form.apellido.label_tag }}
             {{ cliente_anonimo_form.apellido|add_class:"form-control" }}
             {% if cliente_anonimo_form.apellido.errors %}
-                <div class="alert alert-danger">
-                    {{ cliente_anonimo_form.apellido.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.apellido.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
@@ -92,9 +90,9 @@
             {{ cliente_anonimo_form.email.label_tag }}
             {{ cliente_anonimo_form.email|add_class:"form-control" }}
             {% if cliente_anonimo_form.email.errors %}
-                <div class="alert alert-danger">
-                    {{ cliente_anonimo_form.email.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.email.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
@@ -102,78 +100,55 @@
             {{ cliente_anonimo_form.numero_telefono.label_tag }}
             {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
             {% if cliente_anonimo_form.numero_telefono.errors %}
-                <div class="alert alert-danger">
-                    {{ cliente_anonimo_form.numero_telefono.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.numero_telefono.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>      
+
+        <!-- Precio de Costo -->
+        <h3>Detalles del Servicio</h3>
+
+        <div class="form-group">
+            {{ orden_compra_form.fecha_creacion.label_tag }}
+            {{ orden_compra_form.fecha_creacion|add_class:"form-control" }}
+            {% if orden_compra_form.fecha_creacion.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_creacion.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
-    <!-- Productos -->
-    <div id="productos-section" class="d-none">
-        <h3>Productos</h3>
-        <div id="productos-form-container">
-            {{ detalle_formset.management_form }}
-            {% for form in detalle_formset %}
-                <div class="producto-form form-row align-items-end">
-                    <div class="form-group col-md-5">
-                        {{ form.producto.label_tag }}
-                        {{ form.producto|add_class:"form-control" }}
-                        {% if form.producto.errors %}
-                            <div class="alert alert-danger">
-                                {{ form.producto.errors.as_text }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="form-group col-md-5">
-                        {{ form.cantidad.label_tag }}
-                        {{ form.cantidad|add_class:"form-control" }}
-                    </div>
-                    <div class="form-group col-md-2 d-flex align-items-center justify-content-center">
-                        {% if not forloop.first %}
-                            <button type="button" class="btn btn-danger remove-form-row">Quitar</button>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
-            <button type="button" id="add-more-productos" class="btn btn-info btn-sm mb-3">Agregar otro producto</button>
-            <a href="{% url 'listar_productos' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
+        <div class="form-group">
+            {{ detalle_servicio_form.servicio.label_tag }}
+            {{ detalle_servicio_form.servicio|add_class:"form-control" }}
+            {% if detalle_servicio_form.servicio.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.servicio.errors.as_text }}
+            </div>
+            {% endif %}
         </div>
-    </div>
 
-        <!-- Servicios -->
-        <h3>Servicios</h3>
-        <div id="servicios-form-container">
-            {{ detalle_servicio_formset.management_form }}
-            {% for form in detalle_servicio_formset %}
-                <div class="servicio-form form-row align-items-end">
-                    <div class="form-group col-md-10">
-                        {{ form.servicio.label_tag }}
-                        {{ form.servicio|add_class:"form-control" }}
-                        {% if form.servicio.errors %}
-                            <div class="alert alert-danger">
-                                {{ form.servicio.errors.as_text }}
-                            </div>
-                        {% endif %}
-                    </div>
-                    <div class="form-group col-md-2 d-flex align-items-center justify-content-center">
-                        {% if not forloop.first %}
-                            <button type="button" class="btn btn-danger remove-servicio">Quitar</button>
-                        {% endif %}
-                    </div>
-                </div>
-            {% endfor %}
-            <!-- Ocultar el botón de agregar servicios -->
-            <button type="button" id="add-more-servicios" class="btn btn-info btn-sm mb-3 d-none">Agregar otro servicio</button>
-            <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
-        </div>        
+        <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
 
+        <div class="form-group">
+            {{ detalle_servicio_form.precio_costo.label_tag }}
+            {{ detalle_servicio_form.precio_costo|add_class:"form-control" }}
+            {% if detalle_servicio_form.precio_costo.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.precio_costo.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Precio Personalizado -->
         <div class="form-group">
             {{ orden_compra_form.precio_personalizado.label_tag }}
             {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
             {% if orden_compra_form.precio_personalizado.errors %}
-                <div class="alert alert-danger">
-                    {{ orden_compra_form.precio_personalizado.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ orden_compra_form.precio_personalizado.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
@@ -182,138 +157,18 @@
             {{ orden_compra_form.pago_cliente.label_tag }}
             {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
             {% if orden_compra_form.pago_cliente.errors %}
-                <div class="alert alert-danger">
-                    {{ orden_compra_form.pago_cliente.errors.as_text }}
-                </div>
+            <div class="alert alert-danger">
+                {{ orden_compra_form.pago_cliente.errors.as_text }}
+            </div>
             {% endif %}
         </div>
 
+        <!-- Botones de acción -->
         <div class="form-group mb-5">
             <input type="submit" value="Registrar Venta" class="btn btn-primary btn-sm">
-            <a href="{% if query_string %}{% url 'listar_ventas_manuales' %}?{{ query_string }}{% else %}{% url 'listar_ventas_manuales' %}{% endif %}" class="btn btn-secondary btn-sm">Volver atrás</a>
+            <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
         </div>
     </form>
 </div>
 
-<script type="text/javascript">
-    document.addEventListener('DOMContentLoaded', function() {
-        function updateElementIndex(el, prefix, index) {
-            var id_regex = new RegExp('(' + prefix + '-\\d+)');
-            var replacement = prefix + '-' + index;
-            if ($(el).attr("for")) {
-                $(el).attr("for", $(el).attr("for").replace(id_regex, replacement));
-            }
-            if (el.id) {
-                el.id = el.id.replace(id_regex, replacement);
-            }
-            if (el.name) {
-                el.name = el.name.replace(id_regex, replacement);
-            }
-        }
-
-        function cloneMore(selector, prefix) {
-            var newElement = $(selector).clone(true);
-            var total = $('#id_' + prefix + '-TOTAL_FORMS').val();
-            var newIndex = parseInt(total);
-
-            // Actualiza los índices de los campos dentro del formulario clonado
-            newElement.find(':input').each(function() {
-                updateElementIndex(this, prefix, newIndex);
-                $(this).val('');
-            });
-
-            newElement.find('label').each(function() {
-                updateElementIndex(this, prefix, newIndex);
-            });
-
-            // Asegurar que el botón "Quitar" esté alineado correctamente en la misma fila
-            newElement.find('.remove-form-row').remove();
-            newElement.find('.form-group.col-md-2').html(`
-                <button type="button" class="btn btn-danger remove-form-row">Quitar</button>
-            `);
-
-            // Incrementar el TOTAL_FORMS
-            $('#id_' + prefix + '-TOTAL_FORMS').val(newIndex + 1);
-            $(selector).after(newElement);
-
-            calculateTotal();
-            bindRemoveEvent();
-        }
-
-        $('#add-more-productos').click(function() {
-            cloneMore('.producto-form:last', 'productos');
-        });
-
-        $('#add-more-servicios').click(function() {
-            cloneMore('.servicio-form:last', 'servicios');
-        });
-
-        function bindRemoveEvent() {
-            $(document).on('click', '.remove-form-row', function(e) {
-                e.preventDefault();
-                var formType = $(this).closest('.form-row').parent().attr('id'); 
-                var prefix = formType.replace('-form-container', ''); 
-                $(this).closest('.form-row').remove();
-                var totalForms = $('#id_' + prefix + '-TOTAL_FORMS');
-                var currentTotal = parseInt(totalForms.val(), 10);
-                totalForms.val(currentTotal - 1);
-
-                $('.' + prefix + '-form').each(function(index) {
-                    updateElementIndex(this, prefix, index);
-                });
-
-                calculateTotal();
-            });
-        }
-
-        // Función para obtener el precio desde el backend
-        async function obtenerPrecioProducto(productoId) {
-            if (!productoId) return 0;
-            const response = await fetch(`/obtener_precio_producto/${productoId}/`);
-            const data = await response.json();
-            return data.precio || 0;
-        }
-
-        async function obtenerPrecioServicio(servicioId) {
-            if (!servicioId) return 0;
-            const response = await fetch(`/obtener_precio_servicio/${servicioId}/`);
-            const data = await response.json();
-            return data.precio || 0;
-        }
-
-        async function calculateTotal() {
-            let total = 0;
-
-            // Calcular productos
-            const productosPromises = $('.producto-form').map(async function() {
-                const productoId = $(this).find('.producto-input').val();
-                const cantidad = parseFloat($(this).find('.cantidad-input').val()) || 0;
-                if (productoId && cantidad) {
-                    const precio = await obtenerPrecioProducto(productoId);
-                    total += precio * cantidad;
-                }
-            }).get();
-
-            // Calcular servicios
-            const serviciosPromises = $('.servicio-form').map(async function() {
-                const servicioId = $(this).find('.servicio-input').val();
-                if (servicioId) {
-                    const precio = await obtenerPrecioServicio(servicioId);
-                    total += precio;
-                }
-            }).get();
-
-            await Promise.all([...productosPromises, ...serviciosPromises]);
-
-            $('#total-display').text(`Total: $${total.toLocaleString()}`);
-        }
-
-        $(document).on('input', '.cantidad-input, .producto-input, .servicio-input', function() {
-            calculateTotal();
-        });
-
-        bindRemoveEvent();
-    });
-</script> 
-    
 {% endblock %}

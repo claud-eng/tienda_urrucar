@@ -12,6 +12,7 @@ from django.db.models import Case, When, F, Sum, DecimalField, Q  # Importa herr
 from django.http import Http404, HttpResponse, HttpResponseRedirect, JsonResponse  # Importa clases de respuesta y redirección HTTP.
 from django.shortcuts import get_object_or_404, redirect, render  # Importa funciones de atajos para renderizar y redireccionar vistas.
 from django.utils import timezone  # Importa el módulo timezone para manejar zonas horarias.
+from django.utils.timezone import make_aware  # Importa 'make_aware' para convertir objetos de fecha y hora ingresados en objetos conscientes de zonas horarias.
 from io import BytesIO  # Importa BytesIO para manejar flujos de datos en memoria.
 from reportlab.lib import colors  # Importa colores de ReportLab para crear gráficos y personalizar PDFs.
 from reportlab.lib.pagesizes import A4, letter  # Importa tamaños de página 'A4' y 'letter' de ReportLab.
@@ -142,9 +143,9 @@ def generar_comprobante_pago_pdf(tipo_venta, id_venta=None, numero_orden=None, e
         
         # Condición para productos de categoría "Vehículo"
         if detalle.producto and detalle.producto.categoria == "Vehículo":
-            p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio de Reserva: ${precio_formateado}")
+            p.drawString(70, y, f"{producto_o_servicio.nombre} - Precio de Reserva: ${precio_formateado}")
         else:
-            p.drawString(70, y, f"{producto_o_servicio.nombre} - Cantidad: {detalle.cantidad} - Precio: ${precio_formateado}")
+            p.drawString(70, y, f"{producto_o_servicio.nombre} - Precio: ${precio_formateado}")
         
         y -= 20
         if y < 50:
@@ -169,9 +170,8 @@ def generar_comprobante_pago_pdf(tipo_venta, id_venta=None, numero_orden=None, e
     y -= 20
 
     if tipo_venta == 'manual':
-        p.drawString(50, y, f"Pagó: ${format(int(venta.pago_cliente), ',').replace(',', '.')}")
+        p.drawString(50, y, f"Monto pagado hasta el día de hoy: ${format(int(venta.pago_cliente), ',').replace(',', '.')}")
         y -= 20
-        p.drawString(50, y, f"Vuelto: ${format(int(venta.cambio), ',').replace(',', '.')}")
     else:
         p.drawString(50, y, f"Número de Cuotas: {venta.numero_cuotas or 0}")
         y -= 20
@@ -263,6 +263,7 @@ def reporte_ventas_manuales(request):
     Incluye el top 5 de productos y servicios en JSON para gráficos y mensajes
     si no hay datos. Permite filtrar por mes, trimestre, semestre o anual.
     """
+
     anio_actual = datetime.now().year
     mes_actual = datetime.now().month
 
@@ -274,35 +275,45 @@ def reporte_ventas_manuales(request):
     # Calcular rango de fechas según el filtro
     fecha_inicio, fecha_fin = calcular_rango_fechas(anio, tipo_filtro, valor_filtro)
 
+    # Asegurarnos de que las fechas sean timezone-aware
+    fecha_inicio = make_aware(fecha_inicio)
+    fecha_fin = make_aware(fecha_fin)
+
+    # **Cambiar a usar fecha_pago_final en lugar de fecha_creacion**
     # Calcular el total de ventas (productos y servicios)
     total_productos = Producto.objects.filter(
-        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_pago_final__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
 
     total_servicios = Servicio.objects.filter(
-        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_pago_final__range=[fecha_inicio, fecha_fin]
     ).aggregate(total_vendido=Sum('detalleventamanual__cantidad'))['total_vendido'] or 0
 
-    # Calcular las ganancias totales directamente desde las ventas manuales
-    ventas = VentaManual.objects.filter(fecha_creacion__range=[fecha_inicio, fecha_fin])
+    # Calcular las ganancias totales basadas en los detalles de ventas
+    ventas = VentaManual.objects.filter(fecha_pago_final__range=[fecha_inicio, fecha_fin])
 
     total_ganancias = 0
     for venta in ventas:
-        if venta.total == 0:
-            total_ganancias += venta.precio_personalizado or 0
-        else:
-            total_ganancias += venta.total
+        # Filtrar solo servicios asociados a la venta
+        servicios = venta.detalleventamanual_set.filter(servicio__isnull=False)
+
+        # Calcular el costo total de los servicios
+        total_costo = sum(detalle.precio_costo or 0 for detalle in servicios)
+
+        # Calcular la ganancia para esta venta
+        ganancia_perdida = venta.pago_cliente - total_costo
+        total_ganancias += ganancia_perdida
 
     # Formatear el total de ganancias
     total_ganancias_formateado = formato_precio(total_ganancias)
 
     # Obtener datos de ventas en ese rango de fechas
     top_cinco_productos = Producto.objects.filter(
-        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_pago_final__range=[fecha_inicio, fecha_fin]
     ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
     top_cinco_servicios = Servicio.objects.filter(
-        detalleventamanual__orden_compra__fecha_creacion__range=[fecha_inicio, fecha_fin]
+        detalleventamanual__orden_compra__fecha_pago_final__range=[fecha_inicio, fecha_fin]
     ).annotate(total_vendido=Sum('detalleventamanual__cantidad')).order_by('-total_vendido')[:5]
 
     # Mensajes si no hay productos o servicios vendidos
@@ -418,52 +429,62 @@ def reporte_ventas_online(request):
 
     # Calcular el total general de ventas (productos y servicios)
     total_productos = Producto.objects.filter(
-        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+        detalleventaonline__fecha_estado_final__range=[fecha_inicio, fecha_fin],  # Usar fecha de actualización
+        detalleventaonline__estado_reserva="Vendida"  # Filtrar productos vendidos
     ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
 
     total_servicios = Servicio.objects.filter(
-        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]  # Fecha original para servicios
     ).aggregate(total_vendido=Sum('detalleventaonline__cantidad'))['total_vendido'] or 0
 
     # Calcular total de ganancias
     detalles = DetalleVentaOnline.objects.filter(
-        orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+        Q(producto__isnull=False, fecha_estado_final__range=[fecha_inicio, fecha_fin], estado_reserva="Vendida") | 
+        Q(servicio__isnull=False, orden_compra__fecha__range=[fecha_inicio, fecha_fin])
     )
 
-    total_ganancias = 0
+    total_ganancias = 0  # Inicializar total de ganancias
+
     for detalle in detalles:
         ganancia_detalle = 0
 
-        # Verificar si es un producto
+        # Verificar si el detalle corresponde a un producto
         if detalle.producto:
             if detalle.producto.categoria == "Vehículo":
-                # Vehículo: Ganancia depende del estado
-                if detalle.estado_reserva == "Vendida":
-                    # Permitir mostrar pérdida como valor negativo
-                    ganancia_detalle = (detalle.producto.precio - 
-                                    (detalle.producto.precio_costo + detalle.producto.costo_extra)) * detalle.cantidad
+                if detalle.producto.consignado:
+                    # Si el vehículo es consignado, calcular ganancia con porcentaje de consignación
+                    if detalle.producto.porcentaje_consignacion is not None:
+                        ganancia_detalle = (detalle.producto.precio * (detalle.producto.porcentaje_consignacion / 100)) * detalle.cantidad
+                    else:
+                        ganancia_detalle = 0  # Si no hay porcentaje definido, no hay ganancia
                 else:
-                    # En proceso o Desistida: ganancia es 0
-                    ganancia_detalle = 0
+                    # Vehículo no consignado: cálculo de ganancia tradicional
+                    ganancia_detalle = (
+                        detalle.producto.precio - 
+                        (detalle.producto.precio_costo + detalle.producto.costo_extra)
+                    ) * detalle.cantidad
             else:
-                # No es vehículo: Usar el total pagado como ganancia
+                # Otros productos: Ganancia es el precio total pagado
                 ganancia_detalle = detalle.precio * detalle.cantidad
-        else:
-            # Servicios: Usar el total pagado como ganancia
+
+        elif detalle.servicio:
+            # Servicios: Ganancia es el precio total pagado
             ganancia_detalle = detalle.precio * detalle.cantidad
 
+        # Sumar la ganancia del detalle al total
         total_ganancias += ganancia_detalle
 
-    # Formatear el total de ganancias
+    # Formatear el total de ganancias para el reporte
     total_ganancias_formateado = formato_precio(total_ganancias)
 
     # Obtener datos de ventas online dentro del rango
     top_cinco_productos = Producto.objects.filter(
-        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+        detalleventaonline__fecha_estado_final__range=[fecha_inicio, fecha_fin],  # Usar fecha de actualización
+        detalleventaonline__estado_reserva="Vendida"  # Solo productos vendidos
     ).annotate(total_vendido=Sum('detalleventaonline__cantidad')).order_by('-total_vendido')[:5]
 
     top_cinco_servicios = Servicio.objects.filter(
-        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]
+        detalleventaonline__orden_compra__fecha__range=[fecha_inicio, fecha_fin]  # Usar fecha de creación
     ).annotate(total_vendido=Sum('detalleventaonline__cantidad')).order_by('-total_vendido')[:5]
 
     # Mensajes si no hay productos o servicios vendidos

@@ -20,6 +20,7 @@ from .context_processors import formato_precio  # Importa 'formato_precio' para 
 from .forms import * # Importa todas las funciones definidas en 'forms' del directorio actual.
 from .functions import *  # Importa todas las funciones definidas en 'functions' del directorio actual.
 from .models import * # Importa la función ImagenProducto para gestionar la lógica de imágenes adicionales en la galería de productos.
+from django.utils import timezone  # Importa 'timezone' para manejar operaciones relacionadas con zonas horarias en Django.
 
 # Validación para que solo el administrador tenga acceso a las plantillas
 def es_administrador(user):
@@ -85,12 +86,20 @@ def listar_productos(request):
         producto.costo_extra_formateado = (
             formato_precio(producto.costo_extra) if producto.costo_extra else None
         )
-        if producto.precio_costo is not None and producto.costo_extra is not None:
-            # Permitir mostrar pérdidas como valores negativos
-            ganancia = producto.precio - (producto.precio_costo + producto.costo_extra)
-            producto.ganancia_formateada = formato_precio(ganancia)
+
+        # Calcular ganancia basada en si el producto es consignado o no
+        if producto.consignado:
+            if producto.porcentaje_consignacion is not None:
+                ganancia = round(producto.precio * (producto.porcentaje_consignacion / 100), 2)
+                producto.ganancia_formateada = formato_precio(ganancia)
+            else:
+                producto.ganancia_formateada = ""  # Si no tiene porcentaje, no hay ganancia
         else:
-            producto.ganancia_formateada = None
+            if producto.precio_costo is not None and producto.costo_extra is not None:
+                ganancia = producto.precio - (producto.precio_costo + producto.costo_extra)
+                producto.ganancia_formateada = formato_precio(ganancia)
+            else:
+                producto.ganancia_formateada = ""
 
     # Indicar si hay una consulta de búsqueda activa
     has_search_query_nombre = bool(nombre_query)
@@ -120,26 +129,41 @@ def agregar_producto(request):
     return render(request, "Transaccion/agregar_producto.html", {'form': form})
 
 @user_passes_test(es_administrador, login_url='home')
-# Función para editar producto
 def editar_producto(request, producto_id):
+    """
+    Permite editar un producto existente, asegurando que el porcentaje de consignación
+    se cargue correctamente y que las imágenes adicionales se gestionen bien.
+    """
     producto = get_object_or_404(Producto, id=producto_id)
-    imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtén las imágenes adicionales
+    imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtener imágenes adicionales
+
+    print(f"Producto encontrado: {producto.nombre} (ID: {producto.id})")
+    print(f"Consignado en DB: {producto.consignado}")
+    print(f"Porcentaje Consignación en DB: {producto.porcentaje_consignacion}")
 
     if request.method == "POST":
         form = ProductoForm(request.POST, request.FILES, instance=producto)
+        
         if form.is_valid():
             producto = form.save()
 
+            # Si `consignado` es "No", limpiar el campo `porcentaje_consignacion`
+            if not producto.consignado:
+                print("Producto NO consignado, eliminando porcentaje de consignación.")
+                producto.porcentaje_consignacion = None
+                producto.save()
+
+            # **Manejo de imágenes**
             # Eliminar imagen principal si está marcada para eliminación
             imagen_principal_id = request.POST.get("imagen_principal_a_eliminar")
             if imagen_principal_id and producto.imagen:
-                # Eliminar la imagen principal
                 if os.path.exists(producto.imagen.path):
                     os.remove(producto.imagen.path)  # Elimina físicamente el archivo
                 producto.imagen.delete(save=False)
                 producto.imagen = None
                 producto.save()
 
+            # Eliminar imágenes adicionales seleccionadas
             imagenes_a_eliminar = request.POST.get("imagenes_a_eliminar", "").split(",")
             for imagen_id in imagenes_a_eliminar:
                 if imagen_id.isdigit():
@@ -157,8 +181,15 @@ def editar_producto(request, producto_id):
 
             messages.success(request, "Producto actualizado con éxito.")
             return redirect("listar_productos")
+        else:
+            print("Errores en el formulario:")
+            print(form.errors)
+            messages.error(request, "Hubo errores en el formulario, revisa los campos.")
+    
     else:
-        form = ProductoForm(instance=producto)
+        # **Aquí verificamos que el formulario reciba el valor de porcentaje_consignacion**
+        form = ProductoForm(instance=producto, initial={'porcentaje_consignacion': producto.porcentaje_consignacion})
+        print(f"Inicializando formulario con porcentaje consignación: {form.initial.get('porcentaje_consignacion')}")
 
     return render(request, "Transaccion/editar_producto.html", {
         "form": form,
@@ -766,12 +797,18 @@ def listar_ventas_manuales(request):
         venta.pago_cliente_formateado = formato_precio(venta.pago_cliente)
         venta.cambio_formateado = formato_precio(venta.cambio)
 
+        # Calcular ganancia o pérdida basada en pago_cliente
+        total_costo = sum(detalle.precio_costo or 0 for detalle in productos) + \
+                    sum(detalle.precio_costo or 0 for detalle in servicios)
+        ganancia_perdida = venta.pago_cliente - total_costo
+
         productos_formateados = []
         for detalle in productos:
             productos_formateados.append({
                 'nombre': detalle.producto.nombre,
                 'cantidad': detalle.cantidad,
                 'precio_formateado': formato_precio(detalle.producto.precio),
+                'precio_costo': formato_precio(detalle.precio_costo),  # Agregamos precio_costo
             })
 
         servicios_formateados = []
@@ -784,6 +821,7 @@ def listar_ventas_manuales(request):
             servicios_formateados.append({
                 'nombre': detalle.servicio.nombre,
                 'precio_formateado': precio,
+                'precio_costo': formato_precio(detalle.precio_costo),  # Agregamos precio_costo
             })
 
         ventas_list.append({
@@ -792,6 +830,7 @@ def listar_ventas_manuales(request):
             'servicios': servicios_formateados,
             'tiene_productos': productos.exists(),
             'tiene_servicios': servicios.exists(),
+            'ganancia_perdida': formato_precio(ganancia_perdida),
         })
 
     return render(request, 'Transaccion/listar_ventas_manuales.html', {
@@ -800,133 +839,137 @@ def listar_ventas_manuales(request):
         'cliente_query': cliente_query,
     })
 
-# Función para agregar una venta de manera manual y asociarla a un cliente anónimo    
 @user_passes_test(es_administrador, login_url='home')
 def agregar_venta_manual(request):
     """
-    Permite agregar una nueva venta, verificando la disponibilidad de stock. Calcula el total y maneja pagos y cambios.
+    Permite agregar una nueva venta manual de servicios asociada a un cliente anónimo.
     """
-    # Formularios
     orden_compra_form = VentaManualForm(request.POST or None)
-    detalle_formset = DetalleVentaManualProductoFormset(request.POST or None, prefix='productos')
-    detalle_servicio_formset = DetalleVentaManualServicioFormset(request.POST or None, prefix='servicios')
+    detalle_servicio_form = DetalleVentaManualServicioForm(request.POST or None)
     cliente_anonimo_form = ClienteAnonimoForm(request.POST or None)
-    query_string = request.GET.urlencode()
 
     if request.method == 'POST':
-        # Validar todos los formularios
-        if (orden_compra_form.is_valid() and 
-            detalle_formset.is_valid() and 
-            detalle_servicio_formset.is_valid() and 
-            cliente_anonimo_form.is_valid()):
-
-            # Obtener datos del cliente anónimo
-            nombre = cliente_anonimo_form.cleaned_data['nombre']
-            apellido = cliente_anonimo_form.cleaned_data['apellido']
-            email = cliente_anonimo_form.cleaned_data['email']
-            numero_telefono = cliente_anonimo_form.cleaned_data['numero_telefono']
-
-            # Crear siempre un nuevo cliente anónimo
-            cliente_anonimo = ClienteAnonimo.objects.create(
-                nombre=nombre,
-                apellido=apellido,
-                email=email,
-                numero_telefono=numero_telefono,
-                session_key=f"anonimo_{nombre.lower()}{apellido.lower()}{timezone.now().strftime('%Y%m%d%H%M%S')}"
-            )
-
-            # Calcular totales de productos y servicios
-            total_productos = sum(
-                form.cleaned_data.get('cantidad', 0) * form.cleaned_data.get('producto').precio
-                for form in detalle_formset if form.cleaned_data.get('producto')
-            )
-            total_servicios = sum(
-                form.cleaned_data.get('servicio').precio
-                for form in detalle_servicio_formset if form.cleaned_data.get('servicio')
-            )
-
-            # Obtener el precio personalizado si se ingresó
+        if (
+            orden_compra_form.is_valid()
+            and detalle_servicio_form.is_valid()
+            and cliente_anonimo_form.is_valid()
+        ):
+            # Calcular el total manualmente
+            servicio = detalle_servicio_form.cleaned_data.get('servicio')
+            precio_costo = detalle_servicio_form.cleaned_data.get('precio_costo', 0)
+            total_servicios = servicio.precio if servicio else 0
             precio_personalizado = orden_compra_form.cleaned_data.get('precio_personalizado', 0)
+            total_venta = max(total_servicios, precio_personalizado)
 
-            # Calcular el total general: usar el precio de servicios si es mayor a 0, de lo contrario usar el personalizado
-            total_venta = total_servicios if total_servicios > 0 else precio_personalizado
-
-            pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)  # Usar 0 como valor predeterminado
-
-            # Verificar si el cliente pagó menos que el total de la venta
-            if pago_cliente is None or pago_cliente < total_venta:
-                messages.error(request, 'La cantidad ingresada a pagar es inferior al total de la venta o no es válida.')
+            # Validar el monto del pago
+            pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
+            if pago_cliente > total_venta:
+                messages.error(request, 'El monto del pago no puede ser mayor al total.')
                 return render(request, 'Transaccion/agregar_venta_manual.html', {
                     'orden_compra_form': orden_compra_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
+                    'detalle_servicio_form': detalle_servicio_form,
                     'cliente_anonimo_form': cliente_anonimo_form,
-                    'query_string': query_string,
                 })
 
-            # Verificar disponibilidad de stock
-            stock_insuficiente = False
-            for form in detalle_formset:
-                if form.cleaned_data.get('producto'):
-                    producto = form.cleaned_data['producto']
-                    cantidad = form.cleaned_data['cantidad']
-                    if cantidad > producto.cantidad_stock:
-                        stock_insuficiente = True
-                        messages.error(request, f'Stock insuficiente para el producto {producto.nombre}.')
-                        break
-
-            if stock_insuficiente:
-                return render(request, 'Transaccion/agregar_venta_manual.html', {
-                    'orden_compra_form': orden_compra_form,
-                    'detalle_formset': detalle_formset,
-                    'detalle_servicio_formset': detalle_servicio_formset,
-                    'cliente_anonimo_form': cliente_anonimo_form,
-                    'query_string': query_string,
-                })
+            # Crear cliente anónimo
+            cliente_anonimo = cliente_anonimo_form.save(commit=False)
+            cliente_anonimo.session_key = f"anonimo_{cliente_anonimo.nombre.lower()}{cliente_anonimo.apellido.lower()}{now().strftime('%Y%m%d%H%M%S')}"
+            cliente_anonimo.save()
 
             # Guardar la venta
             with transaction.atomic():
                 orden_compra = orden_compra_form.save(commit=False)
-                orden_compra.cliente_anonimo = cliente_anonimo  # Asignar el cliente anónimo a la venta
-                orden_compra.total = total_venta  # Total calculado
-                orden_compra.cambio = max(pago_cliente - total_venta, 0)  # Calcular cambio
+                orden_compra.cliente_anonimo = cliente_anonimo
+                orden_compra.total = total_venta
+                orden_compra.cambio = max(pago_cliente - total_venta, 0)
+
+                # Registrar fecha de pago final si el monto pagado es igual al total
+                if pago_cliente >= total_venta:
+                    orden_compra.fecha_pago_final = now()
+                else:
+                    orden_compra.fecha_pago_final = None
+
                 orden_compra.save()
 
-                # Guardar detalles de productos
-                for form in detalle_formset:
-                    if form.cleaned_data.get('producto'):
-                        producto = form.cleaned_data['producto']
-                        cantidad = form.cleaned_data['cantidad']
-                        producto.cantidad_stock -= cantidad  # Restar del stock
-                        producto.save()
-                        detalle = form.save(commit=False)
-                        detalle.orden_compra = orden_compra
-                        detalle.save()
+                # Guardar el detalle del servicio
+                detalle = detalle_servicio_form.save(commit=False)
+                detalle.orden_compra = orden_compra
+                detalle.cantidad = 1  # Siempre será 1 para servicios
+                detalle.save()
 
-                # Guardar detalles de servicios
-                for form in detalle_servicio_formset:
-                    if form.cleaned_data.get('servicio'):
-                        detalle = form.save(commit=False)
-                        detalle.orden_compra = orden_compra
-                        detalle.save()
+            messages.success(request, 'Venta registrada exitosamente.')
+            return redirect('listar_ventas_manuales')
 
-                # Mensaje de éxito y redirección
-                messages.success(request, 'Venta registrada exitosamente.')
-                return redirect('listar_ventas_manuales')
-
-        else:
-            # Mostrar errores de validación
-            messages.error(request, 'Errores en el formulario de venta')
+        # Mostrar errores si alguno de los formularios no es válido
+        print("Errores en orden_compra_form:", orden_compra_form.errors)
+        print("Errores en detalle_servicio_form:", detalle_servicio_form.errors)
+        print("Errores en cliente_anonimo_form:", cliente_anonimo_form.errors)
 
     # Contexto para renderizar el formulario
     context = {
         'orden_compra_form': orden_compra_form,
-        'detalle_formset': detalle_formset,
-        'detalle_servicio_formset': detalle_servicio_formset,
+        'detalle_servicio_form': detalle_servicio_form,
         'cliente_anonimo_form': cliente_anonimo_form,
-        'query_string': query_string,
     }
     return render(request, 'Transaccion/agregar_venta_manual.html', context)
+
+@user_passes_test(es_administrador, login_url='home')
+def editar_venta_manual(request, venta_id):
+    """
+    Permite editar una venta manual existente, actualizando el precio de costo y el pago del cliente,
+    manteniendo intacto el precio personalizado.
+    """
+    venta = get_object_or_404(VentaManual, id=venta_id)
+    orden_compra_form = VentaManualForm(request.POST or None, instance=venta)
+    detalle_servicio = venta.detalleventamanual_set.filter(servicio__isnull=False).first()
+    detalle_servicio_form = DetalleVentaManualServicioForm(request.POST or None, instance=detalle_servicio)
+
+    if request.method == 'POST':
+        print("POST recibido:", request.POST)
+        if orden_compra_form.is_valid() and detalle_servicio_form.is_valid():
+            # Validar que el monto pagado por el cliente no exceda el total
+            pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
+            total_venta = venta.total
+            if pago_cliente > total_venta:
+                messages.error(request, 'El monto del pago no puede ser mayor al total.')
+                return render(request, 'Transaccion/editar_venta_manual.html', {
+                    'orden_compra_form': orden_compra_form,
+                    'detalle_servicio_form': detalle_servicio_form,
+                    'venta': venta,
+                })
+
+            detalle_actualizado = detalle_servicio_form.save(commit=False)
+            detalle_actualizado.save()
+
+            venta_actualizada = orden_compra_form.save(commit=False)
+            print("Datos de venta antes de guardar:", venta_actualizada.__dict__)
+
+            # Si el pago del cliente iguala o supera el total, actualizar la fecha de pago final
+            if venta_actualizada.pago_cliente >= venta_actualizada.total:
+                if not venta_actualizada.fecha_pago_final:
+                    venta_actualizada.fecha_pago_final = timezone.now()
+                    print("Fecha de pago final actualizada a:", venta_actualizada.fecha_pago_final)
+            else:
+                # Si el pago no es completo, limpiar la fecha de pago final
+                venta_actualizada.fecha_pago_final = None
+                print("Pago incompleto, fecha de pago final reseteada a None")
+
+            venta_actualizada.save()
+            print("Datos de venta después de guardar:", venta_actualizada.__dict__)
+
+            messages.success(request, 'Venta manual actualizada correctamente.')
+            return redirect('listar_ventas_manuales')
+        else:
+            print("Errores en los formularios:")
+            print("Orden compra form:", orden_compra_form.errors)
+            print("Detalle servicio form:", detalle_servicio_form.errors)
+            messages.error(request, 'Errores en el formulario de edición.')
+
+    return render(request, 'Transaccion/editar_venta_manual.html', {
+        'orden_compra_form': orden_compra_form,
+        'detalle_servicio_form': detalle_servicio_form,
+        'venta': venta,
+    })
 
 @user_passes_test(es_administrador, login_url='home')
 def gestionar_transacciones(request):

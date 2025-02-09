@@ -51,7 +51,7 @@
       <strong class="text-black">Agregar Producto</strong></div>
       </div>
   </div>
-  </div>
+</div>
 
 <div class="container mt-5 mb-2">
 
@@ -99,13 +99,58 @@
     </div>
 
     <div class="form-group">
+      <label for="{{ form.consignado.id_for_label }}">¿Está en consignación?</label>
+      {{ form.consignado }}
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.porcentaje_consignacion.id_for_label }}">Porcentaje de Consignación (%)</label>
+      <input type="number" class="form-control" id="id_porcentaje_consignacion"
+             name="{{ form.porcentaje_consignacion.name }}" 
+             value="{{ form.porcentaje_consignacion.value|default:'' }}" step="0.01" min="0" max="100">
+    </div>
+
+    <!-- Botón para mostrar/ocultar la calculadora -->
+    <button type="button" class="btn btn-info btn-sm mb-3" onclick="toggleCalculadora()">Mostrar Calculadora</button>
+
+    <!-- Sección de la Calculadora (Oculta por defecto) -->
+    <div id="calculadora" style="display: none;">
+      <h5>Calculadora de Consignación</h5>
+      
+      <div class="form-group">
+        <label for="cliente_gana">Monto que el cliente quiere recibir ($)</label>
+        <input type="number" class="form-control" id="cliente_gana" step="1000" min="0">
+      </div>
+
+      <div class="form-group">
+        <label for="urrucar_gana">Ganancia que desea obtener ($)</label>
+        <input type="number" class="form-control" id="urrucar_gana" step="1000" min="0">
+      </div>
+
+      <div class="form-group">
+        <label for="precio_calculado">Precio de Venta Calculado ($)</label>
+        <input type="number" class="form-control" id="precio_calculado" readonly>
+      </div>
+
+      <div class="form-group">
+        <label for="porcentaje_calculado">Porcentaje de Consignación Calculado (%)</label>
+        <input type="number" class="form-control" id="porcentaje_calculado" readonly>
+      </div>
+
+      <button type="button" class="btn btn-primary btn-sm mb-2" onclick="calcularConsignacion()">Calcular</button>
+      <button type="button" class="btn btn-secondary btn-sm mb-2" onclick="ocultarCalculadora()">Cerrar</button>
+    </div>
+
+    <div class="form-group">
       <label for="{{ form.precio_reserva.id_for_label }}">Precio de Reserva</label>
       <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'' }}">
     </div>
 
     <div class="form-group">
       <label for="{{ form.precio.id_for_label }}">Precio de Venta</label>
-      <input type="number" class="form-control" id="{{ form.precio.id_for_label }}" name="{{ form.precio.name }}" value="{{ form.precio.value|default:'' }}">
+      <input type="number" class="form-control" id="id_precio"
+             name="{{ form.precio.name }}" 
+             value="{{ form.precio.value|default:'' }}">
     </div>
 
     <div class="form-group">
@@ -120,22 +165,70 @@
 
     <div class="form-group">
       <label for="{{ form.cantidad_stock.id_for_label }}">Cantidad en Stock</label>
-      <input type="number" class="form-control" id="{{ form.cantidad_stock.id_for_label }}" name="{{ form.cantidad_stock.name }}" value="{{ form.cantidad_stock.value|default:'' }}">
+      <input type="number" class="form-control" id="{{ form.cantidad_stock.id_for_label }}" name="{{ form.cantidad_stock.name }}" value="{{ form.cantidad_stock.value|default:'1' }}">
     </div>
     
-    <div class="form-group">
-      <label for="{{ form.imagen.id_for_label }}">Imagen</label>
-      <input type="file" class="form-control" id="{{ form.imagen.id_for_label }}" name="{{ form.imagen.name }}">
-    </div>
-
-    <div class="form-group">
-      <label for="imagenes">Galería de Imágenes (máximo 15 imágenes, 3 MB cada una)</label>
-      <input type="file" class="form-control" id="imagenes" name="imagenes" multiple>
-  </div>
-  
     <button type="submit" class="btn btn-primary btn-sm">Agregar Producto</button>
     <a href="{% url 'listar_productos' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
   </form>
+
 </div>
+
+<!-- Script para cambiar campo porcentaje de consignación a modo lectura -->
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      let consignadoField = document.getElementById("id_consignado");
+      let porcentajeField = document.getElementById("id_porcentaje_consignacion");
+
+      function togglePorcentajeField() {
+          if (consignadoField.value === "True") {
+              porcentajeField.removeAttribute("disabled");
+          } else {
+              porcentajeField.setAttribute("disabled", "disabled");
+              porcentajeField.value = 0;
+          }
+      }
+
+      // Ejecutar cuando la página carga
+      togglePorcentajeField();
+
+      // Ejecutar cuando el usuario cambia la opción
+      consignadoField.addEventListener("change", togglePorcentajeField);
+  });
+</script>
+
+<!-- Script para la Calculadora -->
+<script>
+  function toggleCalculadora() {
+    document.getElementById("calculadora").style.display = "block";
+  }
+
+  function ocultarCalculadora() {
+    document.getElementById("calculadora").style.display = "none";
+  }
+
+  function calcularConsignacion() {
+    let clienteGana = parseFloat(document.getElementById("cliente_gana").value) || 0;
+    let urrucarGana = parseFloat(document.getElementById("urrucar_gana").value) || 0;
+
+    if (clienteGana <= 0 || urrucarGana <= 0) {
+        alert("Por favor, ingrese valores válidos.");
+        return;
+    }
+
+    // Calcular el precio de venta exacto
+    let precioVenta = clienteGana + urrucarGana;
+
+    // Calcular el porcentaje de consignación correcto
+    let porcentajeConsignacion = (urrucarGana / precioVenta) * 100;
+
+    // Asignamos los valores corregidos a los campos del formulario
+    document.getElementById("precio_calculado").value = precioVenta.toFixed(0);
+    document.getElementById("porcentaje_calculado").value = porcentajeConsignacion.toFixed(7); // Ajustamos a 7 decimales
+
+    document.getElementById("id_precio").value = precioVenta.toFixed(0);
+    document.getElementById("id_porcentaje_consignacion").value = porcentajeConsignacion.toFixed(7);
+  }
+</script>
 
 {% endblock %}

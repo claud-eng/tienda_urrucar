@@ -1,0 +1,105 @@
+{% extends 'base.html' %}
+{% load widget_tweaks %}
+{% block title %}Editar Pago de Venta Manual{% endblock %}
+{% block extra_css %}
+<style>
+    /* Tablets (pantallas medianas) */
+    @media (max-width: 991.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;  /* Ancho completo */
+            margin-bottom: 10px;  /* Espaciado entre botones */
+        }
+    }
+
+    /* Móviles (pantallas pequeñas) */
+    @media (max-width: 767.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Más espacio entre botones */
+        }
+    }
+
+    /* Dispositivos muy pequeños (menos de 480px) */
+    @media (max-width: 480px) {
+        .container .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <a href="{% url 'listar_ventas_manuales' %}">Historial de Ventas Manuales</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <strong class="text-black">Editar Venta Manual</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <form method="post" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <!-- Mostrar mensajes de error -->
+        {% if messages %}
+        <div>
+            {% for message in messages %}
+            <div class="alert alert-danger" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Precio de Costo -->
+        <h3>Actualizar Precio de Costo</h3>
+        <div class="form-group">
+            {{ detalle_servicio_form.precio_costo.label_tag }}
+            {{ detalle_servicio_form.precio_costo|add_class:"form-control" }}
+            {% if detalle_servicio_form.precio_costo.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.precio_costo.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Monto Total (Solo lectura) -->
+        <h3>Monto Total de la Venta (IVA incluido)</h3>
+        <div class="form-group">
+            <label for="monto_total">Total (IVA incluido)</label>
+            <input type="text" id="monto_total" class="form-control" value="${{ orden_compra_form.instance.total|default:'0' }}" readonly>
+        </div>
+
+        <!-- Pago del cliente -->
+        <h3>Actualizar Pago</h3>
+        <div class="form-group">
+            {{ orden_compra_form.pago_cliente.label_tag }}
+            {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
+            {% if orden_compra_form.pago_cliente.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.pago_cliente.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-group mt-4">
+            <button type="submit" class="btn btn-primary btn-sm">Guardar Cambios</button>
+            <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

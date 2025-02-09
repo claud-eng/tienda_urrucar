@@ -1,6 +1,6 @@
 import os  # Importa el módulo 'os' para manejar operaciones relacionadas con el sistema de archivos y variables de entorno.
 from apps.Usuario.models import Cliente, ClienteAnonimo, Empleado  # Importa las clases Cliente, ClienteAnonimo Empleado desde la aplicación Usuario.
-from datetime import timedelta  # Permite crear y manipular diferencias de tiempo (duraciones).
+from datetime import timedelta, timezone  # Permite crear y manipular diferencias de tiempo (duraciones).
 from django.contrib.auth.models import User  # Importa el modelo User de Django para la gestión de usuarios.
 from django.utils.deconstruct import deconstructible  # Importa el decorador 'deconstructible' para serialización en migraciones.
 from django.contrib.contenttypes.fields import GenericForeignKey, GenericRelation  # Importa campos genéricos para relaciones en modelos.
@@ -35,12 +35,23 @@ class Producto(models.Model):
     imagen = models.ImageField(upload_to='productos/', null=True, blank=True)  # Imagen principal del producto
     precio_costo = models.PositiveIntegerField(null=True, blank=True, help_text="Precio de costo del producto")
     costo_extra = models.PositiveIntegerField(null=True, blank=True, help_text="Costos adicionales del producto")
+    fecha_adquisicion = models.DateField(null=True, blank=True, help_text="Fecha en que se adquirió el producto")
+    consignado = models.BooleanField(default=False, help_text="Indica si el producto está en consignación.")
+    porcentaje_consignacion = models.DecimalField(
+        max_digits=30, decimal_places=20, null=True, blank=True,
+        help_text="Porcentaje de ganancia sobre el precio de venta para productos consignados."
+    )
 
     @property
     def ganancia(self):
         """Calcula la ganancia del producto dinámicamente."""
-        if self.precio_costo is not None and self.costo_extra is not None:
-            return self.precio - (self.precio_costo + self.costo_extra)
+        if self.consignado:
+            if self.porcentaje_consignacion is not None:
+                return self.precio * (self.porcentaje_consignacion / 100)
+            return 0  # Si no hay porcentaje definido, no hay ganancia
+        else:
+            if self.precio_costo is not None and self.costo_extra is not None:
+                return self.precio - (self.precio_costo + self.costo_extra)
         return None
 
     def __str__(self):
@@ -145,20 +156,38 @@ class DetalleVentaOnline(models.Model):
         blank=True
     )  # Estado de la reserva
     fecha_estado_final = models.DateTimeField(null=True, blank=True)  # Fecha en la que se actualizó el estado final
-    calculo_tiempo_transcurrido = models.PositiveIntegerField(null=True, blank=True)  # Días transcurridos
+    dias_desde_adquisicion = models.PositiveIntegerField(null=True, blank=True, help_text="Días transcurridos desde la adquisición del producto") # Días transcurridos entre la fecha de adquisición del producto y actualización de estado de reserva en la venta
+    calculo_tiempo_transcurrido = models.PositiveIntegerField(null=True, blank=True)  # Días transcurridos entre la fecha de la transacción y actualización de estado de reserva en la venta
 
     def save(self, *args, **kwargs):
-        # Si el estado cambia a 'Vendida' o 'Desistida' y no tiene fecha final, asignar la fecha actual
-        if self.estado_reserva in ['Vendida', 'Desistida'] and not self.fecha_estado_final:
-            self.fecha_estado_final = now()
-            # Calcular el tiempo transcurrido en días
+        # Si el estado cambia a 'Vendida', actualiza la fecha_estado_final
+        if self.estado_reserva == 'Vendida':
+            if not self.fecha_estado_final:
+                self.fecha_estado_final = now()
+
+            # Calcular los días desde la adquisición del producto
+            if self.producto and self.producto.fecha_adquisicion and self.fecha_estado_final:
+                diferencia_adquisicion = self.fecha_estado_final.date() - self.producto.fecha_adquisicion
+                self.dias_desde_adquisicion = max(diferencia_adquisicion.days, 0)
+
+            # Calcular los días desde la transacción hasta la fecha final
             if self.orden_compra.fecha and self.fecha_estado_final:
-                diferencia = self.fecha_estado_final - self.orden_compra.fecha
-                self.calculo_tiempo_transcurrido = max(diferencia.days, 0)  # Asignar 0 si es el mismo día
-        elif self.estado_reserva not in ['Vendida', 'Desistida']:
-            # Limpiar los campos si el estado no es final
+                diferencia_reserva = self.fecha_estado_final - self.orden_compra.fecha
+                self.calculo_tiempo_transcurrido = max(diferencia_reserva.days, 0)
+
+        elif self.estado_reserva == 'Desistida':
+            # Si el estado es 'Desistida', limpiar o asignar valores correspondientes
+            self.dias_desde_adquisicion = 0
+            if not self.fecha_estado_final:
+                self.fecha_estado_final = now()  # Registrar fecha actual para "Desistida"
+            self.calculo_tiempo_transcurrido = None  # Opcional, según lo necesites
+
+        else:
+            # Si el estado no es 'Vendida' ni 'Desistida', limpiar los campos
             self.fecha_estado_final = None
             self.calculo_tiempo_transcurrido = None
+            self.dias_desde_adquisicion = None
+
         super().save(*args, **kwargs)
 
     @property
@@ -175,7 +204,6 @@ class DetalleVentaOnline(models.Model):
     def __str__(self):
         return f"Detalle de {self.orden_compra.numero_orden}"
 
-# Clase para almacenar ventas realizadas manualmente
 class VentaManual(models.Model):
     cliente = models.ForeignKey(
         Cliente, on_delete=models.CASCADE, null=True, blank=True,
@@ -185,7 +213,8 @@ class VentaManual(models.Model):
         ClienteAnonimo, on_delete=models.CASCADE, null=True, blank=True,
         help_text="Cliente anónimo que realiza la compra."
     )
-    fecha_creacion = models.DateTimeField(auto_now_add=True)
+    fecha_creacion = models.DateTimeField(null=True, blank=True, help_text="Fecha en que se realizó la venta.")
+    fecha_pago_final = models.DateTimeField(null=True, blank=True, help_text="Fecha en que el pago fue completado.")
     total = models.PositiveIntegerField(default=0)
     pago_cliente = models.PositiveIntegerField(default=0)
     cambio = models.PositiveIntegerField(default=0)
@@ -193,43 +222,49 @@ class VentaManual(models.Model):
 
     def calcular_total(self):
         """
-        Calcula el total de la venta sumando subtotales de productos y servicios.
+        Calcula el total de la venta sumando subtotales de productos y servicios o usando el precio personalizado.
         """
-        total_productos = sum(item.obtener_subtotal() for item in self.detalleventamanual_set.filter(producto__isnull=False))
-        total_servicios = sum(item.obtener_subtotal() for item in self.detalleventamanual_set.filter(servicio__isnull=False))
-
-        # Si el precio de servicios es 0, usar el precio personalizado
-        self.total = total_servicios if total_servicios > 0 else (self.precio_personalizado or 0)
-
-    def calcular_ganancia_total(self):
-        """
-        Calcula la ganancia total de la venta.
-        En este caso, se utiliza el valor mostrado en "Total (IVA incluido)".
-        """
-        # Si el total es 0, usar el precio personalizado; de lo contrario, usar el total
-        if self.total == 0:
+        if not self.pk:
+            # Si la instancia aún no tiene un ID, no puede acceder a la relación
             return self.precio_personalizado or 0
-        return self.total
+
+        total_servicios = sum(item.obtener_subtotal() for item in self.detalleventamanual_set.filter(servicio__isnull=False))
+        return total_servicios if total_servicios > 0 else (self.precio_personalizado or 0)
 
     def calcular_cambio(self):
         """
         Calcula el cambio a devolver al cliente.
         """
-        self.cambio = self.pago_cliente - self.total
+        return max(self.pago_cliente - self.total, 0)
 
     def save(self, *args, **kwargs):
-        """
-        Guarda la instancia, calcula total y cambio después de guardar la instancia por primera vez.
-        """
-        # Si la instancia es nueva (no tiene un ID), guárdala primero para obtener un PK
-        if not self.pk:
-            super().save(*args, **kwargs)
-        
-        # Ahora que la instancia tiene un ID, calcula el total y el cambio
-        self.calcular_total()
-        self.calcular_cambio()
-        
-        # Guarda nuevamente con los valores calculados
+        print("Guardando instancia de VentaManual...")
+        print(f"Fecha creación inicial: {self.fecha_creacion}")
+        print(f"Fecha pago final inicial: {self.fecha_pago_final}")
+
+        # Lógica para total, cambio y fecha de pago final
+        if not self.total:
+            self.total = self.calcular_total()
+        self.cambio = self.calcular_cambio()
+
+        if self.pago_cliente >= self.total:
+            if not self.fecha_pago_final:
+                self.fecha_pago_final = timezone.localtime()  # Corregimos naive datetime
+                print("Fecha de pago final actualizada a:", self.fecha_pago_final)
+        else:
+            self.fecha_pago_final = None
+            print("Pago incompleto, fecha de pago final reseteada a None")
+
+        # Garantizar que la fecha de creación se conserve
+        if self.pk:
+            original = VentaManual.objects.filter(pk=self.pk).first()
+            if original:
+                self.fecha_creacion = original.fecha_creacion
+                print("Fecha creación preservada del objeto original:", self.fecha_creacion)
+
+        print(f"Fecha creación final: {self.fecha_creacion}")
+        print(f"Fecha pago final final: {self.fecha_pago_final}")
+
         super().save(*args, **kwargs)
 
     def __str__(self):
@@ -239,13 +274,13 @@ class VentaManual(models.Model):
             return f"Orden {self.id} - Cliente Anónimo: {self.cliente_anonimo.nombre}"
         return f"Orden {self.id} - Sin cliente asociado"
 
-# Clase para detallar cada ítem (producto o servicio) en la venta manual
 class DetalleVentaManual(models.Model):
-    orden_compra = models.ForeignKey(VentaManual, on_delete=models.CASCADE, related_name='detalleventamanual_set')  # Venta a la que pertenece
-    producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)  # Producto en el detalle
-    servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True)  # Servicio en el detalle
-    cantidad = models.PositiveIntegerField(default=1)  # Cantidad del ítem
-    subtotal = models.PositiveIntegerField(default=0)  # Subtotal del ítem
+    orden_compra = models.ForeignKey(VentaManual, on_delete=models.CASCADE, related_name='detalleventamanual_set')
+    producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)
+    servicio = models.ForeignKey(Servicio, on_delete=models.SET_NULL, null=True, blank=True)
+    cantidad = models.PositiveIntegerField(default=1)
+    precio_costo = models.PositiveIntegerField(null=True, blank=True, help_text="Costo asociado a este detalle")
+    subtotal = models.PositiveIntegerField(default=0)
 
     def obtener_subtotal(self):
         """
@@ -262,35 +297,17 @@ class DetalleVentaManual(models.Model):
         """
         Calcula la ganancia del detalle basado en el tipo de producto o servicio.
         """
-        if self.producto:
-            # Si es un vehículo y el precio costo y extra son válidos, calcular ganancia específica
-            if self.producto.categoria == "Vehículo" and self.producto.precio_costo is not None and self.producto.costo_extra is not None:
-                return (self.producto.precio - (self.producto.precio_costo + self.producto.costo_extra)) * self.cantidad
-            # Para otros productos, la ganancia es el subtotal
-            return self.obtener_subtotal()
-        elif self.servicio:
-            # Para servicios, considera el precio como ganancia directa
-            return self.obtener_subtotal()
-        return 0
+        return self.obtener_subtotal() - (self.precio_costo or 0)
 
     def save(self, *args, **kwargs):
         """
-        Sobrescribe el método save para calcular y guardar el subtotal y actualizar la venta asociada.
+        Guarda el detalle y calcula el subtotal.
         """
-        # Establece el subtotal antes de guardar
+        # Calcular subtotal antes de guardar
         self.subtotal = self.obtener_subtotal()
         super().save(*args, **kwargs)
 
-        # Después de guardar, actualizar el total y cambio de la orden de venta
-        if self.orden_compra_id:
-            self.orden_compra.calcular_total()
-            self.orden_compra.calcular_cambio()
-            self.orden_compra.save()
-
     def __str__(self):
-        """
-        Representación en cadena del detalle, indicando producto o servicio y cantidad.
-        """
         if self.producto:
             return f"{self.cantidad} x {self.producto.nombre}"
         elif self.servicio:

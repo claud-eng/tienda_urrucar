@@ -23,6 +23,7 @@ urlpatterns = [
     path('editar_producto/<int:producto_id>', views.editar_producto, name="editar_producto"),  # Editar un producto
     path('eliminar_imagen_adicional/<int:imagen_id>/', views.eliminar_imagen_adicional, name='eliminar_imagen_adicional'),
     path('editar_servicio/<int:servicio_id>', views.editar_servicio, name="editar_servicio"),  # Editar un servicio
+    path('editar_venta_manual/<int:venta_id>/', views.editar_venta_manual, name='editar_venta_manual'), # Editar una venta manual
     path('editar-venta-online/<int:venta_id>/', views.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
     path('gestionar_inventario', views.gestionar_inventario, name='gestionar_inventario'),  # Gestionar inventario (administrador)
@@ -39,6 +40,7 @@ urlpatterns = [
     path('transaccion_finalizada/', transaccion_finalizada, name='transaccion_finalizada'),  # Finalización de transacción de pago
     path('vaciar_carrito/', vaciar_carrito, name='vaciar_carrito'),  # Vaciar el carrito
     path('ver_detalles_producto/<int:producto_id>/', ver_detalles_producto, name='ver_detalles_producto'),  # Ver detalles del producto
+    path('producto/<int:producto_id>/galeria/<int:imagen_id>/', carrusel_completo, name='carrusel_completo'),
     path('ver_detalles_servicio/<int:servicio_id>/', ver_detalles_servicio, name='ver_detalles_servicio'),  # Ver detalles del servicio
     path('ver_reportes', views.ver_reportes, name='ver_reportes'),  # Visualizar reportes
 ]

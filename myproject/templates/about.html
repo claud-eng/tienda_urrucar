@@ -1,5 +1,35 @@
 {% extends 'base.html' %}
 {% load static %}
+{% block extra_css %}
+<style>
+    /* Estilos generales */
+    .block-38-body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        text-align: center;
+    }
+
+    .responsive-text {
+        margin: 0;
+        text-align: center; /* Centra el texto */
+    }
+
+    .line-1,
+    .line-2 {
+        display: block; /* Fuerza cada línea a ocupar su propio bloque */
+        margin: 0; /* Elimina espacio entre las líneas */
+    }
+
+    /* Pantallas pequeñas (tablet y móviles) */
+    @media (max-width: 767.98px) {
+        .responsive-text {
+            white-space: normal; /* Permite saltos de línea en dispositivos pequeños */
+            text-align: justify; /* Cambia el texto a justificado */
+        }
+    }
+</style>
+{% endblock %}
 {% block content %}
 
     <div class="bg-light py-3">
@@ -10,54 +40,45 @@
       </div>
     </div>  
 
-    <div class="site-section border-bottom" data-aos="fade">
+    <div class="site-section border-bottom pb-3" data-aos="fade">
       <div class="container">
-        <div class="row mb-5">
-          <div class="col-md-6">
-            <div class="block-16">
-              <figure>
-                <img src="{% static 'images/sobre_nosotros.jpg' %}" alt="Image placeholder" class="img-fluid rounded">
-              </figure>
-            </div>
-          </div>
-          <div class="col-md-1"></div>
-          <div class="col-md-5">
-            <div class="site-section-heading pt-3 mb-4 text-center">
+        <div class="row mb-3">
+          <div class="col-md-12">
+            <div class="site-section-heading pt-3 mb-3 text-center">
               <h2 class="text-black">Así empezó todo</h2>
-          </div>          
+            </div>          
             <p style="text-align: justify;">Somos una empresa fundada en el año 2022, innovadora y enfocada en el servicio, dedicada al rubro automotriz, en primera instancia dentro de Santiago, 
               Región Metropolitana. Nuestra misión es ofrecer soluciones integrales y eficientes para todas tus necesidades automotrices.</p>
-              <p style="text-align: justify;">Es clave trabajar con transparencia y honestidad, nos esforzamos por ofrecer soluciones rápidas y efectivas, comunícate con nosotros y buscamos la solución que 
+            <p style="text-align: justify;">Es clave trabajar con transparencia y honestidad, nos esforzamos por ofrecer soluciones rápidas y efectivas, comunícate con nosotros y buscamos la solución que 
               más te acomode.</p>
           </div>
         </div>
       </div>
     </div>
 
-    <div class="site-section border-bottom" data-aos="fade">
+    <div class="site-section pt-0" data-aos="fade">
       <div class="container">
-        <div class="row justify-content-center mb-5">
-          <div class="col-md-7 site-section-heading text-center pt-4">
-            <h2>Nuestro equipo</h2>
-          </div>
-        </div>
         <div class="row justify-content-center">
           <div class="col-md-6 col-lg-4">
-              <div class="block-38 text-center">
-                  <div class="block-38-img">
-                      <div class="block-38-header">
-                          <img src="{% static 'images/person_1.jpg' %}" alt="Cristian Urrutia" class="mb-4">
-                          <h3 class="block-38-heading h4">Cristian Urrutia</h3>
-                          <p class="block-38-subheading">Fundador</p>
-                      </div>
-                      <div class="block-38-body">
-                          <p style="text-align: justify;">Comprometido con la transparencia y la excelencia en cada detalle del servicio automotriz.</p>
-                      </div>
-                  </div>
+            <div class="block-38 text-center">
+              <div class="block-38-img">
+                <div class="block-38-header mt-3">
+                  <img src="{% static 'images/person_1.jpg' %}" alt="Cristian Urrutia" class="mb-4">
+                  <h3 class="block-38-heading h4">Cristian Urrutia</h3>
+                  <p class="block-38-subheading">Fundador</p>
+                </div>
+                <div class="block-38-body">
+                  <p class="responsive-text">
+                      <span class="line-1" style="display: block; margin: 0;">Comprometido con transparencia y excelencia</span>
+                      <span class="line-2" style="display: block; margin: 0;">en cada detalle del servicio automotriz.</span>
+                  </p>
               </div>
+              </div>
+            </div>
           </div>
-      </div>
+        </div>
       </div>
     </div>
-  
+
 {% endblock %}
+

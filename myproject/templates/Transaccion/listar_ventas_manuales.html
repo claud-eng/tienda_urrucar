@@ -99,11 +99,14 @@
                     <th>Correo</th>
                     <th>Teléfono</th>
                     <th>Fecha de la Transacción</th>
+                    <th>Fecha Pago Completo</th>
+                    <th>Acciones</th>
                     <th>Detalle</th>
+                    <th>Precio de Costo</th>
                     <th>Total (IVA incluido)</th>
-                    <th>Pagó</th>
-                    <th>Vuelto</th>
-                    <th>Emitir Comprobante</th>
+                    <th>Monto Pagado por el Cliente</th>
+                    <th>Ganancia o Pérdida</th>
+                    <!-- <th>Emitir Comprobante</th> -->
                 </tr>
             </thead>
             <tbody>
@@ -138,31 +141,34 @@
                     </td>
             
                     <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+
+                    <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
+
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        {% if venta_info.venta %}
+                            <a href="{% url 'editar_venta_manual' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
+                        {% endif %}
+                    </td>
+                    {% endif %}                    
             
                     <td>
                         {% if venta_info.tiene_productos %}
-                            <strong>Productos:</strong>
-                            <ul>
-                                {% for detalle in venta_info.productos %}
-                                    <li>
-                                        {{ detalle.nombre }} - Cantidad: {{ detalle.cantidad }} - 
-                                        Precio Unitario: ${{ detalle.precio_formateado }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        {% endif %}
-            
-                        {% if venta_info.tiene_servicios %}
-                            <strong>Servicios:</strong>
-                            <ul>
-                                {% for detalle in venta_info.servicios %}
-                                    <li>
-                                        {{ detalle.nombre }} - Valor: ${{ detalle.precio_formateado }}
-                                    </li>
-                                {% endfor %}
-                            </ul>
+                            {{ venta_info.productos.0.nombre }}
+                        {% elif venta_info.tiene_servicios %}
+                            {{ venta_info.servicios.0.nombre }}
+                        {% else %}
                         {% endif %}
                     </td>
+
+                    <td>
+                        {% if venta_info.tiene_productos %}
+                            ${{ venta_info.productos.0.precio_costo|default:"0" }}
+                        {% elif venta_info.tiene_servicios %}
+                            ${{ venta_info.servicios.0.precio_costo|default:"0" }}
+                        {% else %}
+                        {% endif %}
+                    </td>               
             
                     <td>
                         {% if venta_info.venta.total == 0 %}
@@ -173,10 +179,17 @@
                     </td>
                     
                     <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
-                    <td>${{ venta_info.venta.cambio_formateado }}</td>
+
+                    <td>
+                        ${{ venta_info.ganancia_perdida }}
+                    </td>
+                    
+                    <!-- 
                     <td>
                         <a href="{% url 'descargar_comprobante_pago' 'manual' venta_info.venta.id %}" class="btn btn-success btn-sm">Descargar</a>
-                    </td>
+                    </td> 
+                    -->
+
                 </tr>
                 {% endfor %}
             </tbody>

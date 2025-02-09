@@ -2,10 +2,17 @@
 {% block title %}Lista de Productos{% endblock %}
 {% block extra_css %}
 <style>
+    .cantidad-stock-column,
+    .estado-column,
+    #filtro-stock-container {
+        display: none;
+    }
+
     .table td, .table th {
         vertical-align: middle;
         text-align: center;
     }
+
     .estado-column span {
         min-width: 180px; /* Establece un ancho mínimo para la columna "Estado" */
         display: inline-block;
@@ -104,7 +111,7 @@
         </div>
 
         <!-- Filtro de stock -->
-        <div class="form-group">
+        <div class="form-group" id="filtro-stock-container">
             <label for="filtro-stock">Filtrar por Stock:</label>
             <select class="form-control mx-2" id="filtro-stock" name="stock">
                 <option value="">Todos</option>
@@ -130,13 +137,16 @@
                 <th>Año</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
+                <th>Consignado</th>
+                <th>Porcentaje Consignación</th>
+                <th>Fecha de Adquisición</th>
                 <th>Precio de Reserva</th>
                 <th>Precio de Venta</th>
                 <th>Precio de Costo</th>
                 <th>Costo Extra</th>
                 <th>Futura Ganancia o Pérdida</th>
-                <th>Cantidad en Stock</th>
-                <th class="estado-column">Estado</th>
+                <th class="cantidad-stock-column">Cantidad en Stock</th>
+                <th class="estado-column">Estado</th>                
                 <th>Imagen</th>
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
                 <th>Acciones</th>
@@ -154,6 +164,25 @@
                     <td>{% if producto.anio %}{{ producto.anio }}{% endif %}</td>
                     <td>{{ producto.categoria }}</td>
                     <td style="text-align: justify;">{{ producto.descripcion }}</td>
+                    <td>
+                        {% if producto.consignado %}
+                            Sí
+                        {% else %}
+                            No
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if producto.porcentaje_consignacion %}
+                            {{ producto.porcentaje_consignacion|floatformat:2 }}%
+                        {% endif %}
+                    </td>
+                                   
+                    <td>
+                        {% if producto.fecha_adquisicion %}
+                            {{ producto.fecha_adquisicion|date:"d/m/Y" }} <!-- Mostrar fecha en formato dd/mm/yyyy -->
+                        {% else %}
+                        {% endif %}
+                    </td>
                     <td>{% if producto.precio_reserva_formateado %}${{ producto.precio_reserva_formateado }}{% endif %}</td>
                     <td>${{ producto.precio_formateado }}</td>
                     <td>
@@ -171,7 +200,7 @@
                             ${{ producto.ganancia_formateada }}
                         {% endif %}
                     </td>                    
-                    <td>{{ producto.cantidad_stock }}</td>
+                    <td class="cantidad-stock-column">{{ producto.cantidad_stock }}</td>
                     <td class="estado-column">
                         {% if producto.cantidad_stock >= 10 %}
                             <span class="alert alert-success">Suficiente Stock</span>
@@ -180,7 +209,7 @@
                         {% else %}
                             <span class="alert alert-danger">No hay Stock</span>
                         {% endif %}
-                    </td>
+                    </td>                    
                     <td>
                         {% if producto.imagen %}
                             <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" width="100">

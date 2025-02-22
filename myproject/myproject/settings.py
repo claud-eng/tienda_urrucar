@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
-import os  # Módulo estándar de Python para operaciones relacionadas con el sistema operativo
 from dotenv import load_dotenv  # Función para cargar variables de entorno desde un archivo .env
 from pathlib import Path  # Módulo estándar de Python para manejar rutas de archivos y directorios
+import os  # Módulo estándar de Python para operaciones relacionadas con el sistema operativo
 
 # Carga las variables de entorno desde '.env'
 load_dotenv()
@@ -72,9 +72,10 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
-                'apps.Transaccion.context_processors.carrito_count',
                 'apps.Transaccion.context_processors.agregar_filtros_catalogo',
                 'apps.Transaccion.context_processors.agregar_formato_precio',
+                'apps.Transaccion.context_processors.carrito_count',
+                'apps.Transaccion.context_processors.mensaje_whatsapp',
             ],
         },
     },

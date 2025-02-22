@@ -12,7 +12,7 @@ def home(request):
 # Vista para la página principal
 def index(request):
     productos_principales = Producto.objects.filter(
-        cantidad_stock__gte=0,
+        cantidad_stock__gte=1,
         categoria='Vehículo'  # Filtro para solo traer vehículos
     ).order_by('id')[:5]
     for producto in productos_principales:

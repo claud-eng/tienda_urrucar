@@ -2,6 +2,8 @@ from collections import Counter  # Importa Counter para contar elementos de form
 from collections import OrderedDict  # Importa OrderedDict para crear diccionarios que mantienen el orden de inserción.
 from django.contrib.contenttypes.models import ContentType  # Importa ContentType para trabajar con relaciones de contenido genéricas en Django.
 from django.db.models import Count  # Importa Count para realizar conteos agregados en consultas de modelos.
+from django.shortcuts import resolve_url  # Importa resolve_url para obtener la URL de una vista a partir de su nombre o modelo.
+from urllib.parse import quote  # Importa quote para codificar cadenas de texto en URLs de manera segura.
 from .models import *  # Importa todos los modelos definidos en el módulo models de la aplicación actual.
 
 # Devuelve el conteo de elementos en el carrito del cliente autenticado.
@@ -53,3 +55,25 @@ def agregar_filtros_catalogo(request):
     return {
         'marca_count': marca_count,
     }
+
+def mensaje_whatsapp(request):
+    """
+    Context processor para definir el mensaje de WhatsApp dinámicamente
+    en función de la vista actual.
+    """
+    mensaje_predeterminado = "Hola Automotriz Urrucar, me gustaría realizar una consulta."
+
+    # Verifica si la URL actual corresponde a ver_detalles_producto
+    if request.resolver_match and request.resolver_match.view_name == "ver_detalles_producto":
+        producto_id = request.resolver_match.kwargs.get("producto_id")
+        if producto_id:
+            try:
+                producto = Producto.objects.get(id=producto_id)
+                mensaje_predeterminado = f"Hola, estoy interesado en el vehículo {producto.nombre} que vi en su sitio web. Me gustaría obtener más información."
+            except Producto.DoesNotExist:
+                pass
+
+    # Codificar el mensaje para que sea seguro en URL
+    mensaje_codificado = quote(mensaje_predeterminado)
+
+    return {"mensaje_whatsapp": mensaje_codificado}

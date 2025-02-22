@@ -214,15 +214,15 @@
 </head>
 <body>
     <div class="site-wrap">
-      <header class="site-navbar" role="banner">
-        <div class="site-navbar-top">
+      <header class="site-navbar" role="banner" >
+        <div class="site-navbar-top bg-light">
           <div class="container">
             <div class="row align-items-center">
         
               <div class="col-12 mb-3 mb-md-0 col-md-4 order-1 order-md-1 text-center">
                 <div class="new-site-logo">
                   <a href="{% url 'home' %}" class="js-logo-clone">
-                    <img src="{% static 'images/logo.png' %}" alt="Logo" class="new-logo-img" style="width: 200px; height: auto;">
+                    <img src="{% static 'images/logo.png' %}" alt="Logo" class="new-logo-img" style="width: 250px; height: auto;">
                   </a>
                 </div>
               </div>
@@ -357,7 +357,7 @@
       
   {% block content %}{% endblock %}
 
-  <footer class="site-footer border-top">
+  <footer class="site-footer border-top bg-light">
     <div class="container">
       <div class="row">
         <!-- Redes sociales -->
@@ -394,10 +394,12 @@
       </div>
   
     <!-- Botón Flotante de WhatsApp -->
-    <a href="https://wa.me/56961923925" class="whatsapp-button" target="_blank">
+    <a href="https://wa.me/56961923925?text={{ mensaje_whatsapp }}" 
+      class="whatsapp-button" 
+      target="_blank">
       <i class="fab fa-whatsapp"></i>
     </a>
-  
+
     <!-- Scroll Top -->
     <a href="#" id="scroll-top" class="scroll-top d-flex align-items-center justify-content-center"><i class="bi bi-arrow-up-short"></i></a>
   </footer>

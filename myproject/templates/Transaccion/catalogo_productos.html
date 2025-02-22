@@ -98,9 +98,13 @@
                 <p class="mb-0">&nbsp;</p>  <!-- Espacio en blanco si no hay año -->
               {% endif %}
         
-                <p class="text-primary font-weight-bold mt-0" style="color: white !important;">
+              <p class="text-primary font-weight-bold mt-0" style="color: white !important;">
+                {% if producto.cantidad_stock == 0 %}
+                  Vendido
+                {% else %}
                   ${{ producto.precio_formateado }}
-                </p>
+                {% endif %}
+              </p>
               </div>
             </div>
           </div>

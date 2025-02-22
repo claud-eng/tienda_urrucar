@@ -167,7 +167,7 @@
         {% if producto.precio_reserva_formateado %}
         <p>Precio de Reserva: <strong class="text-primary">${{ producto.precio_reserva_formateado }}</strong></p>
         {% endif %}
-        <p>Cantidad en Stock: {{ producto.cantidad_stock }}</p>
+        <p style="text-align: justify;">Para mas información, escríbenos por WhatsApp o reserva directamente en el botón "Agregar al Carrito" y te contactamos a la brevedad.</p>
         
         {% if not user.empleado %}
           {% if producto.cantidad_stock > 0 %}

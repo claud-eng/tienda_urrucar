@@ -45,13 +45,27 @@ class Producto(models.Model):
     @property
     def ganancia(self):
         """Calcula la ganancia del producto dinámicamente."""
+        print(f"\n--- DEBUG: Calculando ganancia para {self.nombre} (ID: {self.id}) ---")
+        print(f"Stock Propio (consignado): {self.consignado}")
+        print(f"Precio Venta: {self.precio}")
+        print(f"Valor de Compra: {self.precio_costo}")
+        print(f"Costo Extra: {self.costo_extra}")
+        print(f"Porcentaje Consignación: {self.porcentaje_consignacion}")
+
         if self.consignado:
             if self.porcentaje_consignacion is not None:
-                return self.precio * (self.porcentaje_consignacion / 100)
+                ganancia = self.precio * (self.porcentaje_consignacion / 100)
+                print(f"Ganancia Calculada (Consignación): {ganancia}")  # Depuración
+                return ganancia
+            print("Producto consignado pero sin porcentaje definido.")
             return 0  # Si no hay porcentaje definido, no hay ganancia
         else:
             if self.precio_costo is not None and self.costo_extra is not None:
-                return self.precio - (self.precio_costo + self.costo_extra)
+                ganancia = self.precio - (self.precio_costo + self.costo_extra)
+                print(f"Ganancia Calculada (Stock Propio): {ganancia}")  # Depuración
+                return ganancia
+
+        print("No se pudo calcular ganancia.")  # Depuración en caso de error
         return None
 
     def __str__(self):

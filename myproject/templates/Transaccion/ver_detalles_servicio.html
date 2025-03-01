@@ -129,7 +129,9 @@
 
       <!-- Detalles del servicio -->
       <div class="col-md-6">
-        <h2 class="text-black">{{ servicio.nombre }}</h2>
+        <h2 class="text-black" style="font-size: 2rem; font-weight: bold; color: #ea741b; font-family: 'Arial', sans-serif;">
+          {{ servicio.nombre }}
+      </h2>      
         <p class="mb-4" style="text-align: justify;">{{ servicio.descripcion }}</p>
         
         {% if servicio.precio > 0 %}

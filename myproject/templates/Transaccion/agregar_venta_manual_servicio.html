@@ -1,0 +1,185 @@
+{% extends 'base.html' %}
+{% load static %}
+{% load widget_tweaks %}
+{% block title %}Agregar Venta Manual{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* Estilos personalizados para botones en pantallas pequeñas */
+    @media (max-width: 991.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;  /* Ancho completo */
+            margin-bottom: 10px;  /* Espaciado entre botones */
+        }
+    }
+
+    @media (max-width: 767.98px) {
+        .container .btn {
+            display: block;
+            width: 100%;
+            margin-bottom: 15px;  /* Más espacio entre botones */
+        }
+    }
+
+    @media (max-width: 480px) {
+        .container .btn {
+            width: 100%;
+            margin-bottom: 12px;
+        }
+    }
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <a href="{% url 'listar_ventas_manuales' %}">Historial de Ventas Manuales</a> 
+                <span class="mx-2 mb-0">/</span> 
+                <strong class="text-black">Agregar Venta Manual</strong>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <form method="post" id="ventaForm" class="needs-validation" novalidate>
+        {% csrf_token %}
+
+        <!-- Mostrar mensajes de error -->
+        {% if messages %}
+        <div>
+            {% for message in messages %}
+            <div class="alert alert-danger" role="alert">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Formulario para Cliente Anónimo -->
+        <h3>Datos del Cliente</h3>
+        <div class="form-group">
+            {{ cliente_anonimo_form.nombre.label_tag }}
+            {{ cliente_anonimo_form.nombre|add_class:"form-control" }}
+            {% if cliente_anonimo_form.nombre.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.nombre.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.apellido.label_tag }}
+            {{ cliente_anonimo_form.apellido|add_class:"form-control" }}
+            {% if cliente_anonimo_form.apellido.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.apellido.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.email.label_tag }}
+            {{ cliente_anonimo_form.email|add_class:"form-control" }}
+            {% if cliente_anonimo_form.email.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.email.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.numero_telefono.label_tag }}
+            {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
+            {% if cliente_anonimo_form.numero_telefono.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.numero_telefono.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>      
+
+        <!-- Precio de Costo -->
+        <h3>Detalles del Servicio</h3>
+
+        <div class="form-group">
+            {{ orden_compra_form.fecha_creacion.label_tag }}
+            {{ orden_compra_form.fecha_creacion|add_class:"form-control" }}
+            {% if orden_compra_form.fecha_creacion.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_creacion.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ detalle_servicio_form.servicio.label_tag }}
+            {{ detalle_servicio_form.servicio|add_class:"form-control" }}
+            {% if detalle_servicio_form.servicio.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.servicio.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
+
+        <div class="form-group">
+            {{ detalle_servicio_form.precio_costo.label_tag }}
+            {{ detalle_servicio_form.precio_costo|add_class:"form-control" }}
+            {% if detalle_servicio_form.precio_costo.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.precio_costo.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Precio Personalizado -->
+        <div class="form-group">
+            {{ orden_compra_form.precio_personalizado.label_tag }}
+            {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
+            {% if orden_compra_form.precio_personalizado.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.precio_personalizado.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pago del Cliente -->
+        <div class="form-group">
+            {{ orden_compra_form.pago_cliente.label_tag }}
+            {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
+            {% if orden_compra_form.pago_cliente.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.pago_cliente.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Fecha Pago Completo -->
+        <div class="form-group">
+            {{ orden_compra_form.fecha_pago_final.label_tag }}
+            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
+                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            {% if orden_compra_form.fecha_pago_final.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_pago_final.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Botones de acción -->
+        <div class="form-group mb-5">
+            <input type="submit" value="Registrar Venta" class="btn btn-primary btn-sm">
+            <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

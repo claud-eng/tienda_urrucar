@@ -93,7 +93,13 @@
                 <tr class="{% cycle 'table-light' 'table-secondary' %}">
                     <td>{{ servicio.id }}</td>
                     <td>{{ servicio.nombre }}</td>
-                    <td style="text-align: justify;">{{ servicio.descripcion }}</td>
+                    <td style="text-align: justify;">
+                        {% if servicio.descripcion|length > 10 %}
+                            {{ servicio.descripcion|slice:":10" }}...
+                        {% else %}
+                            {{ servicio.descripcion }}
+                        {% endif %}
+                    </td>                    
                     <td>${{ servicio.precio_formateado }}</td>
                     <td>
                         {% if servicio.imagen %}
@@ -106,7 +112,7 @@
                     <td>
                         <div class="d-flex align-items-center">
                             <a href="{% url 'editar_servicio' servicio.id %}" class="btn btn-primary btn-sm">Editar</a>
-                            <a href="{% url 'confirmar_borrar_servicio' servicio.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                            <a href="{% url 'confirmar_borrar_servicio' servicio.id %}" class="btn btn-danger btn-sm ml-2">Eliminar</a>
                         </div>
                     </td>
                     {% endif %}

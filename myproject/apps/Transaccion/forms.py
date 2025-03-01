@@ -15,14 +15,14 @@ class ClienteAnonimoForm(forms.ModelForm):
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
     CONSIGNADO_CHOICES = [
+        ('True', "Sí"),   # Ahora "Sí" es la primera opción y será la predeterminada
         ('False', "No"),
-        ('True', "Sí"),
     ]
 
     consignado = forms.ChoiceField(
         choices=CONSIGNADO_CHOICES,
         widget=forms.Select(attrs={'class': 'form-control', 'id': 'id_consignado'}),
-        label="¿Está en consignación?"
+        label="Stock Propio"
     )
 
     class Meta:
@@ -53,7 +53,10 @@ class ProductoForm(forms.ModelForm):
         print(f"Porcentaje Consignación en la BD: {self.instance.porcentaje_consignacion}")
 
         # Convertir booleano a string para ChoiceField
-        self.initial['consignado'] = 'True' if self.instance.consignado else 'False'
+        if self.instance.pk is None:  # Si es un nuevo producto (aún no se ha guardado en la BD)
+            self.initial['consignado'] = 'True'  # Valor predeterminado: Sí (Stock Propio)
+        else:
+            self.initial['consignado'] = 'True' if self.instance.consignado else 'False'
 
         # Si hay un valor en la BD, asignarlo
         if self.instance.porcentaje_consignacion is not None:
@@ -66,22 +69,34 @@ class ProductoForm(forms.ModelForm):
         Convierte la selección de "Sí" o "No" en un valor booleano real.
         """
         valor = self.cleaned_data.get("consignado")
-        return valor == "True"
+        print(f"\nClean Consignado - Valor recibido: {valor}")
+
+        resultado = valor == "True"
+        print(f"Clean Consignado - Convertido a booleano: {resultado}")
+        return resultado
 
     def clean_porcentaje_consignacion(self):
         """
-        Valida que el porcentaje de consignación solo sea obligatorio si `consignado` es True.
+        Valida que el porcentaje de consignación solo sea obligatorio si `consignado` es False.
         """
         consignado = self.cleaned_data.get("consignado")
         porcentaje = self.cleaned_data.get("porcentaje_consignacion")
 
-        print(f"Clean - Consignado: {consignado}, Porcentaje Consignación: {porcentaje}")
+        print(f"\nClean Porcentaje - Stock Propio: {consignado}, Porcentaje Consignación recibido: {porcentaje}")
 
-        if consignado and porcentaje is None:
-            raise forms.ValidationError("Debe ingresar un porcentaje de consignación si el producto está en consignación.")
-        elif porcentaje and (porcentaje < 0 or porcentaje > 100):
-            raise forms.ValidationError("El porcentaje de consignación debe estar entre 0 y 100.")
+        if consignado:
+            print("Producto es Stock Propio, forzando porcentaje a 0")
+            return 0  
+
+        if not consignado and (porcentaje is None or porcentaje == ""):
+            print("Error: Producto no es Stock Propio pero no tiene porcentaje")
+            raise forms.ValidationError("Debe ingresar un porcentaje de consignación si el producto no es stock propio.")
         
+        if porcentaje is not None and (porcentaje < 0 or porcentaje > 100):
+            print("Error: Porcentaje fuera de rango")
+            raise forms.ValidationError("El porcentaje de consignación debe estar entre 0 y 100.")
+
+        print(f"Porcentaje válido: {porcentaje}")
         return porcentaje
 
     def clean_categoria(self):
@@ -115,18 +130,6 @@ class ProductoForm(forms.ModelForm):
         version = cleaned_data.get('version')
         anio = cleaned_data.get('anio')
         descripcion = cleaned_data.get('descripcion')
-
-        # Capitaliza los campos de texto para consistencia en el formato
-        if nombre:
-            cleaned_data['nombre'] = nombre.capitalize()
-        if marca:
-            cleaned_data['marca'] = marca.capitalize()
-        if modelo:
-            cleaned_data['modelo'] = modelo.capitalize()
-        if version:
-            cleaned_data['version'] = version.capitalize()
-        if descripcion:
-            cleaned_data['descripcion'] = descripcion.capitalize()
 
         # Validar que el año sea razonable
         if anio and (anio < 1900 or anio > datetime.date.today().year + 1):
@@ -183,6 +186,13 @@ class DetalleVentaOnlineForm(forms.ModelForm):
 
 # Formulario para ventas manuales (cliente anónimo)
 class VentaManualForm(forms.ModelForm):
+
+    fecha_pago_final = forms.DateTimeField(
+        required=False,
+        widget=forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+        label="Fecha Pago Completo"
+    )
+
     class Meta:
         model = VentaManual
         fields = ['pago_cliente', 'precio_personalizado', 'fecha_creacion']
@@ -190,6 +200,7 @@ class VentaManualForm(forms.ModelForm):
             'pago_cliente': 'Monto Pagado por el Cliente',
             'precio_personalizado': 'Total (IVA incluido)',
             'fecha_creacion': 'Fecha de la Venta',
+            'fecha_pago_final': 'Fecha Pago Completo'
         }
         widgets = {
             'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),
@@ -198,6 +209,7 @@ class VentaManualForm(forms.ModelForm):
                 'class': 'form-control',
                 'type': 'datetime-local',
             }),
+            'fecha_pago_final': DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
 
     def save(self, commit=True):
@@ -212,10 +224,44 @@ class VentaManualForm(forms.ModelForm):
             venta.fecha_creacion = self.instance.fecha_creacion
             print("Edición de venta, fecha_creacion preservada:", venta.fecha_creacion)
 
+        # Evitar errores si precio_personalizado es None
+        venta.precio_personalizado = self.cleaned_data.get('precio_personalizado', 0) or 0
+        venta.pago_cliente = self.cleaned_data.get('pago_cliente', 0) or 0
+
+        # Verificar si el pago cubre el total antes de asignar la fecha
+        if venta.pago_cliente >= venta.precio_personalizado:
+            venta.fecha_pago_final = self.cleaned_data.get('fecha_pago_final', None)
+            print("Fecha de pago final editada:", venta.fecha_pago_final)
+        else:
+            venta.fecha_pago_final = None  # Resetear si no se ha pagado completamente
+            print("Pago incompleto, fecha de pago final reseteada a None")
+
         if commit:
             venta.save()
         return venta
 
+# Formulario de detalle de productos en venta manual
+class DetalleVentaManualProductoForm(forms.ModelForm):
+    producto = forms.IntegerField(
+        widget=forms.NumberInput(attrs={'class': 'form-control'}),
+        label='ID del Producto',
+        required=True
+    )
+
+    class Meta:
+        model = DetalleVentaManual
+        fields = ['producto']
+
+    def clean_producto(self):
+        """
+        Valida que el producto ingresado exista en la base de datos.
+        """
+        id_producto = self.cleaned_data.get('producto')
+        try:
+            return Producto.objects.get(id=id_producto)
+        except Producto.DoesNotExist:
+            raise forms.ValidationError("No se encontró un producto con ese ID.")
+        
 # Formulario de detalle de servicios en venta manual
 class DetalleVentaManualServicioForm(forms.ModelForm):
     servicio = forms.IntegerField(
@@ -225,10 +271,10 @@ class DetalleVentaManualServicioForm(forms.ModelForm):
     )
     precio_costo = forms.DecimalField(
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label='Precio de Costo',
+        label='Valor de Compra',
         required=True,
         min_value=0,
-        help_text="Precio de costo asociado a este servicio en esta venta."
+        help_text="Valor de Compra asociado a este servicio en esta venta."
     )
 
     class Meta:
@@ -256,3 +302,5 @@ DetalleVentaOnlineFormset = inlineformset_factory(
     extra=1,  # Número de formularios adicionales
     can_delete=True,  # Permitir eliminar ítems
 )
+
+

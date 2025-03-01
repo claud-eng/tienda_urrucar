@@ -156,18 +156,22 @@
 
       <!-- Detalles del producto -->
       <div class="col-md-6">
-        <h2 class="text-black">{{ producto.nombre }}</h2>
+        <h2 class="text-black" style="font-size: 2rem; font-weight: bold; color: #ea741b; font-family: 'Arial', sans-serif;">
+          {{ producto.nombre }}
+      </h2>      
         {% if producto.categoria == 'Vehículo' and producto.anio %}
         <p class="mb-0">Año: {{ producto.anio }}</p>
         {% else %}
         <p class="mb-0">&nbsp;</p>  <!-- Espacio en blanco si no hay año -->
         {% endif %}
-        <p>{{ producto.descripcion }}</p>
+        <p style="text-align: justify;">{{ producto.descripcion }}</p>
         <p><strong class="text-primary h4">${{ producto.precio_formateado }}</strong></p>
-        {% if producto.precio_reserva_formateado %}
+        {% if producto.cantidad_stock > 0 and producto.precio_reserva_formateado %}
         <p>Precio de Reserva: <strong class="text-primary">${{ producto.precio_reserva_formateado }}</strong></p>
         {% endif %}
-        <p style="text-align: justify;">Para mas información, escríbenos por WhatsApp o reserva directamente en el botón "Agregar al Carrito" y te contactamos a la brevedad.</p>
+        {% if producto.cantidad_stock > 0 %}
+        <p style="text-align: justify;">Para más información, escríbenos por WhatsApp o reserva directamente en el botón "Agregar al Carrito" y te contactamos a la brevedad.</p>
+        {% endif %}        
         
         {% if not user.empleado %}
           {% if producto.cantidad_stock > 0 %}
@@ -195,7 +199,7 @@
             </form>
             {% endif %}
           {% else %}
-          <p class="text-danger">Producto no disponible</p>
+          <p class="text-danger">Vendido</p>
           {% endif %}
         {% else %}
         <p>No puedes realizar compras con una cuenta de empleado.</p>

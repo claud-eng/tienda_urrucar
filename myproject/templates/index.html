@@ -128,11 +128,12 @@
                 {% for producto in productos_principales %}
                 <div class="item neon-box-blue">
                     <div class="block-4 text-center bg-dark">
-                        <figure class="block-4-image">
-                            <a href="{% url 'ver_detalles_producto' producto.id %}">
-                                <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid">
-                            </a>
-                        </figure>
+                      <figure class="block-4-image">
+                        <a href="{% url 'ver_detalles_producto' producto.id %}">
+                            <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid"
+                                 style="width: 350px; height: 250px; object-fit: cover;">
+                        </a>
+                    </figure>                    
                         <div class="block-4-text p-4 bg-dark" style="color: white;">
                           <h3>
                             <a href="{% url 'ver_detalles_producto' producto.id %}" style="color: white !important;">
@@ -147,6 +148,13 @@
                           <p class="text-primary font-weight-bold" style="color: white !important;">
                             ${{ producto.precio_formateado }}
                           </p>
+                          <p class="font-weight-bold" style="color: white !important;">
+                            {% if producto.cantidad_stock == 0 %}
+                                Vendido
+                            {% else %}
+                                Disponible
+                            {% endif %}
+                        </p>
                         </div>
                     </div>
                 </div>

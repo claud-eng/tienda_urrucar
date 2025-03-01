@@ -30,7 +30,6 @@
     }
 </style>
 {% endblock %}
-
 {% block content %}
 
 <div class="bg-light py-3">
@@ -43,14 +42,14 @@
                 <span class="mx-2 mb-0">/</span> 
                 <a href="{% url 'listar_ventas_manuales' %}">Historial de Ventas Manuales</a> 
                 <span class="mx-2 mb-0">/</span> 
-                <strong class="text-black">Agregar Venta Manual</strong>
+                <strong class="text-black">Agregar Venta Manual de Producto</strong>
             </div>
         </div>
     </div>
 </div>
 
 <div class="container mt-5">
-    <form method="post" id="ventaForm" class="needs-validation" novalidate>
+    <form method="post" id="ventaProductoForm" class="needs-validation" novalidate>
         {% csrf_token %}
 
         <!-- Mostrar mensajes de error -->
@@ -69,96 +68,53 @@
         <div class="form-group">
             {{ cliente_anonimo_form.nombre.label_tag }}
             {{ cliente_anonimo_form.nombre|add_class:"form-control" }}
-            {% if cliente_anonimo_form.nombre.errors %}
-            <div class="alert alert-danger">
-                {{ cliente_anonimo_form.nombre.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
-
         <div class="form-group">
             {{ cliente_anonimo_form.apellido.label_tag }}
             {{ cliente_anonimo_form.apellido|add_class:"form-control" }}
-            {% if cliente_anonimo_form.apellido.errors %}
-            <div class="alert alert-danger">
-                {{ cliente_anonimo_form.apellido.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
-
         <div class="form-group">
             {{ cliente_anonimo_form.email.label_tag }}
             {{ cliente_anonimo_form.email|add_class:"form-control" }}
-            {% if cliente_anonimo_form.email.errors %}
-            <div class="alert alert-danger">
-                {{ cliente_anonimo_form.email.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
-
         <div class="form-group">
             {{ cliente_anonimo_form.numero_telefono.label_tag }}
             {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
-            {% if cliente_anonimo_form.numero_telefono.errors %}
-            <div class="alert alert-danger">
-                {{ cliente_anonimo_form.numero_telefono.errors.as_text }}
-            </div>
-            {% endif %}
-        </div>      
+        </div>
 
-        <!-- Precio de Costo -->
-        <h3>Detalles del Servicio</h3>
+        <!-- Formulario para Producto -->
+        <h3>Detalles del Producto</h3>
+        <div class="form-group">
+            {{ detalle_producto_form.producto.label_tag }}
+            {{ detalle_producto_form.producto|add_class:"form-control" }}
+        </div>
+        <a href="{% url 'listar_productos' %}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
 
+        <!-- Fecha de la Transacción -->
         <div class="form-group">
             {{ orden_compra_form.fecha_creacion.label_tag }}
             {{ orden_compra_form.fecha_creacion|add_class:"form-control" }}
-            {% if orden_compra_form.fecha_creacion.errors %}
-            <div class="alert alert-danger">
-                {{ orden_compra_form.fecha_creacion.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
 
-        <div class="form-group">
-            {{ detalle_servicio_form.servicio.label_tag }}
-            {{ detalle_servicio_form.servicio|add_class:"form-control" }}
-            {% if detalle_servicio_form.servicio.errors %}
-            <div class="alert alert-danger">
-                {{ detalle_servicio_form.servicio.errors.as_text }}
-            </div>
-            {% endif %}
-        </div>
-
-        <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
-
-        <div class="form-group">
-            {{ detalle_servicio_form.precio_costo.label_tag }}
-            {{ detalle_servicio_form.precio_costo|add_class:"form-control" }}
-            {% if detalle_servicio_form.precio_costo.errors %}
-            <div class="alert alert-danger">
-                {{ detalle_servicio_form.precio_costo.errors.as_text }}
-            </div>
-            {% endif %}
-        </div>
-
-        <!-- Precio Personalizado -->
+        <!-- Total e Ingreso del Cliente -->
+        <h3>Resumen de Pago</h3>
         <div class="form-group">
             {{ orden_compra_form.precio_personalizado.label_tag }}
             {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
-            {% if orden_compra_form.precio_personalizado.errors %}
-            <div class="alert alert-danger">
-                {{ orden_compra_form.precio_personalizado.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
-
-        <!-- Pago del Cliente -->
         <div class="form-group">
             {{ orden_compra_form.pago_cliente.label_tag }}
             {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
-            {% if orden_compra_form.pago_cliente.errors %}
+        </div>
+
+        <!-- Fecha Pago Completo -->
+        <div class="form-group">
+            {{ orden_compra_form.fecha_pago_final.label_tag }}
+            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
+                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            {% if orden_compra_form.fecha_pago_final.errors %}
             <div class="alert alert-danger">
-                {{ orden_compra_form.pago_cliente.errors.as_text }}
+                {{ orden_compra_form.fecha_pago_final.errors.as_text }}
             </div>
             {% endif %}
         </div>
@@ -170,5 +126,34 @@
         </div>
     </form>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    $(document).ready(function() {
+        // Detectar cambios en el campo del ID del Producto
+        $("#id_producto").on("change", function() {
+            var productoID = $(this).val();  // Obtener el ID ingresado
+            
+            if (productoID) {  // Solo hacer la petición si hay un ID válido
+                $.ajax({
+                    url: "{% url 'obtener_precio_producto' %}",  // URL de la vista en Django
+                    data: { 'producto_id': productoID },  // Enviar ID al backend
+                    dataType: "json",
+                    success: function(data) {
+                        if (data.precio) {
+                            $("#id_precio_personalizado").val(data.precio);  // Actualizar el campo Total
+                        }
+                    },
+                    error: function() {
+                        $("#id_precio_personalizado").val("");  // Limpiar el campo si hay error
+                        alert("No se encontró un producto con este ID.");
+                    }
+                });
+            } else {
+                $("#id_precio_personalizado").val("");  // Limpiar si el campo está vacío
+            }
+        });
+    });
+</script>
 
 {% endblock %}

@@ -58,10 +58,8 @@
   <form method="post" enctype="multipart/form-data">
     {% csrf_token %}
     
-    <div class="form-group">
-      <label for="{{ form.nombre.id_for_label }}">Nombre</label>
-      <input type="text" class="form-control" id="{{ form.nombre.id_for_label }}" name="{{ form.nombre.name }}" value="{{ form.nombre.value|default:'' }}">
-    </div>
+    <!-- Campo oculto para el nombre -->
+    <input type="hidden" id="{{ form.nombre.id_for_label }}" name="{{ form.nombre.name }}" value="{{ form.nombre.value|default:'' }}">
 
     <div class="form-group">
       <label for="{{ form.marca.id_for_label }}">Marca</label>
@@ -99,7 +97,7 @@
     </div>
 
     <div class="form-group">
-      <label for="{{ form.consignado.id_for_label }}">¿Está en consignación?</label>
+      <label for="{{ form.consignado.id_for_label }}">Stock Propio</label>
       {{ form.consignado }}
     </div>
 
@@ -142,25 +140,30 @@
     </div>
 
     <div class="form-group">
-      <label for="{{ form.precio_reserva.id_for_label }}">Precio de Reserva</label>
-      <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'' }}">
+      <label for="{{ form.fecha_adquisicion.id_for_label }}">Fecha de Adquisición</label>
+      {{ form.fecha_adquisicion }}
     </div>
 
     <div class="form-group">
-      <label for="{{ form.precio.id_for_label }}">Precio de Venta</label>
+      <label for="{{ form.precio_reserva.id_for_label }}">Valor de Reserva</label>
+      <input type="number" class="form-control" id="{{ form.precio_reserva.id_for_label }}" name="{{ form.precio_reserva.name }}" value="{{ form.precio_reserva.value|default:'200000' }}">
+    </div>
+
+    <div class="form-group">
+      <label for="{{ form.precio.id_for_label }}">Valor de Venta</label>
       <input type="number" class="form-control" id="id_precio"
              name="{{ form.precio.name }}" 
-             value="{{ form.precio.value|default:'' }}">
+             value="{{ form.precio.value|default:'0' }}">
     </div>
 
     <div class="form-group">
-      <label for="{{ form.precio_costo.id_for_label }}">Precio de Costo</label>
-      <input type="number" class="form-control" id="{{ form.precio_costo.id_for_label }}" name="{{ form.precio_costo.name }}" value="{{ form.precio_costo.value|default:'' }}">
+      <label for="{{ form.precio_costo.id_for_label }}">Valor de Compra</label>
+      <input type="number" class="form-control" id="{{ form.precio_costo.id_for_label }}" name="{{ form.precio_costo.name }}" value="{{ form.precio_costo.value|default:'0' }}">
     </div>
   
     <div class="form-group">
       <label for="{{ form.costo_extra.id_for_label }}">Costo Extra</label>
-      <input type="number" class="form-control" id="{{ form.costo_extra.id_for_label }}" name="{{ form.costo_extra.name }}" value="{{ form.costo_extra.value|default:'' }}">
+      <input type="number" class="form-control" id="{{ form.costo_extra.id_for_label }}" name="{{ form.costo_extra.name }}" value="{{ form.costo_extra.value|default:'0' }}">
     </div>
 
     <div class="form-group">
@@ -191,7 +194,7 @@
       let porcentajeField = document.getElementById("id_porcentaje_consignacion");
 
       function togglePorcentajeField() {
-          if (consignadoField.value === "True") {
+          if (consignadoField.value === "False") {
               porcentajeField.removeAttribute("disabled");
           } else {
               porcentajeField.setAttribute("disabled", "disabled");
@@ -239,6 +242,29 @@
     document.getElementById("id_precio").value = precioVenta.toFixed(0);
     document.getElementById("id_porcentaje_consignacion").value = porcentajeConsignacion.toFixed(7);
   }
+</script>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+      let marcaField = document.getElementById("{{ form.marca.id_for_label }}");
+      let modeloField = document.getElementById("{{ form.modelo.id_for_label }}");
+      let versionField = document.getElementById("{{ form.version.id_for_label }}");
+      let nombreField = document.getElementById("{{ form.nombre.id_for_label }}");
+
+      function actualizarNombre() {
+          let marca = marcaField.value.trim();
+          let modelo = modeloField.value.trim();
+          let version = versionField.value.trim();
+
+          let nombreConcatenado = [marca, modelo, version].filter(Boolean).join(" ");  // Evita espacios extra
+          nombreField.value = nombreConcatenado;
+      }
+
+      // Escuchar cambios en los campos
+      marcaField.addEventListener("input", actualizarNombre);
+      modeloField.addEventListener("input", actualizarNombre);
+      versionField.addEventListener("input", actualizarNombre);
+  });
 </script>
 
 {% endblock %}

@@ -94,6 +94,18 @@
             {% endif %}
         </div>
 
+        <!-- Fecha Pago Completo -->
+        <div class="form-group">
+            {{ orden_compra_form.fecha_pago_final.label_tag }}
+            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
+                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            {% if orden_compra_form.fecha_pago_final.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_pago_final.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Botones de acción -->
         <div class="form-group mt-4">
             <button type="submit" class="btn btn-primary btn-sm">Guardar Cambios</button>

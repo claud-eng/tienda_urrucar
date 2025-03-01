@@ -43,15 +43,16 @@
 {% endblock %}
 {% block content %}
 
-
 <div class="bg-light py-3">
     <div class="container">
         <div class="row">
             <div class="col-md-12 mb-0">
                 <a href="{% url 'home' %}">Inicio</a> 
                 <span class="mx-2 mb-0">/</span> 
-                <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
-                <span class="mx-2 mb-0">/</span> 
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
+                    <span class="mx-2 mb-0">/</span> 
+                {% endif %}
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
                     <strong class="text-black">Historial de Ventas Online</strong>
                 {% elif user.cliente %}
@@ -78,228 +79,316 @@
     </form>
     {% endif %}
 
-<!-- Tabla de ventas online -->
-<div class="table-responsive mb-4"> <!-- Añadido mb-4 para espacio entre tabla y paginación -->
-    <table class="table table-hover">
-        <thead class="thead-dark">
-            <tr>
-                <th>Número de Orden</th>
-                <th>Cliente</th>
-                <th>Correo</th>
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <th>¿Usuario registrado?</th>
-            {% endif %}
-                <th>Fecha de la Transacción</th>
-                <th>Fecha Modificación Estado de la Reserva</th>
-                <th>Estado de la Reserva</th>
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <th>Acciones</th>
-                {% endif %}
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <th>Días Transcurridos entre la Adquisición y Venta</th>
-                {% endif %}
-                <th>Días Transcurridos entre la Reserva y Venta</th>
-                <th>Detalle</th>
-                <th>Consignado</th>
-                <th>Tipo de Pago</th>
-                <th>Monto de Cuotas</th>
-                <th>Número de Cuotas</th>
-                <th>Total (IVA incluido)</th>
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <th>Ganancia o Pérdida</th>
-            {% endif %}
-                <th>Emitir Comprobante</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for orden in ordenes_paginadas %}
-            <tr class="{% cycle 'table-light' 'table-secondary' %}">
-                <td>{{ orden.numero_orden }}</td>
-                
-                <td>
-                    {% if orden.cliente %}
-                        {{ orden.cliente.user.first_name }} {{ orden.cliente.user.last_name }}
-                    {% elif orden.cliente_anonimo %}
-                        {{ orden.cliente_anonimo.nombre }} {{ orden.cliente_anonimo.apellido }}
-                    {% else %}
+    <!-- TABLA DE VENTAS DE PRODUCTOS -->
+    <h2 class="text-center">
+        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+            Historial de Ventas de Productos
+        {% else %}
+            Historial de Compras de Productos
+        {% endif %}
+    </h2>    
+    <div class="table-responsive mb-4">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Número de Orden</th>
+                    <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Fecha de la Transacción</th>
+                    <th>Fecha Modificación Estado de la Reserva</th>
+                    <th>Estado de la Reserva</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <th>Acciones</th>
+                    <th>Días Transcurridos entre la Adquisición y Venta</th>
                     {% endif %}
-                </td>
-        
-                <td>
-                    {% if orden.cliente %}
-                        {{ orden.cliente.user.email }}
-                    {% elif orden.cliente_anonimo %}
-                        {{ orden.cliente_anonimo.email }}
-                    {% else %}
+                    <th>Días Transcurridos entre la Reserva y Venta</th>
+                    <th>Detalle</th>
+                    <th>Stock Propio</th>
+                    <th>Tipo de Pago</th>
+                    <th>Monto de Cuotas</th>
+                    <th>Número de Cuotas</th>
+                    <th>Total (IVA incluido)</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <th>Resultado del Negocio</th>
                     {% endif %}
-                </td>
-
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <td>
-                    {% if orden.cliente %}
-                        Sí
-                    {% elif orden.cliente_anonimo %}
-                        No
-                    {% else %}
-                    {% endif %}
-                </td>
-                {% endif %}
-
-                <td>{{ orden.fecha|date:"d/m/Y H:i" }}</td>
-                
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
-                            {% if detalle.fecha_estado_final %}
+                    <th>Emitir Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta_info in ventas_productos_list %}
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                    <td>{{ venta_info.venta.numero_orden }}</td>
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.first_name }} {{ venta_info.venta.cliente.user.last_name }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.nombre }} {{ venta_info.venta.cliente_anonimo.apellido }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.email }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.email }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>                    
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.numero_telefono }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.numero_telefono }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>                    
+                    <td>{{ venta_info.venta.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.fecha_estado_final %}
                                 {{ detalle.fecha_estado_final|date:"d/m/Y H:i" }}
-                            {% else %}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
-                            {% if detalle.estado_reserva %}
-                                {{ detalle.estado_reserva }}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <td>
-                    {% with show_button=False %}
-                        {% for detalle in orden.detalleventaonline_set.all %}
-                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and not show_button %}
-                                <a href="{% url 'editar_venta_online' orden.id %}" class="btn btn-primary btn-sm">Editar</a>
-                                {% with True as show_button %}
-                                {% endwith %}
                             {% endif %}
                         {% endfor %}
-                    {% endwith %}
-                </td>
-                {% endif %}  
-                
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
-                            {% if detalle.dias_desde_adquisicion is not None %}
-                                {{ detalle.dias_desde_adquisicion }} días
-                            {% else %}
+                    </td>
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
+                                {{ detalle.estado_reserva }}
                             {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-                {% endif %}  
-                
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
-                            {% if detalle.calculo_tiempo_transcurrido is not None %}
-                                {{ detalle.calculo_tiempo_transcurrido }} días
-                            {% else %}
-                            {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-                
-                <td>
-                    {% for detalle in orden.detalles_formateados %}
-                        {{ detalle.nombre }}{% if not forloop.last %} - {% endif %}
-                    {% endfor %}
-                </td>
-                
-                <td>
-                    {% for detalle in orden.detalleventaonline_set.all %}
-                        {% if detalle.producto %}
-                            {% if detalle.producto.consignado %}
-                                Sí
-                            {% else %}
-                                No
-                            {% endif %}
-                            {% if not forloop.last %} - {% endif %}
-                        {% endif %}
-                    {% endfor %}
-                </td>
-                
-                <td>
-                    {% if orden.tipo_pago == 'VD' %}
-                        Venta Débito
-                    {% elif orden.tipo_pago == 'VN' %}
-                        Venta Normal
-                    {% elif orden.tipo_pago == 'VC' %}
-                        Venta en Cuotas
-                    {% elif orden.tipo_pago == 'SI' %}
-                        3 Cuotas sin Interés
-                    {% elif orden.tipo_pago == 'S2' %}
-                        2 Cuotas sin Interés
-                    {% elif orden.tipo_pago == 'NC' %}
-                        Cuotas sin Interés
-                    {% elif orden.tipo_pago == 'VP' %}
-                        Venta Prepago
-                    {% else %}
-                        {{ orden.tipo_pago }}
+                        {% endfor %}
+                    </td>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        {% with show_button=False %}
+                            {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                                {% if detalle.producto and detalle.producto.categoria == "Vehículo" and not show_button %}
+                                    <a href="{% url 'editar_venta_online' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
+                                    {% with True as show_button %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endwith %}
+                    </td>
                     {% endif %}
-                </td>
-        
-                <td>${{ orden.monto_cuotas|default:'0' }}</td>
-                <td>{{ orden.numero_cuotas }}</td>
-                <td>${{ orden.total_formateado }}</td>
-                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                <td>${{ orden.ganancia_formateada }}</td>
-                {% endif %}
-                
-                <td>
-                    <a href="{% url 'descargar_comprobante_pago' 'online' orden.numero_orden %}" class="btn btn-success btn-sm">Descargar</a>
-                </td>
-        
-            </tr>
-            {% endfor %}
-        </tbody>        
-    </table>
-</div>
-
-<!-- Paginación con espacio superior -->
-<div class="mb-4">
-    <nav aria-label="Paginación">
-        <ul class="pagination">
-            {% if ordenes_paginadas.has_previous %}
-                <li class="page-item">
-                    <a class="page-link" href="?page=1{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Primera</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ ordenes_paginadas.previous_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Anterior</a>
-                </li>
-            {% endif %}
-            
-            {% for num in ordenes_paginadas.paginator.page_range %}
-                <li class="page-item{% if ordenes_paginadas.number == num %} active{% endif %}">
-                    <a class="page-link" href="?page={{ num }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">{{ num }}</a>
-                </li>
-            {% endfor %}
-            
-            {% if ordenes_paginadas.has_next %}
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ ordenes_paginadas.next_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Siguiente</a>
-                </li>
-                <li class="page-item">
-                    <a class="page-link" href="?page={{ ordenes_paginadas.paginator.num_pages }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Última</a>
-                </li>
-            {% endif %}
-        </ul>
-    </nav>
-</div>
-
-    <div class="mt-4">
-        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-            <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
-        {% else %}
-            <p><a href="javascript:history.back()" class="btn btn-secondary btn-sm mt-2">Volver atrás</a></p>
-        {% endif %}
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.dias_desde_adquisicion %}
+                                {{ detalle.dias_desde_adquisicion }} días
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    {% endif %}
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.calculo_tiempo_transcurrido %}
+                                {{ detalle.calculo_tiempo_transcurrido }} días
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for producto in venta_info.productos %}
+                            {{ producto.nombre }}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for producto in venta_info.productos %}
+                            {{ producto.stock_propio }}{% if not forloop.last %}, {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if venta_info.venta.tipo_pago %}
+                            {% if venta_info.venta.tipo_pago == 'VD' %}
+                                Venta Débito
+                            {% elif venta_info.venta.tipo_pago == 'VN' %}
+                                Venta Normal
+                            {% elif venta_info.venta.tipo_pago == 'VC' %}
+                                Venta en Cuotas
+                            {% elif venta_info.venta.tipo_pago == 'SI' %}
+                                3 Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'S2' %}
+                                2 Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'NC' %}
+                                Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'VP' %}
+                                Venta Prepago
+                            {% else %}
+                                {{ venta_info.venta.tipo_pago }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>                    
+                    <td>${{ venta_info.venta.monto_cuotas|default:'0' }}</td>
+                    <td>{{ venta_info.venta.numero_cuotas }}</td>
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>${{ venta_info.ganancia_formateada }}</td>
+                    {% endif %}
+                    <td>
+                        <a href="{% url 'descargar_comprobante_pago' 'online' venta_info.venta.numero_orden %}" class="btn btn-success btn-sm">Descargar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
     </div>
+
+    <!-- PAGINACIÓN DE PRODUCTOS -->
+    <div class="mb-4">
+        <nav aria-label="Paginación Productos">
+            <ul class="pagination">
+                {% if ventas_productos_paginadas.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_productos=1">Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                {% for i in ventas_productos_paginadas.paginator.page_range %}
+                    <li class="page-item{% if i == ventas_productos_paginadas.number %} active{% endif %}">
+                        <a class="page-link" href="?page_productos={{ i }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                {% if ventas_productos_paginadas.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.next_page_number }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.paginator.num_pages }}">Última</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <!-- TABLA DE VENTAS DE SERVICIOS -->
+    <h2 class="text-center">
+        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+            Historial de Ventas de Servicios
+        {% else %}
+            Historial de Compras de Servicios
+        {% endif %}
+    </h2>    
+    <div class="table-responsive mb-4">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Número de Orden</th>
+                    <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    {% endif %}
+                    <th>Fecha de la Transacción</th>
+                    <th>Detalle</th>
+                    <th>Tipo de Pago</th>
+                    <th>Monto de Cuotas</th>
+                    <th>Número de Cuotas</th>
+                    <th>Total (IVA incluido)</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <th>Resultado del Negocio</th>
+                    {% endif %}
+                    <th>Emitir Comprobante</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta_info in ventas_servicios_list %}
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                    <td>{{ venta_info.venta.numero_orden }}</td>
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.first_name }} {{ venta_info.venta.cliente.user.last_name }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.nombre }} {{ venta_info.venta.cliente_anonimo.apellido }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.email }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.email }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.numero_telefono }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.numero_telefono }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>
+                    <td>{{ venta_info.venta.fecha|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        {% for servicio in venta_info.servicios %}
+                            {{ servicio.nombre }}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if venta_info.venta.tipo_pago %}
+                            {% if venta_info.venta.tipo_pago == 'VD' %}
+                                Venta Débito
+                            {% elif venta_info.venta.tipo_pago == 'VN' %}
+                                Venta Normal
+                            {% elif venta_info.venta.tipo_pago == 'VC' %}
+                                Venta en Cuotas
+                            {% elif venta_info.venta.tipo_pago == 'SI' %}
+                                3 Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'S2' %}
+                                2 Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'NC' %}
+                                Cuotas sin Interés
+                            {% elif venta_info.venta.tipo_pago == 'VP' %}
+                                Venta Prepago
+                            {% else %}
+                                {{ venta_info.venta.tipo_pago }}
+                            {% endif %}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>                    
+                    <td>${{ venta_info.venta.monto_cuotas|default:'0' }}</td>
+                    <td>{{ venta_info.venta.numero_cuotas }}</td>
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>${{ venta_info.ganancia_formateada }}</td>
+                    {% endif %}
+                    <td>
+                        <a href="{% url 'descargar_comprobante_pago' 'online' venta_info.venta.numero_orden %}" class="btn btn-success btn-sm">Descargar</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGINACIÓN DE SERVICIOS -->
+    <div class="mb-4">
+        <nav aria-label="Paginación Servicios">
+            <ul class="pagination">
+                {% if ventas_servicios_paginadas.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_servicios=1">Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                {% for i in ventas_servicios_paginadas.paginator.page_range %}
+                    <li class="page-item{% if i == ventas_servicios_paginadas.number %} active{% endif %}">
+                        <a class="page-link" href="?page_servicios={{ i }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                {% if ventas_servicios_paginadas.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.next_page_number }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.paginator.num_pages }}">Última</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
+    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+    <a href="{% url 'gestionar_transacciones' %}"><button class="btn btn-danger btn-sm">Volver al menú principal</button></a>
+    {% endif %}
 
 </div>
 

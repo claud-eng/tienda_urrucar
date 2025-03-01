@@ -137,14 +137,14 @@
                 <th>Año</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
-                <th>Consignado</th>
+                <th>Stock Propio</th>
                 <th>Porcentaje Consignación</th>
                 <th>Fecha de Adquisición</th>
-                <th>Precio de Reserva</th>
-                <th>Precio de Venta</th>
-                <th>Precio de Costo</th>
+                <th>Valor de Reserva</th>
+                <th>Valor de Venta</th>
+                <th>Valor de Compra</th>
                 <th>Costo Extra</th>
-                <th>Futura Ganancia o Pérdida</th>
+                <th>Resultado del Negocio</th>
                 <th class="cantidad-stock-column">Cantidad en Stock</th>
                 <th class="estado-column">Estado</th>                
                 <th>Imagen</th>
@@ -163,7 +163,13 @@
                     <td>{% if producto.version %}{{ producto.version }}{% endif %}</td>
                     <td>{% if producto.anio %}{{ producto.anio }}{% endif %}</td>
                     <td>{{ producto.categoria }}</td>
-                    <td style="text-align: justify;">{{ producto.descripcion }}</td>
+                    <td style="text-align: justify;">
+                        {% if producto.descripcion|length > 10 %}
+                            {{ producto.descripcion|slice:":10" }}...
+                        {% else %}
+                            {{ producto.descripcion }}
+                        {% endif %}
+                    </td>                    
                     <td>
                         {% if producto.consignado %}
                             Sí
@@ -221,7 +227,7 @@
                     <td>
                         <div class="d-flex align-items-center">
                             <a href="{% url 'editar_producto' producto.id %}" class="btn btn-primary btn-sm">Editar</a>
-                            <a href="{% url 'confirmar_borrar_producto' producto.id %}" class="btn btn-danger btn-sm ml-2">Borrar</a>
+                            <a href="{% url 'confirmar_borrar_producto' producto.id %}" class="btn btn-danger btn-sm ml-2">Eliminar</a>
                         </div>
                     </td>
                     {% endif %}

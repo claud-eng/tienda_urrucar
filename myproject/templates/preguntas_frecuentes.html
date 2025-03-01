@@ -3,6 +3,30 @@
 {% block title %}Sobre Nosotros{% endblock %}
 {% block extra_css %}
 <style>
+    .highlight-box {
+        background-color: #f8f9fa;
+        border-left: 5px solid #ed913f;
+        border-right: 5px solid #ed913f;
+        padding: 20px;
+        margin-bottom: 30px;
+        border-radius: 8px;
+        box-shadow: 0px 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .highlight-box p {
+        font-size: 1.1em;
+        font-weight: 500;
+        text-align: center;
+        color: #333;
+        margin: 0;
+    }
+
+    @media (max-width: 767.98px) {
+        .highlight-box p {
+            text-align: justify;
+        }
+    }
+
     @media (max-width: 767.98px) {
         .card-header button {
             font-size: 1em;  /* Tamaño más pequeño */
@@ -71,6 +95,15 @@
   </div>  
 
 <section class="container my-5">
+
+    <div class="highlight-box">
+        <p>
+            La idea de <strong>Urrucar Automotriz</strong> es poder ayudarte en cualquier necesidad que tengas relacionada con el rubro automotriz. 
+            Nuestros canales de atención están abiertos para atender tus consultas y buscar la mejor solución. Contamos con experiencia en el rubro 
+            y una gran cartera de proveedores de confianza para atender tus requerimientos.
+        </p>
+    </div>
+
     <div class="accordion" id="faqAccordion">
         <!-- Pregunta 1 -->
         <div class="card">
@@ -85,7 +118,7 @@
                 <div class="card-body" style="text-align: justify;">
                     Solo debes seleccionar el auto que te gusta en la galería, donde tendrás fotos y una descripción para que puedas informarte lo mejor 
                     posible acerca del vehículo que quieres. Lo puedes reservar directamente en la página por un valor de $200.000, monto que puedes cancelar vía Webpay. Luego te contactamos para coordinar la visita, para que puedas revisar y probar el vehículo, si todo anda bien, cerramos el negocio 
-                    de manera online o presencial, según mejor te acomode. De lo contrario te haremos reembolso de tu reserva en máximo de 5 días hábiles.
+                    de manera online o presencial, según mejor te acomode. De lo contrario te haremos reembolso de tu reserva en un plazo máximo de 5 días hábiles.
                 </div>
             </div>
         </div>
@@ -104,7 +137,7 @@
                     Para este servicio, primero debes generar la solicitud mediante el formulario, luego de eso, se evalúa si es viable el negocio. Si la respuesta es Sí, 
                     te contactamos para coordinar una visita, revisar tú vehículo, tomar las fotos necesarias para la publicación y nos encargamos de buscar comprador. 
                     Una vez que lo tengamos, nos encargamos de realizar todo el trámite de transferencia de la manera más cómoda a convenir. Al finalizar el negocio, 
-                    debes cancelar el servicio por un costo del 5% del valor de venta.
+                    debes cancelar el servicio por un costo del 5% del valor de venta, o un valor fijo a convenir previamente entre las partes.
                 </div>
             </div>
         </div>

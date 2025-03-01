@@ -22,6 +22,15 @@
         width: 100%;
     }
 
+    /* 📌 Ajuste para PC: Imágenes de 350x200 */
+    @media (min-width: 992px) { /* Detecta pantallas más grandes que 992px (PC) */
+        .block-4-image img {
+            width: 350px !important;
+            height: 200px !important;
+            object-fit: cover;
+        }
+    }
+
     /* Tablets (pantallas medianas) */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -82,9 +91,9 @@
             <div class="block-4 text-center bg-dark border">
               <figure class="block-4-image">
                 <a href="{% url 'ver_detalles_producto' producto.id %}">
-                  <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid">
+                    <img src="{{ producto.imagen.url }}" alt="{{ producto.nombre }}" class="img-fluid">
                 </a>
-              </figure>
+            </figure>            
               <div class="block-4-text p-4 bg-dark" style="color: white;">
                 <h3>
                   <a href="{% url 'ver_detalles_producto' producto.id %}" style="color: white !important;">

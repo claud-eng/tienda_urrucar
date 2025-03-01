@@ -16,6 +16,19 @@
         text-align: center;
     }
 
+        /* Asegurar que ambos botones tengan el mismo ancho en pantallas grandes */
+    @media (min-width: 992px) {  /* Se aplica solo en escritorio */
+        .btn-group-equal {
+            display: flex;
+            flex-direction: column;
+            align-items: start;
+        }
+
+        .btn-group-equal .btn {
+            min-width: 180px; /* Ajusta esto según el botón más largo */
+        }
+    }
+
     /* Tablets (pantallas medianas) */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -67,18 +80,20 @@
 
 <div class="container mt-5">
     <div class="d-flex flex-column mb-3">
-
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
-        <div class="d-flex justify-content-start">
-            <a href="{% url 'agregar_venta_manual' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Registrar Venta</a>
-        </div>
+        <div class="btn-group-equal">
+            <a href="{% url 'agregar_venta_manual_producto' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Agregar Producto</a>
+            <a href="{% url 'agregar_venta_manual_servicio' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Agregar Servicio</a>
+        </div>     
         {% endif %}
     </div>
+
     {% for message in messages %}
     <div class="alert alert-{{ message.tags }}" role="alert">
         {{ message }}
     </div>
     {% endfor %}
+
     {% if user.empleado and user.empleado.rol == 'Administrador' %}
     <form method="GET" class="form-control-file mb-2">
         <div class="form-group">
@@ -88,9 +103,11 @@
         <button type="submit" class="btn btn-outline-primary btn-sm mb-2">Filtrar</button>
         <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-outline-danger btn-sm mb-2">Quitar filtro</a>
     </form>
-    {% endif %}    
-    
-    <div class="table-responsive mb-4">  <!-- Añadimos mb-4 aquí para separar la tabla de la paginación -->
+    {% endif %}
+
+    <!-- TABLA DE VENTAS DE PRODUCTOS -->
+    <h2 class="text-center">Historial de Ventas de Productos</h2>
+    <div class="table-responsive mb-4">
         <table class="table table-hover">
             <thead class="thead-dark">
                 <tr>
@@ -98,22 +115,119 @@
                     <th>Cliente</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
-                    <th>Fecha de la Transacción</th>
+                    <th>Fecha de la Venta</th>
                     <th>Fecha Pago Completo</th>
                     <th>Acciones</th>
+                    <th>Días Transcurridos entre la Adquisición y Venta</th>
                     <th>Detalle</th>
-                    <th>Precio de Costo</th>
-                    <th>Total (IVA incluido)</th>
-                    <th>Monto Pagado por el Cliente</th>
-                    <th>Ganancia o Pérdida</th>
-                    <!-- <th>Emitir Comprobante</th> -->
+                    <th>Stock Propio</th>
+                    <th>Valor de Venta</th>
+                    <th>Valor de Compra</th>
+                    <th>Costo Extra</th>
+                    <th>Monto Pagado</th>
+                    <th>Resultado del Negocio</th>
                 </tr>
             </thead>
             <tbody>
-                {% for venta_info in ventas_list %}
+                {% for venta_info in ventas_productos_list %}
                 <tr class="{% cycle 'table-light' 'table-secondary' %}">
                     <td>{{ venta_info.venta.id }}</td>
-            
+                    <td>
+                        {% if venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.first_name }} {{ venta_info.venta.cliente.user.last_name }}
+                        {% elif venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.nombre }} {{ venta_info.venta.cliente_anonimo.apellido }}
+                        {% else %}
+                            N/A
+                        {% endif %}
+                    </td>             
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo %}
+                            {{ venta_info.venta.cliente_anonimo.email }}
+                        {% elif venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.user.email }}
+                        {% endif %}
+                    </td>                   
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.numero_telefono %}
+                            {{ venta_info.venta.cliente_anonimo.numero_telefono }}
+                        {% elif venta_info.venta.cliente %}
+                            {{ venta_info.venta.cliente.numero_telefono }}
+                        {% endif %}
+                    </td>                  
+                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="{% url 'editar_venta_manual_producto' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
+                    </td>
+                    <td>
+                        {% if venta_info.productos.0.dias_transcurridos %}
+                            {{ venta_info.productos.0.dias_transcurridos }} 
+                            {% if venta_info.productos.0.dias_transcurridos == 1 %}
+                                día
+                            {% else %}
+                                días
+                            {% endif %}
+                        {% endif %}
+                    </td>                    
+                    <td>{{ venta_info.productos.0.nombre }}</td>
+                    <td>{{ venta_info.productos.0.stock_propio }}</td>
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    <td>${{ venta_info.productos.0.precio_costo|default:"0" }}</td>
+                    <td>${{ venta_info.productos.0.costo_extra|default:"0" }}</td>
+                    <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
+                    <td>${{ venta_info.ganancia_perdida }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- PAGINACIÓN DE PRODUCTOS -->
+    <div class="mb-4">
+        <nav aria-label="Paginación Productos">
+            <ul class="pagination">
+                {% if ventas_productos_paginadas.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_productos=1">Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.previous_page_number }}">Anterior</a></li>
+                {% endif %}
+                {% for i in ventas_productos_paginadas.paginator.page_range %}
+                    <li class="page-item{% if i == ventas_productos_paginadas.number %} active{% endif %}">
+                        <a class="page-link" href="?page_productos={{ i }}">{{ i }}</a>
+                    </li>
+                {% endfor %}
+                {% if ventas_productos_paginadas.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.next_page_number }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_productos={{ ventas_productos_paginadas.paginator.num_pages }}">Última</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+
+    <!-- TABLA DE VENTAS DE SERVICIOS -->
+    <h2 class="text-center">Historial de Ventas de Servicios</h2>
+    <div class="table-responsive mb-4">
+        <table class="table table-hover">
+            <thead class="thead-dark">
+                <tr>
+                    <th>Número de Orden</th>
+                    <th>Cliente</th>
+                    <th>Correo</th>
+                    <th>Teléfono</th>
+                    <th>Fecha de la Venta</th>
+                    <th>Fecha Pago Completo</th>
+                    <th>Acciones</th>
+                    <th>Detalle</th>
+                    <th>Valor de Venta</th>
+                    <th>Valor de Compra</th>
+                    <th>Monto Pagado</th>
+                    <th>Resultado del Negocio</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for venta_info in ventas_servicios_list %}
+                <tr class="{% cycle 'table-light' 'table-secondary' %}">
+                    <td>{{ venta_info.venta.id }}</td>
                     <td>
                         {% if venta_info.venta.cliente %}
                             {{ venta_info.venta.cliente.user.first_name }} {{ venta_info.venta.cliente.user.last_name }}
@@ -123,7 +237,6 @@
                             N/A
                         {% endif %}
                     </td>
-            
                     <td>
                         {% if venta_info.venta.cliente_anonimo %}
                             {{ venta_info.venta.cliente_anonimo.email }}
@@ -131,7 +244,6 @@
                             {{ venta_info.venta.cliente.user.email }}
                         {% endif %}
                     </td>
-            
                     <td>
                         {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.numero_telefono %}
                             {{ venta_info.venta.cliente_anonimo.numero_telefono }}
@@ -139,97 +251,50 @@
                             {{ venta_info.venta.cliente.numero_telefono }}
                         {% endif %}
                     </td>
-            
                     <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
-
                     <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
-
-                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <td>
-                        {% if venta_info.venta %}
-                            <a href="{% url 'editar_venta_manual' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
-                        {% endif %}
+                        <a href="{% url 'editar_venta_manual_servicio' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
                     </td>
-                    {% endif %}                    
-            
-                    <td>
-                        {% if venta_info.tiene_productos %}
-                            {{ venta_info.productos.0.nombre }}
-                        {% elif venta_info.tiene_servicios %}
-                            {{ venta_info.servicios.0.nombre }}
-                        {% else %}
-                        {% endif %}
-                    </td>
-
-                    <td>
-                        {% if venta_info.tiene_productos %}
-                            ${{ venta_info.productos.0.precio_costo|default:"0" }}
-                        {% elif venta_info.tiene_servicios %}
-                            ${{ venta_info.servicios.0.precio_costo|default:"0" }}
-                        {% else %}
-                        {% endif %}
-                    </td>               
-            
-                    <td>
-                        {% if venta_info.venta.total == 0 %}
-                            ${{ venta_info.venta.precio_personalizado|default:0 }}
-                        {% else %}
-                            ${{ venta_info.venta.total_formateado }}
-                        {% endif %}
-                    </td>
-                    
+                    <td>{{ venta_info.servicios.0.nombre }}</td>
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    <td>${{ venta_info.servicios.0.precio_costo|default:"0" }}</td>
                     <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
-
-                    <td>
-                        ${{ venta_info.ganancia_perdida }}
-                    </td>
-                    
-                    <!-- 
-                    <td>
-                        <a href="{% url 'descargar_comprobante_pago' 'manual' venta_info.venta.id %}" class="btn btn-success btn-sm">Descargar</a>
-                    </td> 
-                    -->
-
+                    <td>${{ venta_info.ganancia_perdida }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
-    </div>    
+    </div>
 
-    <div class="mb-4"> <!-- Separador para dar espacio antes de la paginación -->
-        <nav aria-label="Paginación">
+    <!-- PAGINACIÓN DE SERVICIOS -->
+    <div class="mb-4">
+        <nav aria-label="Paginación Servicios">
             <ul class="pagination">
-                {% if ventas_paginadas.has_previous %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page=1{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Primera</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ ventas_paginadas.previous_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Anterior</a>
-                    </li>
+                {% if ventas_servicios_paginadas.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?page_servicios=1">Primera</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.previous_page_number }}">Anterior</a></li>
                 {% endif %}
-                
-                {% for i in ventas_paginadas.paginator.page_range %}
-                    <li class="page-item{% if i == ventas_paginadas.number %} active{% endif %}">
-                        <a class="page-link" href="?page={{ i }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">{{ i }}</a>
+                {% for i in ventas_servicios_paginadas.paginator.page_range %}
+                    <li class="page-item{% if i == ventas_servicios_paginadas.number %} active{% endif %}">
+                        <a class="page-link" href="?page_servicios={{ i }}">{{ i }}</a>
                     </li>
                 {% endfor %}
-                
-                {% if ventas_paginadas.has_next %}
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ ventas_paginadas.next_page_number }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Siguiente</a>
-                    </li>
-                    <li class="page-item">
-                        <a class="page-link" href="?page={{ ventas_paginadas.paginator.num_pages }}{% if cliente_query %}&cliente={{ cliente_query }}{% endif %}">Última</a>
-                    </li>
+                {% if ventas_servicios_paginadas.has_next %}
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.next_page_number }}">Siguiente</a></li>
+                    <li class="page-item"><a class="page-link" href="?page_servicios={{ ventas_servicios_paginadas.paginator.num_pages }}">Última</a></li>
                 {% endif %}
             </ul>
         </nav>
     </div>
 
-    <div class="mt-4">
-        <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
-    </div>
+    <!-- "Volver al menú principal" con la clase btn btn-danger ml-2 -->
+    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+    <a href="{% url 'gestionar_transacciones' %}"><button class="btn btn-danger btn-sm">Volver al menú principal</button></a>
+    {% endif %}
+
 </div>
 
 {% endblock %}
+
 

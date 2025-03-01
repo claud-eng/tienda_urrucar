@@ -93,7 +93,7 @@
                 <p><strong>Precio:</strong> {{ producto.precio }}</p>
                 <p><strong>Cantidad en Stock:</strong> {{ producto.cantidad_stock }}</p>
 
-                <a href="{% url 'borrar_producto' producto.id %}" class="btn btn-danger btn-sm">Confirmar Borrado</a>
+                <a href="{% url 'borrar_producto' producto.id %}" class="btn btn-danger btn-sm">Confirmar</a>
                 <a href="{% url 'listar_productos' %}" class="btn btn-secondary btn-sm">Cancelar</a>
             </div>
         </div>

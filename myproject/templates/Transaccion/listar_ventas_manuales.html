@@ -18,6 +18,9 @@
 
         /* Asegurar que ambos botones tengan el mismo ancho en pantallas grandes */
     @media (min-width: 992px) {  /* Se aplica solo en escritorio */
+        .w-lg-25 {
+        width: 25% !important;
+        }
         .btn-group-equal {
             display: flex;
             flex-direction: column;
@@ -78,13 +81,13 @@
     </div>
 </div>
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="d-flex flex-column mb-3">
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
         <div class="btn-group-equal">
-            <a href="{% url 'agregar_venta_manual_producto' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Agregar Producto</a>
-            <a href="{% url 'agregar_venta_manual_servicio' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2">Agregar Servicio</a>
-        </div>     
+            <a href="{% url 'agregar_venta_manual_producto' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Producto en Venta</a>
+            <a href="{% url 'agregar_venta_manual_servicio' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Servicio en Venta</a>
+        </div>         
         {% endif %}
     </div>
 

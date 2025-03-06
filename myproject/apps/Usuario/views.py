@@ -1,3 +1,4 @@
+import logging # Importa 'logging' para crear registro de logs en un archivo.
 from apps.Usuario.models import Cliente, Empleado  # Importa los modelos Cliente y Empleado de la aplicación Usuario
 from django.contrib import messages  # Importa la clase para trabajar con mensajes de Django
 from django.contrib.auth import logout  # Importa la función logout para cerrar la sesión de un usuario
@@ -46,6 +47,12 @@ def agregar_cliente(request):
     Permite agregar un nuevo cliente mediante un formulario. Si el usuario es un empleado,
     se muestra un mensaje de éxito específico, y si es un cliente, se le indica que puede iniciar sesión.
     """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+
+    usuario = request.user if request.user.is_authenticated else None
+
     if request.method == "POST":
         form = ClienteForm(request.POST)
         if form.is_valid():
@@ -54,15 +61,105 @@ def agregar_cliente(request):
             user.email = form.cleaned_data['username']
             user.save()
 
-            if request.user.is_authenticated and request.user.empleado and (request.user.empleado.rol == 'Administrador' or request.user.empleado.rol == 'Vendedor'):
+            # Determinar si el cliente fue registrado por un administrador/vendedor o por sí mismo
+            usuario_registrador = (
+                f"{usuario.first_name} {usuario.last_name} ({usuario.email})"
+                if usuario else "Autoregistro"
+            )
+
+            # **Registrar en el log la acción del usuario**
+            logger.info(
+                f"Nuevo usuario agregado por {usuario_registrador}:\n"
+                f"ID={cliente.id}, Usuario: {user.username}\n"
+                f"Nombre: {user.first_name}\n"
+                f"Primer Apellido: {user.last_name}\n"
+                f"Segundo Apellido: {cliente.second_last_name}\n"
+                f"Fecha de Nacimiento: {cliente.fecha_nacimiento.strftime('%d-%m-%Y')}\n"
+                f"Número de Teléfono: {cliente.numero_telefono}"
+            )
+
+            if usuario and hasattr(usuario, 'empleado') and usuario.empleado.rol in ['Administrador', 'Vendedor']:
                 messages.success(request, 'Cliente agregado con éxito.')
                 return redirect('listar_clientes')
             else:
                 messages.success(request, 'Se ha registrado exitosamente. Puede iniciar sesión ahora.')
                 return redirect('login')
+
     else:
         form = ClienteForm()
+
     return render(request, "Usuario/agregar_cliente.html", {'form': form})
+
+@user_passes_test(es_administrador, login_url='home')
+def editar_cliente(request, cliente_id):
+    """
+    Permite editar la información de un cliente, incluyendo su nombre de usuario,
+    nombre y apellidos.
+    """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+    
+    usuario = request.user  # Usuario que edita al cliente
+    instancia = Cliente.objects.get(id=cliente_id)
+    user = instancia.user
+
+    # Guardar valores originales antes de la edición
+    valores_anteriores = {
+        'Usuario': user.username,
+        'Nombre': user.first_name,
+        'Primer Apellido': user.last_name,
+        'Segundo Apellido': instancia.second_last_name,
+        'Fecha de Nacimiento': instancia.fecha_nacimiento.strftime('%d-%m-%Y'),
+        'Número de Teléfono': instancia.numero_telefono,
+    }
+
+    if request.method == "POST":
+        form = EditarClienteForm(request.POST, instance=instancia)
+        if form.is_valid():
+            # Actualizar los valores del usuario
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['username']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.save()
+            form.save()
+
+            # Guardar valores nuevos después de la edición
+            valores_nuevos = {
+                'Usuario': user.username,
+                'Nombre': user.first_name,
+                'Primer Apellido': user.last_name,
+                'Segundo Apellido': instancia.second_last_name,
+                'Fecha de Nacimiento': instancia.fecha_nacimiento.strftime('%d-%m-%Y'),
+                'Número de Teléfono': instancia.numero_telefono,
+            }
+
+            # Detectar cambios
+            cambios = []
+            for campo, valor_anterior in valores_anteriores.items():
+                valor_nuevo = valores_nuevos[campo]
+                if valor_anterior != valor_nuevo:
+                    cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+            if cambios:
+                logger.info(
+                    f"Cliente editado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                    f"ID={cliente_id}, Usuario: {user.username}, Nombre: {user.first_name} {user.last_name} {instancia.second_last_name}\n"
+                    + "\n".join(cambios)
+                )
+
+            messages.success(request, 'Cliente editado con éxito.')
+            return redirect('listar_clientes')
+
+    else:
+        form = EditarClienteForm(instance=instancia, initial={
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })
+
+    return render(request, "Usuario/editar_cliente.html", {'form': form})
 
 @user_passes_test(es_administrador, login_url='home')
 def confirmar_borrar_cliente(request, cliente_id):
@@ -75,45 +172,36 @@ def confirmar_borrar_cliente(request, cliente_id):
 @user_passes_test(es_administrador, login_url='home')
 def borrar_cliente(request, cliente_id):
     """
-    Elimina un cliente de la base de datos y redirige a la lista de clientes.
+    Elimina un cliente de la base de datos y registra la acción en los logs.
     """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+
+    usuario = request.user  # Usuario que elimina el cliente
+
     try:
-        instancia = Cliente.objects.get(id=cliente_id)
-        instancia.delete()
-        messages.success(request, 'Cliente eliminado con éxito.')
+        cliente = Cliente.objects.get(id=cliente_id)
+        cliente_usuario = cliente.user.username  # Guardar nombre de usuario antes de eliminarlo
+
+        cliente.delete()  # Eliminar el cliente
+
+        # **Registrar en el log la acción del usuario**
+        logger.info(
+            f"Cliente eliminado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={cliente_id}, Usuario: {cliente_usuario}, Nombre: {cliente.user.first_name} {cliente.user.last_name} {cliente.second_last_name}"
+        )
+
+        messages.success(request, "Cliente eliminado con éxito.")
+
     except Cliente.DoesNotExist:
-        pass  # Si el cliente no existe, no se hace nada
-    return redirect('listar_clientes')
+        messages.error(request, "El cliente no existe.")
+        logger.warning(
+            f"Intento de eliminación de cliente fallido por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={cliente_id} no existe."
+        )
 
-@user_passes_test(es_administrador, login_url='home')
-def editar_cliente(request, cliente_id):
-    """
-    Permite editar la información de un cliente, incluyendo su nombre de usuario,
-    nombre y apellidos.
-    """
-    instancia = Cliente.objects.get(id=cliente_id)
-    user = instancia.user
-
-    if request.method == "POST":
-        form = EditarClienteForm(request.POST, instance=instancia)
-        if form.is_valid():
-            user.username = form.cleaned_data['username']
-            user.email = form.cleaned_data['username']
-            user.first_name = form.cleaned_data['first_name']
-            user.last_name = form.cleaned_data['last_name']
-            user.save()
-            form.save()
-
-            messages.success(request, 'Cliente editado con éxito.')
-            return redirect('listar_clientes')
-    else:
-        form = EditarClienteForm(instance=instancia, initial={
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-        })
-
-    return render(request, "Usuario/editar_cliente.html", {'form': form})
+    return redirect("listar_clientes")
 
 @login_required
 def actualizar_datos_personales_cliente(request):
@@ -150,10 +238,36 @@ def cambiar_contraseña_usuario(request):
     Permite al usuario cambiar su contraseña y cierra su sesión automáticamente
     después de cambiarla.
     """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+    
+    usuario = request.user  # Usuario que cambia su contraseña
+
+    # Determinar si es Cliente o Empleado y obtener su ID y segundo apellido
+    if hasattr(usuario, 'cliente'):
+        tipo_usuario = "Cliente"
+        usuario_id = usuario.cliente.id
+        segundo_apellido = usuario.cliente.second_last_name
+    elif hasattr(usuario, 'empleado'):
+        tipo_usuario = "Empleado"
+        usuario_id = usuario.empleado.id
+        segundo_apellido = usuario.empleado.second_last_name
+    else:
+        tipo_usuario = "Usuario Desconocido"
+        usuario_id = "N/A"
+        segundo_apellido = ""
+
     if request.method == 'POST':
         form = CambiarContraseñaUsuarioForm(request.user, request.POST)
         if form.is_valid():
             form.save()
+
+            # **Registrar en el log la acción del usuario**
+            logger.info(
+                f"{tipo_usuario} ID={usuario_id}, Usuario: {usuario.email}, Nombre: {usuario.first_name} {usuario.last_name} {segundo_apellido} actualizó su contraseña."
+            )
+
             messages.success(request, 'Contraseña cambiada con éxito.')
             logout(request)  # Cierra la sesión del usuario
             return redirect('login')
@@ -202,6 +316,12 @@ def agregar_empleado(request):
     Permite agregar un nuevo empleado mediante un formulario y configura su correo electrónico
     basado en el nombre de usuario ingresado.
     """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+
+    usuario = request.user  # El usuario que agrega el empleado (siempre será un administrador)
+
     if request.method == "POST":
         form = EmpleadoForm(request.POST)
         if form.is_valid():
@@ -209,11 +329,102 @@ def agregar_empleado(request):
             user = User.objects.get(username=form.cleaned_data['username'])
             user.email = form.cleaned_data['username']
             user.save()
+
+            # **Registrar en el log la acción del administrador**
+            logger.info(
+                f"Nuevo empleado agregado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                f"ID={empleado.id}, Usuario: {user.username}\n"
+                f"RUT: {empleado.rut}\n"
+                f"Nombre: {user.first_name}\n"
+                f"Primer Apellido: {user.last_name}\n"
+                f"Segundo Apellido: {empleado.second_last_name}\n"
+                f"Fecha de Nacimiento: {empleado.fecha_nacimiento.strftime('%d-%m-%Y')}\n"
+                f"Número de Teléfono: {empleado.numero_telefono}\n"
+                f"Rol: {empleado.rol}"
+            )
+
             messages.success(request, 'Empleado agregado con éxito.')
             return redirect('listar_empleados')
+
     else:
         form = EmpleadoForm()
+
     return render(request, "Usuario/agregar_empleado.html", {'form': form})
+
+@user_passes_test(es_administrador, login_url='home')
+def editar_empleado(request, empleado_id):
+    """
+    Permite editar la información de un empleado, incluyendo su nombre de usuario,
+    nombre y apellidos.
+    """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+
+    usuario = request.user  # Usuario que edita el empleado
+    instancia = Empleado.objects.get(id=empleado_id)
+    user = instancia.user
+
+    # Guardar valores originales antes de la edición
+    valores_anteriores = {
+        'Usuario': user.username,
+        'RUT': instancia.rut,
+        'Nombre': user.first_name,
+        'Primer Apellido': user.last_name,
+        'Segundo Apellido': instancia.second_last_name,
+        'Fecha de Nacimiento': instancia.fecha_nacimiento.strftime('%d-%m-%Y'),
+        'Número de Teléfono': instancia.numero_telefono,
+        'Rol': instancia.rol,
+    }
+
+    if request.method == "POST":
+        form = EditarEmpleadoForm(request.POST, instance=instancia)
+        if form.is_valid():
+            # Actualizar los valores del usuario
+            user.username = form.cleaned_data['username']
+            user.email = form.cleaned_data['username']
+            user.first_name = form.cleaned_data['first_name']
+            user.last_name = form.cleaned_data['last_name']
+            user.save()
+            form.save()
+
+            # Guardar valores nuevos después de la edición
+            valores_nuevos = {
+                'Usuario': user.username,
+                'RUT': instancia.rut,
+                'Nombre': user.first_name,
+                'Primer Apellido': user.last_name,
+                'Segundo Apellido': instancia.second_last_name,
+                'Fecha de Nacimiento': instancia.fecha_nacimiento.strftime('%d-%m-%Y'),
+                'Número de Teléfono': instancia.numero_telefono,
+                'Rol': instancia.rol,
+            }
+
+            # Detectar cambios
+            cambios = []
+            for campo, valor_anterior in valores_anteriores.items():
+                valor_nuevo = valores_nuevos[campo]
+                if valor_anterior != valor_nuevo:
+                    cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+            if cambios:
+                logger.info(
+                    f"Empleado editado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                    f"ID={empleado_id}, Usuario: {user.username}, Nombre: {user.first_name} {user.last_name} {instancia.second_last_name}\n"
+                    + "\n".join(cambios)
+                )
+
+            messages.success(request, "Empleado editado con éxito.")
+            return redirect("listar_empleados")
+
+    else:
+        form = EditarEmpleadoForm(instance=instancia, initial={
+            'username': user.username,
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+        })
+
+    return render(request, "Usuario/editar_empleado.html", {'form': form})
 
 @user_passes_test(es_administrador, login_url='home')
 def confirmar_borrar_empleado(request, empleado_id):
@@ -226,44 +437,36 @@ def confirmar_borrar_empleado(request, empleado_id):
 @user_passes_test(es_administrador, login_url='home')
 def borrar_empleado(request, empleado_id):
     """
-    Elimina un empleado de la base de datos y redirige a la lista de empleados.
+    Elimina un empleado de la base de datos y registra la acción en los logs.
     """
+
+    # Configuración del logger
+    logger = logging.getLogger('usuarios')
+
+    usuario = request.user  # Usuario que elimina el empleado
+
     try:
-        instancia = Empleado.objects.get(id=empleado_id)
-        instancia.delete()
-        messages.success(request, 'Empleado eliminado con éxito.')
+        empleado = Empleado.objects.get(id=empleado_id)
+        empleado_usuario = empleado.user.username  # Guardar nombre de usuario antes de eliminarlo
+
+        empleado.delete()  # Eliminar el empleado
+
+        # **Registrar en el log la acción del usuario**
+        logger.info(
+            f"Empleado eliminado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={empleado_id}, Usuario: {empleado_usuario}, Nombre: {empleado.user.first_name} {empleado.user.last_name} {empleado.second_last_name}"
+        )
+
+        messages.success(request, "Empleado eliminado con éxito.")
+
     except Empleado.DoesNotExist:
-        pass
-    return redirect('listar_empleados')
+        messages.error(request, "El empleado no existe.")
+        logger.warning(
+            f"Intento de eliminación de empleado fallido por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={empleado_id} no existe."
+        )
 
-@user_passes_test(es_administrador, login_url='home')
-def editar_empleado(request, empleado_id):
-    """
-    Permite editar la información de un empleado, incluyendo su nombre de usuario,
-    nombre y apellidos.
-    """
-    instancia = Empleado.objects.get(id=empleado_id)
-    user = instancia.user
-
-    if request.method == "POST":
-        form = EditarEmpleadoForm(request.POST, instance=instancia)
-        if form.is_valid():
-            user.username = form.cleaned_data['username']
-            user.email = form.cleaned_data['username']
-            user.first_name = form.cleaned_data['first_name']
-            user.last_name = form.cleaned_data['last_name']
-            user.save()
-            form.save()
-            messages.success(request, 'Empleado editado con éxito.')
-            return redirect('listar_empleados')
-    else:
-        form = EditarEmpleadoForm(instance=instancia, initial={
-            'username': user.username,
-            'first_name': user.first_name,
-            'last_name': user.last_name,
-        })
-
-    return render(request, "Usuario/editar_empleado.html", {'form': form})
+    return redirect("listar_empleados")
 
 @user_passes_test(es_administrador, login_url='home')
 def gestionar_cuentas(request):

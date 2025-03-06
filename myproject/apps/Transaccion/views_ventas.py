@@ -168,15 +168,25 @@ def editar_venta_online(request, venta_id):
     Permite editar únicamente el estado de la reserva de los productos de la categoría 'Vehículo'
     en una venta online específica.
     """
+
+    # Configurar el logger
+    logger = logging.getLogger("ventas_online")
+                           
     venta = get_object_or_404(VentaOnline, id=venta_id)
+    usuario = request.user  # Usuario que realiza la edición
 
     if request.method == "POST":
+        cambios_realizados = []
+
         # Iterar por cada detalle de la venta
         for detalle in venta.detalleventaonline_set.all():
             if detalle.producto and detalle.producto.categoria == "Vehículo":
+                estado_anterior = detalle.estado_reserva  # Guardamos el estado anterior
                 nuevo_estado = request.POST.get(f"estado_reserva_{detalle.id}")
+
                 if nuevo_estado in ['En proceso', 'Vendida', 'Desistida']:
                     detalle.estado_reserva = nuevo_estado
+
                     # Si el estado cambia a 'Vendida' o 'Desistida', actualizar campos adicionales
                     if nuevo_estado in ['Vendida', 'Desistida']:
                         if not detalle.fecha_estado_final:
@@ -188,7 +198,23 @@ def editar_venta_online(request, venta_id):
                         # Limpiar los campos si el estado no es final
                         detalle.fecha_estado_final = None
                         detalle.calculo_tiempo_transcurrido = None
+
                     detalle.save()
+
+                    # Guardar los cambios en la lista de logs
+                    cambios_realizados.append(
+                        f"Producto: {detalle.producto.nombre}\n"
+                        f"Estado: {estado_anterior} -> {nuevo_estado}"
+                    )
+
+        if cambios_realizados:
+            logger.info(
+                f"Edición de venta online realizada por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                f"Venta ID: {venta.id}\n"
+                f"Número de Orden: {venta.numero_orden}\n"
+                + "".join(cambios_realizados)
+            )
+
         messages.success(request, "Estado de la reserva actualizado correctamente.")
         return redirect("listar_ventas_online")
 
@@ -364,6 +390,10 @@ def agregar_venta_manual_producto(request):
     """
     Permite agregar una nueva venta manual de productos asociada a un cliente anónimo.
     """
+
+    # Configurar el logger
+    logger = logging.getLogger("ventas_manuales_productos")
+
     orden_compra_form = VentaManualForm(request.POST or None)
     detalle_producto_form = DetalleVentaManualProductoForm(request.POST or None)
     cliente_anonimo_form = ClienteAnonimoForm(request.POST or None)
@@ -374,8 +404,9 @@ def agregar_venta_manual_producto(request):
             and detalle_producto_form.is_valid()
             and cliente_anonimo_form.is_valid()
         ):
-            # Obtener el producto a partir del ID ingresado
+            # Obtener el producto (ya devuelve un objeto Producto)
             producto = detalle_producto_form.cleaned_data.get('producto')
+
             precio_costo = producto.precio_costo or 0
             precio_venta = producto.precio  # Cantidad siempre es 1, no es necesario multiplicar
             total_venta = precio_venta
@@ -423,6 +454,23 @@ def agregar_venta_manual_producto(request):
                 detalle.cantidad = 1  # Cantidad siempre es 1
                 detalle.save()
 
+                # Registrar log de la venta
+                usuario = request.user
+                logger.info(f"Nueva venta agregada por: {usuario.first_name} {usuario.last_name} ({usuario.email})")
+
+                logger.info(
+                    f"Detalles:\n"
+                    f"ID de la Venta: {orden_compra.id}\n"
+                    f"Nombre: {cliente_anonimo.nombre} {cliente_anonimo.apellido}\n"
+                    f"Correo: {cliente_anonimo.email}\n"
+                    f"Teléfono: {cliente_anonimo.numero_telefono or 'No especificado'}\n"
+                    f"ID del Producto: {producto.id}\n"
+                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M')}\n"
+                    f"Total (IVA incluido): ${orden_compra.total}\n"
+                    f"Monto Pagado por el Cliente: ${pago_cliente}\n"
+                    f"Fecha Pago Completo: {fecha_pago_final.strftime('%d-%m-%Y %H:%M') if fecha_pago_final else 'No especificada'}"
+                )
+
             messages.success(request, 'Venta de producto registrada exitosamente.')
             return redirect('listar_ventas_manuales')
 
@@ -445,23 +493,37 @@ def editar_venta_manual_producto(request, venta_id):
     Permite editar una venta manual de productos, actualizando el precio de costo y el pago del cliente,
     manteniendo intacto el precio total de la venta.
     """
+
+    # Configurar el logger
+    logger = logging.getLogger("ventas_manuales_productos")
+                           
     venta = get_object_or_404(VentaManual, id=venta_id)
     detalle_producto = venta.detalleventamanual_set.filter(producto__isnull=False).first()
 
-    # Si la venta no tiene un producto asociado, redirigir a la lista de ventas manuales
     if not detalle_producto:
         messages.error(request, "Esta venta no está asociada a un producto.")
         return redirect('listar_ventas_manuales')
+
+    usuario = request.user  # Obtener usuario que edita la venta
+
+    # Guardar valores originales antes de la edición
+    valores_anteriores = {
+        "pago_cliente": venta.pago_cliente,
+        "fecha_pago_final": venta.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta.fecha_pago_final else 'No especificada',
+        "precio_costo": detalle_producto.precio_costo,
+        "subtotal": detalle_producto.subtotal,
+    }
 
     orden_compra_form = VentaManualForm(request.POST or None, instance=venta)
     detalle_producto_form = DetalleVentaManualProductoForm(request.POST or None, instance=detalle_producto)
 
     if request.method == 'POST':
         print("POST recibido:", request.POST)
+
         if orden_compra_form.is_valid() and detalle_producto_form.is_valid():
-            # Validar que el monto pagado por el cliente no exceda el total
             pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
             total_venta = venta.total
+
             if pago_cliente > total_venta:
                 messages.error(request, 'El monto del pago no puede ser mayor al total.')
                 return render(request, 'Transaccion/editar_venta_manual_producto.html', {
@@ -470,23 +532,42 @@ def editar_venta_manual_producto(request, venta_id):
                     'venta': venta,
                 })
 
-            detalle_actualizado = detalle_producto_form.save(commit=False)
-            detalle_actualizado.save()
+            with transaction.atomic():
+                # Guardar cambios en el detalle del producto
+                detalle_actualizado = detalle_producto_form.save(commit=False)
+                detalle_actualizado.save()
 
-            venta_actualizada = orden_compra_form.save(commit=False)
-            print("Datos de venta antes de guardar:", venta_actualizada.__dict__)
+                # Guardar cambios en la venta
+                venta_actualizada = orden_compra_form.save(commit=False)
 
-            # Si el pago del cliente iguala o supera el total, actualizar la fecha de pago final
-            if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):  # Se asegura que total nunca sea None
-                venta_actualizada.fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
-                print("Fecha de pago final actualizada a:", venta_actualizada.fecha_pago_final)
-            else:
-                # Si el pago no es completo, limpiar la fecha de pago final
-                venta_actualizada.fecha_pago_final = None
-                print("Pago incompleto, fecha de pago final reseteada a None")
+                if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):
+                    venta_actualizada.fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
+                else:
+                    venta_actualizada.fecha_pago_final = None
 
-            venta_actualizada.save()
-            print("Datos de venta después de guardar:", venta_actualizada.__dict__)
+                venta_actualizada.save()
+
+                # Guardar valores nuevos después de la edición
+                valores_nuevos = {
+                    "pago_cliente": venta_actualizada.pago_cliente,
+                    "fecha_pago_final": venta_actualizada.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta_actualizada.fecha_pago_final else 'No especificada',
+                    "precio_costo": detalle_actualizado.precio_costo,
+                    "subtotal": detalle_actualizado.subtotal,
+                }
+
+                # Detectar cambios en los datos
+                cambios = []
+                for campo, valor_anterior in valores_anteriores.items():
+                    valor_nuevo = valores_nuevos[campo]
+                    if valor_anterior != valor_nuevo:
+                        cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+                if cambios:
+                    logger.info(
+                        f"Venta editada por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                        f"ID de la Venta: {venta.id}\n"
+                        + "\n".join(cambios)
+                    )
 
             messages.success(request, 'Venta de producto actualizada correctamente.')
             return redirect('listar_ventas_manuales')
@@ -508,6 +589,10 @@ def agregar_venta_manual_servicio(request):
     """
     Permite agregar una nueva venta manual de servicios asociada a un cliente anónimo.
     """
+
+    # Configurar el logger
+    logger = logging.getLogger("ventas_manuales_servicios")
+
     orden_compra_form = VentaManualForm(request.POST or None)
     detalle_servicio_form = DetalleVentaManualServicioForm(request.POST or None)
     cliente_anonimo_form = ClienteAnonimoForm(request.POST or None)
@@ -518,9 +603,11 @@ def agregar_venta_manual_servicio(request):
             and detalle_servicio_form.is_valid()
             and cliente_anonimo_form.is_valid()
         ):
-            # Calcular el total manualmente
+            # Obtener el servicio
             servicio = detalle_servicio_form.cleaned_data.get('servicio')
             precio_costo = detalle_servicio_form.cleaned_data.get('precio_costo', 0)
+
+            # Calcular el total
             total_servicios = servicio.precio if servicio else 0
             precio_personalizado = orden_compra_form.cleaned_data.get('precio_personalizado', 0)
             total_venta = max(total_servicios, precio_personalizado)
@@ -551,7 +638,6 @@ def agregar_venta_manual_servicio(request):
                 orden_compra.total = total_venta
                 orden_compra.cambio = max(pago_cliente - total_venta, 0)
 
-                # Registrar la fecha de pago final solo si el usuario la ingresa
                 if pago_cliente >= total_venta and fecha_pago_final:
                     orden_compra.fecha_pago_final = fecha_pago_final
                 else:
@@ -564,6 +650,24 @@ def agregar_venta_manual_servicio(request):
                 detalle.orden_compra = orden_compra
                 detalle.cantidad = 1  # Siempre será 1 para servicios
                 detalle.save()
+
+                # Registrar logs
+                usuario = request.user
+                logger.info(f"Nueva venta agregada por: {usuario.first_name} {usuario.last_name} ({usuario.email})")
+
+                logger.info(
+                    f"Detalles:\n"
+                    f"ID de la Venta: {orden_compra.id}\n"
+                    f"Nombre: {cliente_anonimo.nombre} {cliente_anonimo.apellido}\n"
+                    f"Correo: {cliente_anonimo.email}\n"
+                    f"Teléfono: {cliente_anonimo.numero_telefono or 'No especificado'}\n"
+                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M')}\n"
+                    f"ID del Servicio: {servicio.id if servicio else 'No especificado'}\n"
+                    f"Valor de Compra: ${precio_costo}\n"
+                    f"Total (IVA incluido): ${orden_compra.total}\n"
+                    f"Monto Pagado por el Cliente: ${pago_cliente}\n"
+                    f"Fecha Pago Completo: {fecha_pago_final.strftime('%d-%m-%Y %H:%M') if fecha_pago_final else 'No especificada'}"
+                )
 
             messages.success(request, 'Venta registrada exitosamente.')
             return redirect('listar_ventas_manuales')
@@ -584,20 +688,40 @@ def agregar_venta_manual_servicio(request):
 @user_passes_test(es_administrador, login_url='home')
 def editar_venta_manual_servicio(request, venta_id):
     """
-    Permite editar una venta manual existente, actualizando el precio de costo y el pago del cliente,
+    Permite editar una venta manual de servicios, actualizando el precio de costo y el pago del cliente,
     manteniendo intacto el precio personalizado.
     """
+
+    # Configurar el logger
+    logger = logging.getLogger("ventas_manuales_servicios")
+
     venta = get_object_or_404(VentaManual, id=venta_id)
-    orden_compra_form = VentaManualForm(request.POST or None, instance=venta)
     detalle_servicio = venta.detalleventamanual_set.filter(servicio__isnull=False).first()
+
+    if not detalle_servicio:
+        messages.error(request, "Esta venta no está asociada a un servicio.")
+        return redirect('listar_ventas_manuales')
+
+    usuario = request.user  # Usuario que realiza la edición
+
+    # Guardar valores originales antes de la edición
+    valores_anteriores = {
+        "pago_cliente": venta.pago_cliente,
+        "fecha_pago_final": venta.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta.fecha_pago_final else 'No especificada',
+        "precio_costo": detalle_servicio.precio_costo,
+        "subtotal": detalle_servicio.subtotal,
+    }
+
+    orden_compra_form = VentaManualForm(request.POST or None, instance=venta)
     detalle_servicio_form = DetalleVentaManualServicioForm(request.POST or None, instance=detalle_servicio)
 
     if request.method == 'POST':
         print("POST recibido:", request.POST)
+
         if orden_compra_form.is_valid() and detalle_servicio_form.is_valid():
-            # Validar que el monto pagado por el cliente no exceda el total
             pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
             total_venta = venta.total
+
             if pago_cliente > total_venta:
                 messages.error(request, 'El monto del pago no puede ser mayor al total.')
                 return render(request, 'Transaccion/editar_venta_manual_servicio.html', {
@@ -606,26 +730,46 @@ def editar_venta_manual_servicio(request, venta_id):
                     'venta': venta,
                 })
 
-            detalle_actualizado = detalle_servicio_form.save(commit=False)
-            detalle_actualizado.save()
+            with transaction.atomic():
+                # Guardar cambios en el detalle del servicio
+                detalle_actualizado = detalle_servicio_form.save(commit=False)
+                detalle_actualizado.save()
 
-            venta_actualizada = orden_compra_form.save(commit=False)
-            print("Datos de venta antes de guardar:", venta_actualizada.__dict__)
+                # Guardar cambios en la venta
+                venta_actualizada = orden_compra_form.save(commit=False)
 
-            # Si el pago del cliente iguala o supera el total, actualizar la fecha de pago final
-            if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):  # Se asegura que total nunca sea None
-                venta_actualizada.fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
-                print("Fecha de pago final actualizada a:", venta_actualizada.fecha_pago_final)
-            else:
-                # Si el pago no es completo, limpiar la fecha de pago final
-                venta_actualizada.fecha_pago_final = None
-                print("Pago incompleto, fecha de pago final reseteada a None")
+                if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):
+                    venta_actualizada.fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
+                else:
+                    venta_actualizada.fecha_pago_final = None
 
-            venta_actualizada.save()
-            print("Datos de venta después de guardar:", venta_actualizada.__dict__)
+                venta_actualizada.save()
 
-            messages.success(request, 'Venta manual actualizada correctamente.')
+                # Guardar valores nuevos después de la edición
+                valores_nuevos = {
+                    "pago_cliente": venta_actualizada.pago_cliente,
+                    "fecha_pago_final": venta_actualizada.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta_actualizada.fecha_pago_final else 'No especificada',
+                    "precio_costo": detalle_actualizado.precio_costo,
+                    "subtotal": detalle_actualizado.subtotal,
+                }
+
+                # Detectar cambios en los datos
+                cambios = []
+                for campo, valor_anterior in valores_anteriores.items():
+                    valor_nuevo = valores_nuevos[campo]
+                    if valor_anterior != valor_nuevo:
+                        cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+                if cambios:
+                    logger.info(
+                        f"Venta editada por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                        f"ID de la Venta: {venta.id}\n"
+                        + "\n".join(cambios)
+                    )
+
+            messages.success(request, 'Venta de servicio actualizada correctamente.')
             return redirect('listar_ventas_manuales')
+
         else:
             print("Errores en los formularios:")
             print("Orden compra form:", orden_compra_form.errors)

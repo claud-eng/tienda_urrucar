@@ -1,0 +1,261 @@
+{% extends "base.html" %}
+{% block title %}Generar Presupuesto{% endblock %}
+{% block extra_css %}
+<style>
+/* Estilo base (Escritorio y pantallas grandes) */
+.container .btn {
+    margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
+    width: auto;  /* Ancho automático en pantallas grandes */
+}
+
+/* Para que los botones "Agregar Ítem", "Generar Presupuesto" y "Volver al menú" sean iguales */
+#agregar-item, .d-flex .btn {
+    white-space: nowrap;  /* Evita que el texto del botón se divida en varias líneas */
+}
+
+/* Tablets y móviles (pantallas medianas y pequeñas) */
+@media (max-width: 991.98px) {
+    .d-flex {
+        flex-wrap: wrap; /* Permite que los botones se apilen */
+    }
+    .container .btn, #agregar-item {
+        display: block;  /* Los botones se apilan verticalmente */
+        width: 100%;  /* Ocupan todo el ancho del contenedor */
+        margin-bottom: 10px;  /* Espaciado entre botones */
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+
+/* Móviles (pantallas pequeñas) */
+@media (max-width: 767.98px) {
+    .container .btn, #agregar-item {
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;  /* Espaciado más amplio para móviles */
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+
+/* Dispositivos muy pequeños (menos de 480px) */
+@media (max-width: 480px) {
+    .container .btn, #agregar-item {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a> 
+                <span class="mx-2 mb-0">/</span> 
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
+                    <span class="mx-2 mb-0">/</span> 
+                {% endif %}
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                    <strong class="text-black">Generar Presupuesto</strong>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+
+    <form method="post" action="{% url 'generar_presupuesto_pdf' %}">
+        {% csrf_token %}
+
+        <!-- Datos del Cliente -->
+        <h4>Datos del Cliente</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <label>Nombre del Cliente:</label>
+                <input type="text" name="cliente_nombre" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>RUT:</label>
+                <input type="text" name="cliente_rut" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Teléfono:</label>
+                <input type="text" name="telefono" class="form-control" id="telefono" value="+569" required>
+            </div>
+        </div>
+
+        <!-- Datos del Vehículo -->
+        <h4 class="mt-4">Datos del Vehículo</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <label>Patente:</label>
+                <input type="text" name="patente" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Vehículo:</label>
+                <input type="text" name="vehiculo" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Año:</label>
+                <input type="number" name="anio" class="form-control" required>
+            </div>
+        </div>
+
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <label>N° de Chasis:</label>
+                <input type="text" name="chasis" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Fecha del Presupuesto:</label>
+                <input type="date" name="fecha_presupuesto" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Validez del Presupuesto Hasta:</label>
+                <input type="date" name="fecha_validez" class="form-control" required>
+            </div>            
+        </div>
+
+        <h4 class="mt-4">Observaciones</h4>
+        <div class="form-group">
+            <textarea name="observaciones" class="form-control" rows="4" placeholder="Ingrese observaciones adicionales..."></textarea>
+        </div>
+
+    <!-- Tabla de Ítems -->
+    <h4 class="mt-4">Detalles del Presupuesto</h4>
+    <!-- Contenedor con desplazamiento horizontal -->
+    <div class="tabla-container">
+        <table class="table table-bordered" id="tabla-items">
+            <thead class="thead-dark">
+                <tr>
+                    <th>REFER.</th>
+                    <th>TIPO</th>
+                    <th>CONCEPTO</th>
+                    <th>CANT.</th>
+                    <th>PRECIO UNIT.</th>
+                    <th>DTO (%)</th>
+                    <th>TOTAL</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><input type="text" name="referencia[]" class="form-control referencia" value="001" readonly></td>
+                    <td><input type="text" name="tipo[]" class="form-control" required></td>
+                    <td><input type="text" name="concepto[]" class="form-control" required></td>
+                    <td><input type="number" name="cantidad[]" class="form-control cantidad" value="1" required></td>
+                    <td><input type="number" name="precio_unitario[]" class="form-control precio_unitario" required></td>
+                    <td><input type="number" name="descuento[]" class="form-control descuento" value="0" required></td>
+                    <td><input type="text" name="total[]" class="form-control total" readonly></td>
+                    <td><button type="button" class="btn btn-danger btn-sm eliminar-item">Eliminar</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+        <button type="button" class="btn btn-primary btn-sm" id="agregar-item">Agregar Ítem</button>
+
+        <!-- Contenedor para los botones alineados en la misma línea -->
+        <div class="botones-container mt-4">
+            <button type="submit" class="btn btn-success btn-sm mb-4">Generar Presupuesto</button>
+
+            {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm mb-4">Volver al menú principal</a>
+            {% endif %}
+        </div>
+
+    </form>
+</div>
+
+<!-- Script para manejo dinámico de ítems -->
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    let telefonoInput = document.getElementById("telefono");
+
+    telefonoInput.addEventListener("input", function () {
+        if (!this.value.startsWith("+569")) {
+            this.value = "+569";
+        }
+    });
+
+    telefonoInput.addEventListener("focus", function () {
+        if (this.value === "") {
+            this.value = "+569";
+        }
+    });
+    
+    let contadorReferencia = 1; // Iniciar en 1 para la primera fila (001)
+
+    function obtenerProximaReferencia() {
+        contadorReferencia++; // Incrementar la referencia
+        return contadorReferencia.toString().padStart(3, '0'); // Formato "001", "002", etc.
+    }
+
+    document.getElementById("agregar-item").addEventListener("click", function () {
+        let tabla = document.getElementById("tabla-items").getElementsByTagName('tbody')[0];
+        let nuevaReferencia = obtenerProximaReferencia(); // Obtener nuevo número secuencial
+        let fila = document.createElement("tr");
+        fila.innerHTML = `
+            <td><input type="text" name="referencia[]" class="form-control referencia" value="${nuevaReferencia}" readonly></td>
+            <td><input type="text" name="tipo[]" class="form-control" required></td>
+            <td><input type="text" name="concepto[]" class="form-control" required></td>
+            <td><input type="number" name="cantidad[]" class="form-control cantidad" value="1" required></td>
+            <td><input type="number" name="precio_unitario[]" class="form-control precio_unitario" required></td>
+            <td><input type="number" name="descuento[]" class="form-control descuento" value="0" required></td>
+            <td><input type="text" name="total[]" class="form-control total" readonly></td>
+            <td><button type="button" class="btn btn-danger btn-sm eliminar-item">Eliminar</button></td>
+        `;
+        tabla.appendChild(fila);
+    });
+
+    document.addEventListener("click", function (event) {
+        if (event.target.classList.contains("eliminar-item")) {
+            event.target.closest("tr").remove();
+        }
+    });
+
+    document.addEventListener("input", function (event) {
+        if (event.target.classList.contains("cantidad") || event.target.classList.contains("precio_unitario") || event.target.classList.contains("descuento")) {
+            actualizarTotales();
+        }
+    });
+
+    function actualizarTotales() {
+        let filas = document.querySelectorAll("#tabla-items tbody tr");
+        filas.forEach(fila => {
+            let cantidad = parseFloat(fila.querySelector(".cantidad").value) || 0;
+            let precio = parseFloat(fila.querySelector(".precio_unitario").value) || 0;
+            let descuento = parseFloat(fila.querySelector(".descuento").value) || 0;
+
+            let total = (cantidad * precio) * ((100 - descuento) / 100);
+            fila.querySelector(".total").value = total.toFixed(0);
+        });
+    }
+});
+</script>
+
+{% endblock %}

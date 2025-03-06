@@ -4,13 +4,16 @@ from .shared_imports import *  # Importa todas las funciones y módulos comparti
 def es_administrador(user):
     return user.is_authenticated and hasattr(user, 'empleado') and user.empleado.rol == 'Administrador'
 
+# Configuración del logger
+logger = logging.getLogger('servicios')
+
 @user_passes_test(es_administrador, login_url='home')
 def listar_servicios(request):
     """
     Lista todos los servicios en la base de datos con opciones de búsqueda
     y paginación.
     """
-    servicios = Servicio.objects.all().order_by('id')  # Agrega un orden explícito
+    servicios = Servicio.objects.all().order_by('-id')  # Agrega un orden explícito
     nombre_query = request.GET.get('nombre')
 
     if nombre_query:
@@ -40,20 +43,42 @@ def listar_servicios(request):
 @user_passes_test(es_administrador, login_url='home')
 # Función para agregar servicio
 def agregar_servicio(request):
+    usuario = request.user  # Obtener el usuario que agrega el servicio
+
     if request.method == "POST":
         form = ServicioForm(request.POST, request.FILES)
         if form.is_valid():
             servicio = form.save()
+
+            # Obtener la URL de la imagen si existe
+            imagen_url = servicio.imagen.url if servicio.imagen else "No tiene"
+
+            # **Registrar en el log la acción del usuario**
+            logger.info(
+                f"Nuevo servicio agregado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                f"ID={servicio.id}, Nombre={servicio.nombre}, Descripción={servicio.descripcion}, Precio={servicio.precio}, Imagen={imagen_url}"
+            )
+
             messages.success(request, "Servicio agregado con éxito.")
             return redirect("listar_servicios")
     else:
         form = ServicioForm()
+
     return render(request, "Transaccion/agregar_servicio.html", {"form": form})
 
 @user_passes_test(es_administrador, login_url='home')
 # Función para editar servicio
 def editar_servicio(request, servicio_id):
     servicio = get_object_or_404(Servicio, id=servicio_id)
+    usuario = request.user  # Obtener el usuario que edita el servicio
+
+    # Guardar valores originales antes de la edición
+    valores_anteriores = {
+        'nombre': servicio.nombre,
+        'descripcion': servicio.descripcion,
+        'precio': servicio.precio,
+        'imagen': servicio.imagen.url if servicio.imagen else "No tiene"
+    }
 
     if request.method == "POST":
         form = ServicioForm(request.POST, request.FILES, instance=servicio)
@@ -61,16 +86,38 @@ def editar_servicio(request, servicio_id):
         # Verificar si se marcó la imagen para eliminación
         imagen_a_eliminar = request.POST.get("imagen_a_eliminar")
         if imagen_a_eliminar and servicio.imagen:
-            # Eliminar el archivo físicamente
             if os.path.exists(servicio.imagen.path):
-                os.remove(servicio.imagen.path)
-            # Eliminar referencia en la base de datos
+                os.remove(servicio.imagen.path)  # Elimina físicamente el archivo
             servicio.imagen.delete(save=False)
 
         if form.is_valid():
-            form.save()
+            servicio = form.save()
+
+            # Guardar valores nuevos después de la edición
+            valores_nuevos = {
+                'nombre': servicio.nombre,
+                'descripcion': servicio.descripcion,
+                'precio': servicio.precio,
+                'imagen': servicio.imagen.url if servicio.imagen else "No tiene"
+            }
+
+            # Detectar cambios
+            cambios = []
+            for campo, valor_anterior in valores_anteriores.items():
+                valor_nuevo = valores_nuevos[campo]
+                if valor_anterior != valor_nuevo:
+                    cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+            if cambios:
+                logger.info(
+                    f"Servicio editado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                    f"ID={servicio.id}, Nombre={servicio.nombre}\n"
+                    + "\n".join(cambios)
+                )
+
             messages.success(request, "Servicio actualizado con éxito.")
             return redirect("listar_servicios")
+
     else:
         form = ServicioForm(instance=servicio)
 
@@ -85,19 +132,34 @@ def confirmar_borrar_servicio(request, servicio_id):
     return render(request, 'Transaccion/confirmar_borrar_servicio.html', {'servicio': servicio})
 
 @user_passes_test(es_administrador, login_url='home')
-# Función para editar servicio
+# Función para borrar servicio
 def borrar_servicio(request, servicio_id):
+    usuario = request.user  # Obtener el usuario que elimina el servicio
+
     try:
         servicio = Servicio.objects.get(id=servicio_id)
-        
+        servicio_nombre = servicio.nombre  # Guardar el nombre antes de eliminarlo
+
         # Eliminar imagen si existe
         if servicio.imagen and os.path.exists(servicio.imagen.path):
             os.remove(servicio.imagen.path)
-        
+
         servicio.delete()  # Eliminar el servicio
+
+        # **Registrar en el log la acción del usuario**
+        logger.info(
+            f"Servicio eliminado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={servicio_id}, Nombre={servicio_nombre}"
+        )
+
         messages.success(request, "Servicio eliminado con éxito.")
+
     except Servicio.DoesNotExist:
         messages.error(request, "El servicio no existe.")
+        logger.warning(
+            f"Intento de eliminación de servicio fallido por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={servicio_id} no existe."
+        )
 
     return redirect("listar_servicios")
 

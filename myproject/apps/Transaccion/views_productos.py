@@ -1,8 +1,12 @@
+from decimal import Decimal, InvalidOperation
 from .shared_imports import *  # Importa todas las funciones y módulos compartidos en la aplicación.
 
 # Validación para que solo el administrador tenga acceso a las plantillas
 def es_administrador(user):
     return user.is_authenticated and hasattr(user, 'empleado') and user.empleado.rol == 'Administrador'
+
+# Configuración del logger
+logger = logging.getLogger('productos')
 
 @user_passes_test(es_administrador, login_url='home')
 def listar_productos(request):
@@ -12,7 +16,7 @@ def listar_productos(request):
     y stock.
     """
     # Recuperar todos los productos y construir el filtro
-    productos = Producto.objects.all().order_by('nombre', 'id') # Ordena por ID para evitar el warning de paginación
+    productos = Producto.objects.all().order_by('-id') # Ordena por ID para evitar el warning de paginación
     nombre_query = request.GET.get('nombre')
     stock_query = request.GET.get('stock')
     categoria_filter = request.GET.get('categoria')
@@ -38,6 +42,10 @@ def listar_productos(request):
         sort_orders.append('cantidad_stock')
     elif stock_query == 'desc':
         sort_orders.append('-cantidad_stock')
+
+    # Establecer un orden por defecto si no hay criterios de ordenación
+    if not sort_orders:
+        sort_orders.append('-id')
 
     productos = productos.filter(query).order_by(*sort_orders)
 
@@ -108,8 +116,26 @@ def agregar_producto(request):
             producto = form.save()
 
             # Procesar imágenes adicionales
+            imagenes_adicionales = []
             for imagen in request.FILES.getlist('imagenes'):
-                ImagenProducto.objects.create(producto=producto, imagen=imagen)
+                img_obj = ImagenProducto.objects.create(producto=producto, imagen=imagen)
+                imagenes_adicionales.append(img_obj.imagen.url)
+
+            # Registrar en el log la acción del usuario
+            usuario = request.user
+            logger.info(f"Nuevo producto agregado por: {usuario.first_name} {usuario.last_name} ({usuario.email})")
+            logger.info(
+                f"Detalles:\n"
+                f"ID={producto.id}, Nombre={producto.nombre}, Marca={producto.marca}, Modelo={producto.modelo}, "
+                f"Versión={producto.version}, Año={producto.anio}, Categoría={producto.categoria}, "
+                f"Descripción={producto.descripcion}, Valor de Reserva={producto.precio_reserva}, Valor de Venta={producto.precio}, "
+                f"Valor de Compra={producto.precio_costo}, Costo Extra={producto.costo_extra}, "
+                f"Fecha Adquisición={producto.fecha_adquisicion.strftime('%d-%m-%Y') if producto.fecha_adquisicion else 'No especificada'}, "
+                f"Stock Propio={'Sí' if producto.consignado else 'No'}, "
+                f"Porcentaje Consignación={producto.porcentaje_consignacion}, "
+                f"Imagen Principal={producto.imagen.url if producto.imagen else 'No tiene'}, "
+                f"Imágenes Adicionales={', '.join(imagenes_adicionales) if imagenes_adicionales else 'No tiene'}"
+            )
 
             messages.success(request, 'Producto y galería de imágenes agregados con éxito.')
             return redirect('listar_productos')
@@ -126,18 +152,51 @@ def editar_producto(request, producto_id):
     """
     producto = get_object_or_404(Producto, id=producto_id)
     imagenes_adicionales = ImagenProducto.objects.filter(producto=producto)  # Obtener imágenes adicionales
+    usuario = request.user  # Obtener el usuario que edita el producto
 
     print(f"\n--- CARGANDO FORMULARIO ---")
     print(f"Producto encontrado: {producto.nombre} (ID: {producto.id})")
     print(f"Stock Propio en BD: {producto.consignado}")
     print(f"Porcentaje Consignación en BD: {producto.porcentaje_consignacion}")
 
+    # Guardar los valores originales antes de la edición
+    valores_anteriores = {
+        'nombre': producto.nombre,
+        'marca': producto.marca,
+        'modelo': producto.modelo,
+        'version': producto.version,
+        'anio': producto.anio,
+        'categoria': producto.categoria,
+        'descripcion': producto.descripcion,
+        'precio_reserva': producto.precio_reserva,
+        'precio': producto.precio,
+        'precio_costo': producto.precio_costo,
+        'costo_extra': producto.costo_extra,
+        'fecha_adquisicion': producto.fecha_adquisicion.strftime('%d-%m-%Y') if producto.fecha_adquisicion else 'No especificada',
+        'cantidad_stock': producto.cantidad_stock,
+        'consignado': 'Sí' if producto.consignado else 'No',
+        'porcentaje_consignacion': producto.porcentaje_consignacion,
+        'imagen': producto.imagen.url if producto.imagen else 'No tiene',
+        'imagenes_adicionales': [img.imagen.url for img in imagenes_adicionales] if imagenes_adicionales else ['No tiene']
+    }
+
     if request.method == "POST":
         print("\n--- RECIBIENDO POST ---")
         print(f"Datos enviados: {request.POST}")
         print(f"Archivos enviados: {request.FILES}")
 
-        form = ProductoForm(request.POST, request.FILES, instance=producto)
+        post_data = request.POST.copy()
+
+        # Normalizar porcentaje consignación si está presente
+        if "porcentaje_consignacion" in post_data:
+            porcentaje = post_data["porcentaje_consignacion"].replace(",", ".")  # Cambiar , por .
+            try:
+                porcentaje = Decimal(porcentaje).normalize()
+                post_data["porcentaje_consignacion"] = str(porcentaje)  # Guardar sin ceros extra
+            except InvalidOperation:
+                post_data["porcentaje_consignacion"] = ""  # Si hay error, dejar vacío
+
+        form = ProductoForm(post_data, request.FILES, instance=producto)
 
         if form.is_valid():
             producto = form.save()
@@ -175,15 +234,58 @@ def editar_producto(request, producto_id):
             for imagen in request.FILES.getlist("imagenes"):
                 ImagenProducto.objects.create(producto=producto, imagen=imagen)
 
+            # Guardar valores nuevos
+            valores_nuevos = {
+                'nombre': producto.nombre,
+                'marca': producto.marca,
+                'modelo': producto.modelo,
+                'version': producto.version,
+                'anio': producto.anio,
+                'categoria': producto.categoria,
+                'descripcion': producto.descripcion,
+                'precio_reserva': producto.precio_reserva,
+                'precio': producto.precio,
+                'precio_costo': producto.precio_costo,
+                'costo_extra': producto.costo_extra,
+                'fecha_adquisicion': producto.fecha_adquisicion.strftime('%d-%m-%Y') if producto.fecha_adquisicion else 'No especificada',
+                'cantidad_stock': producto.cantidad_stock,
+                'consignado': 'Sí' if producto.consignado else 'No',
+                'porcentaje_consignacion': producto.porcentaje_consignacion,
+                'imagen': producto.imagen.url if producto.imagen else 'No tiene',
+                'imagenes_adicionales': [img.imagen.url for img in ImagenProducto.objects.filter(producto=producto)] if imagenes_adicionales else ['No tiene']
+            }
+
+            # Detectar cambios
+            cambios = []
+            for campo, valor_anterior in valores_anteriores.items():
+                valor_nuevo = valores_nuevos[campo]
+                if valor_anterior != valor_nuevo:
+                    cambios.append(f"{campo}: {valor_anterior} -> {valor_nuevo}")
+
+            if cambios:
+                logger.info(
+                    f"Producto editado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+                    f"ID={producto.id}, Nombre={producto.nombre}\n"
+                    + "\n".join(cambios)
+                )
+
             messages.success(request, "Producto actualizado con éxito.")
             return redirect("listar_productos")
+
         else:
             print("\nERRORES EN EL FORMULARIO")
             print(form.errors)
 
     else:
-        form = ProductoForm(instance=producto, initial={'porcentaje_consignacion': producto.porcentaje_consignacion})
-        print(f"Inicializando formulario con porcentaje consignación: {form.initial.get('porcentaje_consignacion')}")
+        # Eliminar ceros innecesarios al mostrar en el formulario
+        if producto.porcentaje_consignacion is not None:
+            porcentaje_formateado = producto.porcentaje_consignacion.normalize()  # Elimina ceros finales
+            porcentaje_formateado = str(porcentaje_formateado)  # Convertir a string
+        else:
+            porcentaje_formateado = ""
+
+        form = ProductoForm(instance=producto, initial={'porcentaje_consignacion': porcentaje_formateado})
+        print(f"Inicializando formulario con porcentaje consignación: {porcentaje_formateado}")
 
     return render(request, "Transaccion/editar_producto.html", {
         "form": form,
@@ -212,13 +314,16 @@ def confirmar_borrar_producto(request, producto_id):
 @user_passes_test(es_administrador, login_url='home')
 # Función para borrar producto
 def borrar_producto(request, producto_id):
+    usuario = request.user  # Obtener el usuario que elimina el producto
+
     try:
         producto = Producto.objects.get(id=producto_id)
-        
+        producto_nombre = producto.nombre  # Guardar el nombre antes de eliminarlo
+
         # Eliminar imagen principal si existe
         if producto.imagen and os.path.exists(producto.imagen.path):
             os.remove(producto.imagen.path)
-        
+
         # Eliminar imágenes adicionales
         for imagen in producto.imagenes.all():
             if os.path.exists(imagen.imagen.path):
@@ -226,9 +331,21 @@ def borrar_producto(request, producto_id):
             imagen.delete()  # Eliminar referencia en la base de datos
 
         producto.delete()  # Eliminar el producto
+
+        # **Registrar en el log la acción del usuario**
+        logger.info(
+            f"Producto eliminado por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={producto_id}, Nombre={producto_nombre}"
+        )
+
         messages.success(request, "Producto eliminado con éxito.")
+
     except Producto.DoesNotExist:
         messages.error(request, "El producto no existe.")
+        logger.warning(
+            f"Intento de eliminación de producto fallido por {usuario.first_name} {usuario.last_name} ({usuario.email}):\n"
+            f"ID={producto_id} no existe."
+        )
 
     return redirect("listar_productos")
 

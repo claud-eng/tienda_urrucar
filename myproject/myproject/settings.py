@@ -10,9 +10,9 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/4.2/ref/settings/
 """
 
+import os  # Módulo estándar de Python para operaciones relacionadas con el sistema operativo
 from dotenv import load_dotenv  # Función para cargar variables de entorno desde un archivo .env
 from pathlib import Path  # Módulo estándar de Python para manejar rutas de archivos y directorios
-import os  # Módulo estándar de Python para operaciones relacionadas con el sistema operativo
 
 # Carga las variables de entorno desde '.env'
 load_dotenv()
@@ -120,7 +120,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.2/topics/i18n/
 
@@ -143,11 +142,112 @@ STATICFILES_DIRS = [
     BASE_DIR / 'static',
 ]
 
+# 1 año de caché para archivos estáticos
+WHITENOISE_MAX_AGE = 31536000
+
 # Media files (uploaded images)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 SERVE_MEDIA_IN_PRODUCTION = True
+
+# Asegurar que los directorios de logs existan
+logs_dir = os.path.join(BASE_DIR, 'logs')
+if not os.path.exists(logs_dir):
+    os.makedirs(logs_dir)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} {asctime} {module} {message}',
+            'style': '{',
+            'datefmt': '%d-%m-%Y %H:%M:%S',
+        },
+    },
+    'handlers': {
+        'webpay_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'webpay.log'),
+            'formatter': 'verbose',
+        },
+        'productos_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'productos.log'),
+            'formatter': 'verbose',
+        },
+        'servicios_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'servicios.log'),
+            'formatter': 'verbose',
+        },
+        'ventas_manuales_productos_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'ventas_manuales_productos.log'),
+            'formatter': 'verbose',
+        },
+        'ventas_manuales_servicios_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'ventas_manuales_servicios.log'),
+            'formatter': 'verbose',
+        },
+        'ventas_online_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'ventas_online.log'),
+            'formatter': 'verbose',
+        },
+        'usuarios_file': {
+            'level': 'DEBUG',
+            'class': 'logging.FileHandler',
+            'filename': os.path.join(logs_dir, 'usuarios.log'),
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'webpay': {
+            'handlers': ['webpay_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'productos': {
+            'handlers': ['productos_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'servicios': {
+            'handlers': ['servicios_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ventas_manuales_productos': {
+            'handlers': ['ventas_manuales_productos_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ventas_manuales_servicios': {
+            'handlers': ['ventas_manuales_servicios_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'ventas_online': {
+            'handlers': ['ventas_online_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'usuarios': {
+            'handlers': ['usuarios_file'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

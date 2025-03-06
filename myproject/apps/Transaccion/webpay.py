@@ -1,6 +1,7 @@
 import os  # Importa el módulo 'os' para manejar variables de entorno.
 import time  # Importa el módulo 'time' para operaciones relacionadas con el tiempo.
 import uuid  # Importa el módulo 'uuid' para generar identificadores únicos.
+import logging # Importa 'logging' para crear registro de logs en un archivo.
 from django.conf import settings  # Importa el módulo de configuración de Django.
 from django.contrib import messages  # Importa el sistema de mensajes de Django para mostrar mensajes a los usuarios.
 from django.core.mail import EmailMessage  # Importa la clase 'EmailMessage' para enviar correos electrónicos.
@@ -9,6 +10,7 @@ from django.http import HttpResponse  # Importa 'HttpResponse' para devolver res
 from django.shortcuts import redirect, render  # Importa 'redirect' y 'render' para redirección y renderizado de plantillas.
 from django.template.loader import render_to_string  # Importa 'render_to_string' para renderizar plantillas a cadenas de texto.
 from django.templatetags.static import static  # Importa 'static' para manejar rutas de archivos estáticos.
+from django.utils import timezone # Importa el módulo timezone para manejar zonas horarias.
 from django.utils.html import strip_tags  # Importa 'strip_tags' para eliminar etiquetas HTML de una cadena.
 from django.utils.timezone import localtime  # Importa 'localtime' para trabajar con zonas horarias y convertir fechas a la zona local.
 from transbank.common.integration_type import IntegrationType  # Importa 'IntegrationType' para configurar el entorno de integración de Webpay.
@@ -19,6 +21,9 @@ from .functions import *  # Importa todas las funciones definidas en 'functions'
 from .functions import TIPO_PAGO_CONVERSION  # Importa 'TIPO_PAGO_CONVERSION' desde functions, para convertir tipos de pago.
 from .models import Carrito, Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, Producto, Servicio  # Importa modelos necesarios para gestionar órdenes y carritos.
 from .views import formato_precio  # Importa 'formato_precio' para formatear precios en vistas.
+
+# Configuración del logger
+logger = logging.getLogger('webpay')
 
 # Define las configuraciones de Webpay desde las variables de entorno
 commerce_code = os.getenv('WEBPAY_COMMERCE_CODE')
@@ -112,6 +117,17 @@ def iniciar_transaccion(request):
                 if not datos_formulario_dinamico.get(campo):
                     messages.error(request, "Por favor, completa todos los campos obligatorios del formulario.")
                     return redirect('carrito')
+                
+        # Validar que el carrito no esté vacío
+        if not carrito_items.exists():
+            messages.error(request, "Tu carrito está vacío.")
+            return redirect('carrito')
+
+        # Validación adicional: Verificar stock antes de redirigir a Webpay
+        for item in carrito_items:
+            if isinstance(item.item, Producto) and item.item.cantidad_stock < item.cantidad:
+                messages.error(request, f"El producto {item.item.nombre} ya no tiene stock suficiente.")
+                return redirect('carrito')
 
         # Guarda los datos adicionales en la sesión
         request.session['datos_formulario'] = datos_formulario_dinamico
@@ -151,15 +167,24 @@ def transaccion_finalizada(request):
     del carrito según la respuesta del banco. Envía un correo de confirmación en
     caso de éxito. Además, genera un nuevo session_key para clientes anónimos.
     """
+
+    # Capturar TBK_TOKEN y TBK_ORDEN_COMPRA si existen (indica transacción cancelada)
+    tbk_token = request.GET.get('TBK_TOKEN')
+    tbk_orden = request.GET.get('TBK_ORDEN_COMPRA')
+
     token_ws = request.GET.get('token_ws')
     cliente = None
     cliente_anonimo = None
+
+    # Si TBK_TOKEN está presente, significa que la transacción fue cancelada
+    if tbk_token:
+        logger.warning(f"Transacción cancelada antes de completarse. Orden: {tbk_orden}, TBK_TOKEN: {tbk_token}")
 
     # Determina si el cliente es autenticado o anónimo
     if request.user.is_authenticated:
         cliente = Cliente.objects.get(user=request.user)
         carrito_items = Carrito.objects.filter(cliente=cliente, carrito=1)
-        print(f"Cliente autenticado: {cliente.user.email}")
+        logger.info(f"Cliente autenticado: {cliente.user.first_name} {cliente.user.last_name} {cliente.second_last_name} ({cliente.user.email})")
     else:
         session_key = request.session.session_key
         if not session_key:
@@ -172,13 +197,16 @@ def transaccion_finalizada(request):
             return redirect('carrito')
 
         carrito_items = Carrito.objects.filter(session_key=session_key, carrito=1)
-        print(f"Cliente anónimo: {cliente_anonimo.email} con session_key: {session_key}")
+        logger.info(f"Cliente anónimo: {cliente_anonimo.nombre} {cliente_anonimo.apellido} ({cliente_anonimo.email}) con session_key: {session_key}")
 
     # Instancia la transacción con las opciones predefinidas
     tx = Transaction(webpay_options)
     try:
+        if not token_ws:
+            raise TransbankError("'token' can't be null or white space")  # Esto forzará que pase al except
+        
         response = tx.commit(token_ws)
-        print(f"Respuesta de Webpay: {response}")
+        logger.info(f"Respuesta de Webpay: {response}")
 
         contexto = {}
 
@@ -199,10 +227,17 @@ def transaccion_finalizada(request):
         )
 
         if not created:
-            print("Orden ya existente. Se evita procesamiento duplicado.")
-            contexto['mensaje_error'] = "Esta transacción ya ha sido procesada."
-            contexto['orden'] = orden
-            return render(request, 'Transaccion/retorno_webpay.html', contexto)
+            # Si la orden ya existe, verificar si ya estaba procesada
+            if orden.estado in ['aprobada', 'rechazada']:
+                logger.warning(f"Orden ya existente con estado {orden.estado}. Se evita procesamiento duplicado. Orden: {orden.numero_orden}")
+                contexto['mensaje_error'] = "Esta transacción ya ha sido procesada."
+                contexto['orden'] = orden
+                return render(request, 'Transaccion/retorno_webpay.html', contexto)
+            
+            # Si la orden existía pero aún no estaba procesada, actualizamos `token_ws` y `numero_orden`
+            orden.token_ws = token_ws
+            orden.numero_orden = response.get('buy_order')
+            orden.save()
 
         detalles_compra = []
         transaccion_exitosa = response.get('status') == 'AUTHORIZED'
@@ -217,9 +252,17 @@ def transaccion_finalizada(request):
 
             if stock_insuficiente:
                 orden.estado = 'rechazada'
-                contexto['mensaje_error'] = "Stock insuficiente para uno o más productos."
+                contexto['mensaje_error'] = "Lo sentimos, el producto que intentaste comprar ya no está disponible. La transacción ha sido anulada y el banco liberará el monto retenido pronto."
                 orden.save()
-                print("Stock insuficiente encontrado.")
+                logger.error(f"Se ha creado un nuevo registro en la bdd con estado rechazada, Stock insuficiente encontrado. Orden: {orden.numero_orden}, Token WS: {token_ws}")
+
+                # ANULAR la transacción en Webpay para que el dinero no quede retenido
+                try:
+                    response_refund = tx.refund(token_ws, orden.total)
+                    logger.info(f"Se realizó una anulación de la transacción para {token_ws}")
+                except TransbankError as e:
+                    logger.error(f"Error al anular la transacción: {e.message}")
+
                 return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
             # Procesar ítems del carrito
@@ -277,14 +320,14 @@ def transaccion_finalizada(request):
                     )
 
             carrito_items.update(carrito=0)
-            print("Ítems del carrito procesados y actualizados.")
+            logger.info("Ítems del carrito procesados y actualizados.")
 
         else:
             # Transacción rechazada
             orden.estado = 'rechazada'
             orden.save()
             contexto['mensaje_error'] = "Transacción rechazada por el banco."
-            print("Transacción rechazada por el banco.")
+            logger.error(f"Se ha creado un nuevo registro en la bdd con estado rechazada, Transacción rechazada por el banco. Orden: {orden.numero_orden}, Token WS: {token_ws}")
 
             # Generar un nuevo session_key y crear un nuevo cliente anónimo
             if not request.user.is_authenticated:
@@ -293,7 +336,7 @@ def transaccion_finalizada(request):
                 request.session.create()
                 new_session_key = request.session.session_key
 
-                print(f"Session key reiniciado (rechazada): {old_session_key} -> {new_session_key}")
+                logger.warning(f"Session key reiniciado dado que la compra fue rechazada: {old_session_key} -> {new_session_key}")
 
                 nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
                     nombre="Anónimo",
@@ -302,7 +345,7 @@ def transaccion_finalizada(request):
                     numero_telefono="",
                     session_key=new_session_key
                 )
-                print(f"Nuevo cliente anónimo creado (rechazada): {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
+                logger.info(f"Se ha creado un nuevo cliente anónimo: {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
 
             return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
@@ -323,6 +366,8 @@ def transaccion_finalizada(request):
                 buffer_pdf = generar_comprobante_pago_pdf(tipo_venta='manual', id_venta=orden.id)
             else:
                 raise ValueError("Tipo de venta no reconocido")
+            
+            logger.error(f"Se ha creado un nuevo registro en la bdd con estado aprobada. Orden: {orden.numero_orden}, Token WS: {token_ws}")
 
             # URL del logo
             logo_url = request.build_absolute_uri(static('images/logo.png'))
@@ -352,7 +397,7 @@ def transaccion_finalizada(request):
             email.attach_alternative(email_html, "text/html")
             email.attach(f'comprobante_pago_{orden.numero_orden}.pdf', buffer_pdf.getvalue(), 'application/pdf')
             email.send()
-            print("Comprobante enviado por correo.")
+            logger.info("Comprobante enviado por correo.")
 
             # Generar un nuevo session_key y crear un nuevo cliente anónimo
             if not request.user.is_authenticated:
@@ -361,7 +406,7 @@ def transaccion_finalizada(request):
                 request.session.create()
                 new_session_key = request.session.session_key
 
-                print(f"Session key reiniciado: {old_session_key} -> {new_session_key}")
+                logger.warning(f"Session key reiniciado dado que la compra fue exitósa: {old_session_key} -> {new_session_key}")
 
                 # Crear un nuevo cliente anónimo con valores predeterminados
                 nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
@@ -371,29 +416,44 @@ def transaccion_finalizada(request):
                     numero_telefono="",
                     session_key=new_session_key
                 )
-                print(f"Nuevo cliente anónimo creado: {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
+                logger.info(f"Se ha creado un nuevo cliente anónimo: {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
 
         return render(request, 'Transaccion/retorno_webpay.html', contexto)
 
     except TransbankError as e:
         # Manejo de error en la transacción
-        print(f"Error en la transacción: {e.message}")
+        logger.error(f"Error en la transacción: {e.message}")
 
-        # Siempre crear una nueva orden anulada con un identificador único
-        nueva_orden = VentaOnline.objects.create(
-            cliente=cliente,
-            cliente_anonimo=cliente_anonimo,
-            total=0,
-            estado='anulada',
-            fecha=timezone.now(),
-            numero_orden='error_' + str(timezone.now().timestamp()).replace('.', ''),  # Identificador único
-            tipo_pago=None,
-            monto_cuotas=None,
-            numero_cuotas=None,
-            token_ws=f"error_{timezone.now().timestamp()}"  # Genera un token único para esta orden
-        )
+        # Intentar encontrar la orden original por `TBK_ORDEN_COMPRA`
+        orden = VentaOnline.objects.filter(numero_orden=tbk_orden).first()
 
-        print(f"Nueva orden anulada creada con número de orden: {nueva_orden.numero_orden}")
+        if orden:
+            # Si ya existe, actualizar su estado a "anulada" y guardar TBK_TOKEN
+            orden.estado = 'anulada'
+            orden.token_ws = None
+            orden.tbk_token = tbk_token
+            orden.tipo_pago = None
+            orden.monto_cuotas = None
+            orden.numero_cuotas = None
+            orden.save()
+            logger.warning(f"La orden {orden.numero_orden} ha sido marcada como anulada. TBK_TOKEN: {tbk_token}")
+        else:
+            # Si no existe en la BD, crear una nueva orden con la información correcta
+            nueva_orden = VentaOnline.objects.create(
+                cliente=cliente,
+                cliente_anonimo=cliente_anonimo,
+                total=0,
+                estado='anulada',
+                fecha=timezone.now(),
+                numero_orden=tbk_orden,
+                token_ws=None,
+                tbk_token=tbk_token,
+                tipo_pago=None,
+                monto_cuotas=None,
+                numero_cuotas=None
+            )
+
+            logger.warning(f"Se ha creado un nuevo registro en la bdd con estado anulada. Orden: {nueva_orden.numero_orden}, TBK_TOKEN: {tbk_token}")
 
         # Reiniciar sesión y crear un nuevo cliente anónimo
         if not request.user.is_authenticated:
@@ -402,7 +462,7 @@ def transaccion_finalizada(request):
             request.session.create()
             new_session_key = request.session.session_key
 
-            print(f"Session key reiniciado (error): {old_session_key} -> {new_session_key}")
+            logger.warning(f"Session key reiniciado dado que la compra fue anulada: {old_session_key} -> {new_session_key}")
 
             nuevo_cliente_anonimo = ClienteAnonimo.objects.create(
                 nombre="Anónimo",
@@ -411,7 +471,7 @@ def transaccion_finalizada(request):
                 numero_telefono="",
                 session_key=new_session_key
             )
-            print(f"Nuevo cliente anónimo creado (error): {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
+            logger.info(f"Se ha creado un nuevo cliente anónimo: {nuevo_cliente_anonimo.email} con session_key: {new_session_key}")
 
         # Modificar el mensaje de error solo si el token es nulo
         if "'token' can't be null or white space" in e.message:

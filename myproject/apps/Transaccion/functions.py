@@ -258,5 +258,189 @@ def envio_formulario_pago_administrador(datos_persona, datos_formulario, carrito
         fail_silently=False
     )
 
+# **Función para generar el PDF usando ReportLab**
+def exportar_presupuesto_pdf(datos_presupuesto, items):
+    buffer = BytesIO()
+    pdf = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20)  # Reducir margen superior
+    elementos = []
+    estilos = getSampleStyleSheet()
+
+    # Estilos personalizados
+    estilo_titulo = ParagraphStyle(name="Titulo", parent=estilos["Title"], fontSize=14, alignment=TA_CENTER)
+    estilo_justificado = ParagraphStyle(name="Justificado", parent=estilos["BodyText"], alignment=TA_JUSTIFY)
+    estilo_datos = ParagraphStyle(name="Datos", parent=estilos["BodyText"], fontSize=10)
+    estilo_etiqueta = ParagraphStyle(name="Etiqueta", fontSize=10, textColor="#149ddd")
+
+    # **LOGO DE LA EMPRESA**
+    logo_path = finders.find("images/logo.png")
+    logo = Image(logo_path, width=150, height=150)  # Tamaño corregido
+
+    # **Encabezado con Bordes Redondeados**
+    encabezado_contenido = [
+        ["Urrucar Automotriz"],
+        ["Mantención y Reparación de Vehículos"],
+        ["RUT: 77.602.093-1"],
+        ["Tel: +569 61923925"],
+        ["www.urrucar.cl"]
+    ]
+
+    tabla_encabezado = Table(encabezado_contenido, colWidths=[300])
+    tabla_encabezado.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+
+    # Contenedor del encabezado con caja redondeada y logo
+    contenedor_encabezado = Table([
+        [tabla_encabezado, logo]
+    ], colWidths=[350, 150])
+
+    contenedor_encabezado.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor("#ebebeb")),  # Gris claro #ebebeb
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('ROUNDEDCORNERS', (0, 0), (-1, -1), 5)  # Bordes redondeados
+    ]))
+
+    elementos.append(contenedor_encabezado)
+    elementos.append(Spacer(1, 12))
+
+    # **Sección de Datos del Presupuesto con Bordes Redondeados y Ancho Completo**
+    datos_presupuesto_contenido = [
+        [Paragraph("<b>Presupuesto N°:</b> " + datos_presupuesto["numero_presupuesto"], estilo_titulo)]
+    ]
+
+    # **Usar el ancho total de la página**
+    tabla_presupuesto_numero = Table(datos_presupuesto_contenido, colWidths=[470])
+    tabla_presupuesto_numero.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 5),
+        ('TOPPADDING', (0, 0), (-1, -1), 5)
+    ]))
+
+    datos_cliente_contenido = [
+        [Paragraph("<b>Cliente:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['cliente_nombre'], estilo_datos),
+        Paragraph("<b>RUT:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['cliente_rut'], estilo_datos)],
+        [Paragraph("<b>Teléfono:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['telefono'], estilo_datos)],
+        [Paragraph("<b>Fecha Presupuesto:</b>", estilo_etiqueta), 
+        Paragraph(datetime.strptime(datos_presupuesto['fecha_presupuesto'], "%Y-%m-%d").strftime("%d/%m/%Y"), estilo_datos),
+        Paragraph("<b>Validez hasta:</b>", estilo_etiqueta), 
+        Paragraph(datetime.strptime(datos_presupuesto['fecha_validez'], "%Y-%m-%d").strftime("%d/%m/%Y"), estilo_datos)],
+        [Paragraph("<b>Patente:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['patente'], estilo_datos),
+        Paragraph("<b>Vehículo:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['vehiculo'], estilo_datos)],
+        [Paragraph("<b>Año:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['anio'], estilo_datos),
+        Paragraph("<b>N° Chasis:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['chasis'], estilo_datos)]
+    ]
+
+    tabla_datos_cliente = Table(datos_cliente_contenido, colWidths=[80, 180, 80, 180])
+    tabla_datos_cliente.setStyle(TableStyle([
+        ('TEXTCOLOR', (0, 0), (-1, -1), colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+        ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
+    ]))
+
+    # Caja completa
+    contenedor_datos_presupuesto = Table([[tabla_presupuesto_numero], [tabla_datos_cliente]], colWidths=[470])
+    contenedor_datos_presupuesto.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, -1), colors.HexColor("#FFFFFF")),
+        ('LEFTPADDING', (0, 0), (-1, -1), 15),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 15),
+        ('ROUNDEDCORNERS', (0, 0), (-1, -1), 5)
+    ]))
+
+    elementos.append(contenedor_datos_presupuesto)
+    elementos.append(Spacer(1, 12))
+
+    # **Observaciones**
+    if datos_presupuesto["observaciones"]:
+        elementos.append(Paragraph("<b>Observaciones:</b>", estilos["Normal"]))
+        elementos.append(Paragraph(datos_presupuesto["observaciones"], estilo_justificado))
+        elementos.append(Spacer(1, 12))
+
+    # **Tabla de Ítems del Presupuesto**
+    tabla_datos = [
+        ["REFER.", "TIPO", "CONCEPTO", "CANT.", "PRECIO UNIT.", "DTO", "TOTAL"]
+    ]
+
+    total_presupuesto = 0
+
+    # Definir estilo de párrafo para la columna "CONCEPTO"
+    estilo_concepto = ParagraphStyle(
+        name="Concepto",
+        fontName="Helvetica",
+        fontSize=10,
+        leading=12,  # Espaciado entre líneas
+        alignment=TA_LEFT,  # Alinear el texto a la izquierda
+        wordWrap='CJK'  # Habilitar ajuste de texto automático
+    )
+
+    for item in items:
+        referencia = item["referencia"]
+        tipo = item["tipo"]
+        concepto = Paragraph(item["concepto"], estilo_concepto)  # Convertir a Paragraph
+        cantidad = item["cantidad"]
+        precio_unitario = item["precio_unitario"]
+        descuento = item["descuento"]
+        total_item = (cantidad * precio_unitario) * ((100 - descuento) / 100)
+        total_presupuesto += total_item
+
+        # Reemplazar las comas por puntos en los montos
+        def formatear_monto(monto):
+            return f"${monto:,.0f}".replace(",", ".")
+
+        tabla_datos.append([
+            referencia, tipo, concepto, cantidad,
+            formatear_monto(precio_unitario), f"{descuento}%", formatear_monto(total_item)
+        ])
+
+    tabla_items = Table(tabla_datos, colWidths=[50, 80, 160, 50, 80, 50, 80])
+    tabla_items.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ]))
+    
+    elementos.append(tabla_items)
+    elementos.append(Spacer(1, 12))
+
+    # **Cálculo de Totales**
+    subtotal = total_presupuesto
+    iva = subtotal * 0.19
+    total_final = subtotal + iva
+
+    # **Tabla de Totales**
+    totales = [
+        ["Base Imponible", "IVA (19%)", "Total"],
+        [formatear_monto(subtotal), formatear_monto(iva), formatear_monto(total_final)]
+    ]
+    tabla_totales = Table(totales, colWidths=[150, 150, 150])
+    tabla_totales.setStyle(TableStyle([
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 12),
+        ('BACKGROUND', (0, 0), (-1, 0), colors.lightgrey),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+    ]))
+
+    # **Agregar la tabla de totales antes del total general**
+    elementos.append(tabla_totales)
+    elementos.append(Spacer(1, 12))
+
+    # **TOTAL PRESUPUESTO en grande**
+    elementos.append(Paragraph("TOTAL PRESUPUESTO: " + formatear_monto(total_final), estilo_titulo))
+
+    pdf.build(elementos)
+    buffer.seek(0)
+    return buffer
+
+
 
 

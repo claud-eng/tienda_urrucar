@@ -48,7 +48,7 @@
     </div>
 </div>
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <form method="post" id="ventaForm" class="needs-validation" novalidate>
         {% csrf_token %}
 
@@ -175,7 +175,7 @@
         </div>
 
         <!-- Botones de acción -->
-        <div class="form-group mb-5">
+        <div class="form-group">
             <input type="submit" value="Registrar Venta" class="btn btn-primary btn-sm">
             <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
         </div>

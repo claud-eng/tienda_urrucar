@@ -55,7 +55,7 @@
   </div>
   </div>
 
-    <div class="container mt-5">
+    <div class="container mt-5 mb-5">
 
         <!-- Agregar mensajes de éxito -->
         {% if messages %}
@@ -72,7 +72,7 @@
         <form method="GET" class="form-control-file mb-2">
           <div class="form-group">
               <label for="search-username">Buscar por nombre de usuario:</label>
-              <input type="text" class="form-control mx-2" id="search-username" name="username" placeholder="usuario@claudev.cl">
+              <input type="text" class="form-control mx-2" id="search-username" name="username" placeholder="usuario@urrucar.cl">
           </div>
           <div>
               <button type="submit" class="btn btn-outline-primary btn-sm mb-2">Filtrar</button>
@@ -155,4 +155,6 @@
           {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
             <a href="{% url 'gestionar_cuentas' %}" class="btn btn-danger btn-sm">Volver al menú principal</a>
           {% endif %}
+
+        </div>
 {% endblock %}

@@ -145,6 +145,7 @@ class VentaOnline(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)  # Fecha de la transacción
     estado = models.CharField(max_length=20, default='pendiente')  # Estado de la venta
     token_ws = models.CharField(max_length=100, null=True, blank=True)  # Token de la transacción
+    tbk_token = models.CharField(max_length=100, null=True, blank=True)  # Token de anulación de Webpay
     numero_orden = models.CharField(max_length=26, null=True, blank=True)  # Número de orden
     tipo_pago = models.CharField(max_length=30, null=True, blank=True)  # Tipo de pago (VD, VN, etc.)
     monto_cuotas = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # Monto por cuota
@@ -327,3 +328,20 @@ class DetalleVentaManual(models.Model):
         elif self.servicio:
             return f"Servicio: {self.servicio.nombre}"
 
+# Clase para almacenar el código del presupuesto
+class Presupuesto(models.Model):
+    numero_presupuesto = models.CharField(max_length=10, unique=True, editable=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.numero_presupuesto:
+            ultimo = Presupuesto.objects.order_by("-id").first()
+            if ultimo:
+                nuevo_numero = str(int(ultimo.numero_presupuesto) + 1).zfill(10)
+            else:
+                nuevo_numero = "0000000001"
+            self.numero_presupuesto = nuevo_numero
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Presupuesto {self.numero_presupuesto}"

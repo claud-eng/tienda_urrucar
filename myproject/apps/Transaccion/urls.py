@@ -8,6 +8,7 @@ from .carrito import *  # Importa todas las funciones relacionadas con la gesti�
 from .functions import descargar_comprobante_pago  # Importa una función para descargar un comprobante de venta en formato PDF.
 from .webpay import iniciar_transaccion, transaccion_finalizada  # Importa funciones para iniciar y finalizar transacciones con Webpay.
 from .views import obtener_precio_producto
+
 urlpatterns = [
     path('agregar_al_carrito/producto/<int:id>/', agregar_al_carrito, {'tipo': 'producto'}, name='agregar_producto_al_carrito'),  # Agregar un producto al carrito
     path('agregar_al_carrito/servicio/<int:id>/', agregar_al_carrito, {'tipo': 'servicio'}, name='agregar_servicio_al_carrito'),  # Agregar un servicio al carrito
@@ -31,6 +32,7 @@ urlpatterns = [
     path('editar_venta_manual_servicio/<int:venta_id>/', views_ventas.editar_venta_manual_servicio, name='editar_venta_manual_servicio'), # Editar una venta manual de un servicio
     path('editar-venta-online/<int:venta_id>/', views_ventas.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
+    path('generar_presupuesto_pdf/', views.generar_presupuesto_pdf, name='generar_presupuesto_pdf'),  # Generar presupuesto en formato PDF
     path('gestionar_inventario', views.gestionar_inventario, name='gestionar_inventario'),  # Gestionar inventario (administrador)
     path('gestionar_transacciones', views.gestionar_transacciones, name='gestionar_transacciones'),  # Gestionar transacciones
     path('iniciar_transaccion/', iniciar_transaccion, name='iniciar_transaccion'),  # Iniciar transacción de pago

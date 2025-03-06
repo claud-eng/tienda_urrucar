@@ -3,6 +3,21 @@
 {% block title %}Gestionar Cuentas{% endblock %}
 {% block extra_css %}
 <style>
+    /* Mejora la apariencia de los títulos en las tarjetas */
+    .card-title {
+        font-size: 1rem; /* Aumenta el tamaño de la fuente */
+        font-weight: bold; /* Hace que los títulos sean más llamativos */
+        color: #007bff; /* Un azul más atractivo */
+        text-transform: uppercase; /* Convierte el texto en mayúsculas */
+        letter-spacing: 1px; /* Agrega un pequeño espacio entre letras */
+        margin-bottom: 10px; /* Añade espacio debajo del título */
+    }
+
+    /* Opcional: Sombra para resaltar más los títulos */
+    .card-title:hover {
+        text-shadow: 1px 1px 5px rgba(0, 0, 0, 0.2);
+    }
+
     /* Estilo base (Escritorio y pantallas grandes) */
     .container .btn {
         margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
@@ -46,18 +61,32 @@
     </div>
   </div>  
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <div class="col-md-6">
-            <h2>Servicio de administración de los clientes</h2>
-            <p>Aquí puedes gestionar las cuentas de los clientes.</p>
-            <a href="{% url 'listar_clientes' %}" class="btn btn-primary btn-sm">Gestionar cuentas de clientes</a>
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">Servicio de administración de los clientes</h4>
+                    <p class="card-text">Aquí puedes gestionar las cuentas de los clientes.</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{% url 'listar_clientes' %}" class="btn btn-primary btn-sm w-100">Gestionar cuentas de clientes</a>
+                </div>
+            </div>
         </div>
+
         <div class="col-md-6">
-            <h2>Servicio de administración de los empleados</h2>
-            <p>Aquí puedes gestionar las cuentas de los empleados.</p>
-            <a href="{% url 'listar_empleados' %}" class="btn btn-primary btn-sm">Gestionar cuentas de empleados</a>
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">Servicio de administración de los empleados</h4>
+                    <p class="card-text">Aquí puedes gestionar las cuentas de los empleados.</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{% url 'listar_empleados' %}" class="btn btn-primary btn-sm w-100">Gestionar cuentas de empleados</a>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
 {% endblock %}

@@ -104,13 +104,14 @@ def reporte_ventas_manuales(request):
             producto = detalle.producto
             ganancia_producto = 0
 
+            '''
             print(f"\nDEPURACIÓN - Producto en Reporte:")
             print(f"Nombre: {producto.nombre}")
             print(f"Stock Propio: {producto.consignado}")
             print(f"Precio Venta: {producto.precio}")
             print(f"Valor de Compra: {producto.precio_costo}")
             print(f"Costo Extra: {producto.costo_extra}")
-            print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}")
+            print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}") '''
 
             if producto.consignado:  # Stock Propio = Sí
                 if producto.precio_costo is not None and producto.costo_extra is not None:
@@ -125,7 +126,7 @@ def reporte_ventas_manuales(request):
 
             total_ganancia_productos += ganancia_producto
 
-        print(f"TOTAL GANANCIAS PRODUCTOS EN ESTA VENTA: {total_ganancia_productos}")
+        # print(f"TOTAL GANANCIAS PRODUCTOS EN ESTA VENTA: {total_ganancia_productos}")
 
         # Cálculo de servicios
         for detalle in servicios:
@@ -138,15 +139,16 @@ def reporte_ventas_manuales(request):
 
             total_ganancia_servicios += ganancia_servicio
 
+            '''
             print(f"\nDEPURACIÓN - Servicio en Reporte:")
             print(f"Nombre: {detalle.servicio.nombre}")
             print(f"Precio Servicio: {detalle.servicio.precio}")
             print(f"Precio Costo: {detalle.precio_costo}")
             print(f"Pago Cliente: {venta.pago_cliente}")
             print(f"Total Venta: {venta.total}")
-            print(f"Ganancia Servicio Calculada: {ganancia_servicio}")
+            print(f"Ganancia Servicio Calculada: {ganancia_servicio}") '''
 
-        print(f"TOTAL GANANCIA SERVICIOS EN ESTA VENTA: {total_ganancia_servicios}")
+        # print(f"TOTAL GANANCIA SERVICIOS EN ESTA VENTA: {total_ganancia_servicios}")
 
         # Sumamos la ganancia total
         total_ganancias += total_ganancia_productos + total_ganancia_servicios
@@ -275,6 +277,7 @@ def reporte_ventas_online(request):
         if detalle.producto:
             producto = detalle.producto
 
+            '''
             print("\n--- DEBUG: Producto en Reporte ---")
             print(f"Nombre: {producto.nombre}")
             print(f"Stock Propio: {producto.consignado}")  # Mensaje más claro
@@ -282,7 +285,7 @@ def reporte_ventas_online(request):
             print(f"Valor de Compra: {producto.precio_costo}")
             print(f"Costo Extra: {producto.costo_extra}")
             print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}")
-            print(f"Estado de Reserva: {detalle.estado_reserva}")
+            print(f"Estado de Reserva: {detalle.estado_reserva}") '''
 
             # Validamos si el producto fue vendido
             if detalle.estado_reserva == "Vendida":
@@ -290,29 +293,30 @@ def reporte_ventas_online(request):
                 if producto.consignado:  # Ahora se calcula bien como STOCK PROPIO
                     if producto.precio_costo is not None and producto.costo_extra is not None:
                         ganancia_detalle = (producto.precio - (producto.precio_costo + producto.costo_extra)) * detalle.cantidad
-                        print(f"Ganancia Calculada (Stock Propio): {ganancia_detalle}")
+                        # print(f"Ganancia Calculada (Stock Propio): {ganancia_detalle}")
                     else:
                         ganancia_detalle = 0
-                        print("Faltan valores de costo o extra. Ganancia = 0")
+                        # print("Faltan valores de costo o extra. Ganancia = 0")
                 else:  # Producto consignado
                     if producto.porcentaje_consignacion is not None:
                         ganancia_detalle = (producto.precio * (producto.porcentaje_consignacion / 100)) * detalle.cantidad
-                        print(f"Ganancia Calculada (Consignación): {ganancia_detalle}")
+                        # print(f"Ganancia Calculada (Consignación): {ganancia_detalle}")
                     else:
                         ganancia_detalle = 0  # Producto consignado sin porcentaje
-                        print("Producto consignado sin porcentaje definido. Ganancia = 0")
+                        # print("Producto consignado sin porcentaje definido. Ganancia = 0")
 
         elif detalle.servicio:
             ganancia_detalle = detalle.precio * detalle.cantidad
+            '''
             print("\n--- DEBUG: Servicio en Reporte ---")
             print(f"Nombre: {detalle.servicio.nombre}")
             print(f"Precio: {detalle.precio}")
             print(f"Cantidad: {detalle.cantidad}")
-            print(f"Ganancia Calculada (Servicio): {ganancia_detalle}")
+            print(f"Ganancia Calculada (Servicio): {ganancia_detalle}") '''
 
         total_ganancias += ganancia_detalle
 
-    print(f"\nTOTAL GANANCIAS CALCULADAS: {total_ganancias}\n")
+    # print(f"\nTOTAL GANANCIAS CALCULADAS: {total_ganancias}\n")
 
     # Formatear el total de ganancias para el reporte
     total_ganancias_formateado = formato_precio(total_ganancias)

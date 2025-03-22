@@ -67,6 +67,7 @@
 
 <div class="container mt-5 mb-5">
     <div class="row">
+        <!-- Tarjeta 1 -->
         <div class="col-md-4">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
@@ -78,6 +79,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tarjeta 2 -->
         <div class="col-md-4">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
@@ -89,6 +92,8 @@
                 </div>
             </div>
         </div>
+
+        <!-- Tarjeta 3 -->
         <div class="col-md-4">
             <div class="card text-center shadow-sm">
                 <div class="card-body">
@@ -97,6 +102,21 @@
                 </div>
                 <div class="card-footer bg-white">
                     <a href="{% url 'generar_presupuesto_pdf' %}" class="btn btn-success btn-sm w-100">Generar Presupuesto</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mt-4">
+        <!-- Tarjeta 4 centrada -->
+        <div class="col-md-4 mx-auto">
+            <div class="card text-center shadow-sm">
+                <div class="card-body">
+                    <h4 class="card-title">Generar Formulario de Inspección</h4>
+                    <p class="card-text">Aquí puedes crear y descargar formularios de inspección en formato PDF para tus clientes.</p>
+                </div>
+                <div class="card-footer bg-white">
+                    <a href="{% url 'generar_formulario_inspeccion_pdf' %}" class="btn btn-success btn-sm w-100">Generar Formulario</a>
                 </div>
             </div>
         </div>

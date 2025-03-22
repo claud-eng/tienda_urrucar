@@ -32,6 +32,7 @@ urlpatterns = [
     path('editar_venta_manual_servicio/<int:venta_id>/', views_ventas.editar_venta_manual_servicio, name='editar_venta_manual_servicio'), # Editar una venta manual de un servicio
     path('editar-venta-online/<int:venta_id>/', views_ventas.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
+    path('generar_formulario_inspeccion_pdf/', views.generar_formulario_inspeccion_pdf, name='generar_formulario_inspeccion_pdf'),  # Generar formulario de inspección en formato PDF
     path('generar_presupuesto_pdf/', views.generar_presupuesto_pdf, name='generar_presupuesto_pdf'),  # Generar presupuesto en formato PDF
     path('gestionar_inventario', views.gestionar_inventario, name='gestionar_inventario'),  # Gestionar inventario (administrador)
     path('gestionar_transacciones', views.gestionar_transacciones, name='gestionar_transacciones'),  # Gestionar transacciones

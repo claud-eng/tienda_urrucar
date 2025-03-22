@@ -1,4 +1,4 @@
-from .functions import es_administrador, exportar_presupuesto_pdf  # Importa la función 'es_administrador' para verificar si un usuario tiene rol de administrador.
+from .functions import es_administrador, exportar_presupuesto_pdf, exportar_formulario_inspeccion_pdf  # Importa la función 'es_administrador' para verificar si un usuario tiene rol de administrador.
 from .shared_imports import *  # Importa todas las funciones y módulos compartidos en la aplicación.
 
 # Validación para que solo el administrador tenga acceso a las plantillas
@@ -89,5 +89,39 @@ def generar_presupuesto_pdf(request):
         return response
 
     return render(request, "Transaccion/generar_presupuesto_pdf.html")
+
+@user_passes_test(es_administrador, login_url='home')
+def generar_formulario_inspeccion_pdf(request):
+    if request.method == "POST":
+        # Crear una nueva instancia de inspección para generar el código interno automáticamente
+        nueva_inspeccion = FormularioInspeccion.objects.create()
+
+        # Recoger los datos del formulario
+        datos_inspeccion = {
+            "fecha": request.POST.get("fecha"),
+            "nombre_inspector": request.POST.get("nombre_inspector"),
+            "codigo_interno": nueva_inspeccion.codigo_interno,
+            "nombre_cliente": request.POST.get("nombre_cliente"),
+            "rut_cliente": request.POST.get("rut_cliente"),
+            "email": request.POST.get("email"),
+            "telefono": request.POST.get("telefono"),
+            "patente": request.POST.get("patente"),
+            "anio": request.POST.get("anio"),
+            "marca": request.POST.get("marca"),
+            "modelo": request.POST.get("modelo"),
+            "kilometraje": request.POST.get("kilometraje"),
+            "color": request.POST.get("color"),
+            "conclusion": request.POST.get("conclusion")
+        }
+
+        # Generar el PDF
+        pdf_buffer = exportar_formulario_inspeccion_pdf(datos_inspeccion)
+
+        # Devolver el PDF como respuesta
+        response = HttpResponse(pdf_buffer, content_type="application/pdf")
+        response["Content-Disposition"] = f'attachment; filename="informe_inspeccion_{nueva_inspeccion.codigo_interno}.pdf"'
+        return response
+
+    return render(request, "Transaccion/generar_formulario_inspeccion_pdf.html")
 
 

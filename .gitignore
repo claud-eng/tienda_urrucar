@@ -7,5 +7,11 @@
 # Ignorar la carpeta env
 env/
 
+# Ignorar la carpeta logs
+logs/
+
+# Ignorar la carpeta media
+media/
+
 # Ignorar la carpeta .vscode
 .vscode/

@@ -73,28 +73,28 @@ def listar_productos(request):
             formato_precio(producto.costo_extra) if producto.costo_extra else None
         )
 
-        # Depuración de valores clave
+        ''' Depuración de valores clave
         print(f"\n--- DEBUG: Producto {producto.id} ---")
         print(f"Nombre: {producto.nombre}")
         print(f"Stock Propio (consignado): {producto.consignado}")
         print(f"Precio Venta: {producto.precio}")
         print(f"Valor de Compra: {producto.precio_costo}")
         print(f"Costo Extra: {producto.costo_extra}")
-        print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}")
+        print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}") '''
 
         # Calcular ganancia correcta
         if not producto.consignado:  # Si NO es stock propio (consignado), usa la fórmula de consignación
             if producto.porcentaje_consignacion is not None:
                 ganancia = round(float(producto.precio) * (float(producto.porcentaje_consignacion) / 100), 2)
-                print(f"Ganancia Calculada (Consignación): {ganancia}")  # Depuración
+                # print(f"Ganancia Calculada (Consignación): {ganancia}")  # Depuración
                 producto.ganancia_formateada = formato_precio(ganancia)
             else:
-                print("Producto consignado pero sin porcentaje definido.")
+                # print("Producto consignado pero sin porcentaje definido.")
                 producto.ganancia_formateada = ""
         else:  # Si es stock propio, usa el cálculo normal
             if producto.precio_costo is not None and producto.costo_extra is not None:
                 ganancia = producto.precio - (producto.precio_costo + producto.costo_extra)
-                print(f"Ganancia Calculada (Stock Propio): {ganancia}")  # Depuración
+                # print(f"Ganancia Calculada (Stock Propio): {ganancia}")  # Depuración
                 producto.ganancia_formateada = formato_precio(ganancia)
             else:
                 producto.ganancia_formateada = ""
@@ -115,9 +115,14 @@ def agregar_producto(request):
         if form.is_valid():
             producto = form.save()
 
-            # Procesar imágenes adicionales
+            # Procesar imágenes adicionales con validación de tamaño
             imagenes_adicionales = []
             for imagen in request.FILES.getlist('imagenes'):
+                # Validar el tamaño de cada imagen adicional
+                if imagen.size > 3 * 1024 * 1024:  # 3 MB
+                    messages.error(request, f"La imagen {imagen.name} supera los 3 MB y no se ha agregado.")
+                    continue  # No guardar imágenes que sean demasiado grandes
+
                 img_obj = ImagenProducto.objects.create(producto=producto, imagen=imagen)
                 imagenes_adicionales.append(img_obj.imagen.url)
 
@@ -139,6 +144,29 @@ def agregar_producto(request):
 
             messages.success(request, 'Producto y galería de imágenes agregados con éxito.')
             return redirect('listar_productos')
+        else:
+            # Si el formulario no es válido, mostrar un mensaje de error con los detalles
+            error_messages = []
+            datos_digitados = {}  # Almacenar lo que digitó el usuario
+            errores_detallados = []  # Almacenar errores específicos
+
+            for field, errors in form.errors.items():
+                # Capturar el valor ingresado por el usuario si está en `cleaned_data`
+                datos_digitados[field] = request.POST.get(field, "No ingresado")
+                for error in errors:
+                    error_messages.append(f"{form.fields[field].label}: {error}")
+                    errores_detallados.append(f"Campo: {field} -> {error}")
+
+            # Registrar en los logs los datos ingresados y los errores específicos
+            usuario = request.user
+            logger.error(
+                f"Error al agregar producto por usuario: {usuario.first_name} {usuario.last_name} ({usuario.email})\n"
+                f"Datos ingresados por el usuario:\n{datos_digitados}\n"
+                f"Errores detectados:\n{errores_detallados}"
+            )
+
+            messages.error(request, "Hubo un error al agregar el producto: " + ", ".join(error_messages))
+
     else:
         form = ProductoForm()
 
@@ -231,7 +259,13 @@ def editar_producto(request, producto_id):
                     except ImagenProducto.DoesNotExist:
                         pass
 
+            # Procesar imágenes adicionales con validación de tamaño
             for imagen in request.FILES.getlist("imagenes"):
+                # Validar el tamaño de cada imagen adicional
+                if imagen.size > 3 * 1024 * 1024:  # 3 MB
+                    messages.error(request, f"La imagen {imagen.name} supera los 3 MB y no se ha agregado.")
+                    continue  # No guardar imágenes que sean demasiado grandes
+
                 ImagenProducto.objects.create(producto=producto, imagen=imagen)
 
             # Guardar valores nuevos
@@ -275,6 +309,40 @@ def editar_producto(request, producto_id):
         else:
             print("\nERRORES EN EL FORMULARIO")
             print(form.errors)
+
+            # Capturar errores del formulario y mostrarlos al usuario
+            error_messages = []
+            datos_digitados = {}  # Almacenar TODOS los datos ingresados, no solo los incorrectos
+            errores_detallados = []  # Almacenar errores específicos
+
+            # Capturar todos los datos ingresados por el usuario, sin traducción de nombres de campos
+            for field in form.fields:
+                valor_ingresado = post_data.get(field, "No ingresado")
+
+                # Si el campo es la fecha de adquisición, convertir a formato "dd-mm-yyyy"
+                if field == "fecha_adquisicion" and valor_ingresado not in ["", "No ingresado"]:
+                    try:
+                        fecha_obj = datetime.strptime(valor_ingresado, "%Y-%m-%d")  # Convertir de "yyyy-mm-dd"
+                        valor_ingresado = fecha_obj.strftime("%d-%m-%Y")  # Formatear a "dd-mm-yyyy"
+                    except ValueError:
+                        valor_ingresado = "Formato incorrecto"
+
+                datos_digitados[field] = valor_ingresado  # Guardar sin traducción
+
+            # Capturar específicamente los errores sin traducción de nombres de campos
+            for field, errors in form.errors.items():
+                for error in errors:
+                    error_messages.append(f"{form.fields[field].label}: {error}")
+                    errores_detallados.append(f"{field} -> {error}")
+
+            # Registrar en los logs TODOS los datos ingresados sin traducción
+            logger.error(
+                f"Error al editar producto (ID: {producto.id}, Nombre: {producto.nombre}) por usuario: {usuario.first_name} {usuario.last_name} ({usuario.email})\n"
+                f"Todos los datos ingresados:\n{datos_digitados}\n"
+                f"Errores detectados:\n{errores_detallados}"
+            )
+
+            messages.error(request, "Hubo un error al actualizar el producto: " + ", ".join(error_messages))
 
     else:
         # Eliminar ceros innecesarios al mostrar en el formulario
@@ -351,18 +419,24 @@ def borrar_producto(request, producto_id):
 
 def catalogo_productos(request):
     """
-    Muestra un catálogo de productos permitiendo filtrar por marca y ordenar por precio.
+    Muestra un catálogo de productos permitiendo filtrar por marca, ordenar por precio y disponibilidad.
     """
     # Obtener parámetros de filtro y orden
     sort_order = request.GET.get('sort', '')
     marca_filter = request.GET.get('marca', '')
-
+    disponibilidad_filter = request.GET.get('disponibilidad', '')
     # Base queryset
     productos = Producto.objects.all()
 
     # Filtrar por marca
     if marca_filter:
         productos = productos.filter(marca=marca_filter)
+
+    # Filtrar por disponibilidad
+    if disponibilidad_filter == 'disponible':
+        productos = productos.filter(cantidad_stock__gt=0)
+    elif disponibilidad_filter == 'vendido':
+        productos = productos.filter(cantidad_stock=0)
 
     # Ordenar por precio
     if sort_order == 'asc':

@@ -365,6 +365,11 @@ def editar_empleado(request, empleado_id):
     instancia = Empleado.objects.get(id=empleado_id)
     user = instancia.user
 
+    # Restricción: Un Administrador NO puede editar a otro Administrador, pero sí puede editarse a sí mismo
+    if request.user.empleado.rol == "Administrador" and instancia.rol == "Administrador" and request.user != user:
+        messages.error(request, "No tienes permiso para editar a otro administrador.")
+        return redirect("listar_empleados")  # Redirigir al listado de empleados
+
     # Guardar valores originales antes de la edición
     valores_anteriores = {
         'Usuario': user.username,
@@ -429,9 +434,17 @@ def editar_empleado(request, empleado_id):
 @user_passes_test(es_administrador, login_url='home')
 def confirmar_borrar_empleado(request, empleado_id):
     """
-    Muestra una página de confirmación antes de eliminar un empleado.
+    Muestra una página de confirmación antes de eliminar un empleado,
+    pero impide que un Administrador intente eliminar a otro Administrador.
     """
+
     empleado = Empleado.objects.get(id=empleado_id)
+
+    # Restricción: Un Administrador NO puede eliminar a otro Administrador
+    if request.user.empleado.rol == "Administrador" and empleado.rol == "Administrador":
+        messages.error(request, "No tienes permiso para eliminar a otro administrador o a ti mismo.")
+        return redirect("listar_empleados")  # Redirigir al listado de empleados
+
     return render(request, 'Usuario/confirmar_borrar_empleado.html', {'empleado': empleado})
 
 @user_passes_test(es_administrador, login_url='home')
@@ -447,6 +460,16 @@ def borrar_empleado(request, empleado_id):
 
     try:
         empleado = Empleado.objects.get(id=empleado_id)
+
+        # Restricción: Un Administrador NO puede eliminar a otro Administrador
+        if usuario.empleado.rol == "Administrador" and empleado.rol == "Administrador":
+            messages.error(request, "No tienes permiso para eliminar a otro administrador o a ti mismo.")
+            logger.warning(
+                f"Intento de eliminación bloqueado: {usuario.first_name} {usuario.last_name} ({usuario.email}) "
+                f"intentó eliminar a otro Administrador (ID={empleado_id}, Usuario: {empleado.user.username})."
+            )
+            return redirect("listar_empleados")
+        
         empleado_usuario = empleado.user.username  # Guardar nombre de usuario antes de eliminarlo
 
         empleado.delete()  # Eliminar el empleado

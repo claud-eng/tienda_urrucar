@@ -77,7 +77,7 @@ def listar_ventas_online(request):
             producto = detalle.producto
             ganancia_detalle = 0
 
-            # Mostrar datos del producto antes del cálculo
+            ''' Mostrar datos del producto antes del cálculo
             print(f"\nDEPURACIÓN - Producto en Venta Online:")
             print(f"Orden ID: {venta.id}")
             print(f"Nombre: {producto.nombre}")
@@ -88,7 +88,7 @@ def listar_ventas_online(request):
             print(f"Costo Extra: {producto.costo_extra}")
             print(f"Porcentaje Consignación: {producto.porcentaje_consignacion}")
             print(f"Estado de Reserva: {detalle.estado_reserva}")
-            print(f"Cantidad Vendida: {detalle.cantidad}")
+            print(f"Cantidad Vendida: {detalle.cantidad}") '''
 
             # Aplicar cálculo de ganancia solo si la reserva es "Vendida"
             if detalle.estado_reserva == "Vendida":
@@ -96,14 +96,14 @@ def listar_ventas_online(request):
                     # Producto CONSIGNADO
                     if producto.porcentaje_consignacion is not None:
                         ganancia_detalle = round((producto.precio * (producto.porcentaje_consignacion / 100)) * detalle.cantidad, 2)
-                        print(f"Ganancia Calculada (Consignación, corregida): {ganancia_detalle}")
+                        # print(f"Ganancia Calculada (Consignación, corregida): {ganancia_detalle}")
                     else:
                         print("Producto consignado pero sin porcentaje definido. Ganancia = 0")
                 else:  
                     # Producto PROPIO (STOCK PROPIO)
                     if producto.precio_costo is not None and producto.costo_extra is not None:
                         ganancia_detalle = max((producto.precio - producto.precio_costo - producto.costo_extra) * detalle.cantidad, 0)
-                        print(f"Ganancia Calculada (Stock Propio, corregida): {ganancia_detalle}")
+                        # print(f"Ganancia Calculada (Stock Propio, corregida): {ganancia_detalle}")
                     else:
                         ganancia_detalle = 0
                         print("Faltan valores de precio de costo o costo extra. Ganancia = 0")
@@ -118,7 +118,7 @@ def listar_ventas_online(request):
                 'stock_propio': "Sí" if producto.consignado else "No",
             })
 
-        print(f"\nTOTAL GANANCIAS PRODUCTOS EN ESTA VENTA (Orden {venta.id}): {ganancia_total}")
+        # print(f"\nTOTAL GANANCIAS PRODUCTOS EN ESTA VENTA (Orden {venta.id}): {ganancia_total}")
 
         ventas_productos_list.append({
             'venta': venta,
@@ -298,12 +298,13 @@ def listar_ventas_manuales(request):
             if producto.fecha_adquisicion and venta.fecha_pago_final:
                 dias_transcurridos = (venta.fecha_pago_final.date() - producto.fecha_adquisicion).days
 
+            '''
             print(f"\nDEPURACIÓN - Producto en Venta Manual:")
             print(f"Nombre: {producto.nombre}")
             print(f"Stock Propio: {stock_propio}")
             print(f"Fecha Adquisición: {producto.fecha_adquisicion}")
             print(f"Fecha Pago Final: {venta.fecha_pago_final}")
-            print(f"Días Transcurridos entre la Adquisición y Venta: {dias_transcurridos}")
+            print(f"Días Transcurridos entre la Adquisición y Venta: {dias_transcurridos}") '''
 
             # Corrección: Si la venta aún no está pagada completamente, la ganancia debe ser 0
             if venta.fecha_pago_final:
@@ -327,7 +328,7 @@ def listar_ventas_manuales(request):
                 'stock_propio': stock_propio
             })
 
-        print(f"\nTOTAL GANANCIAS PRODUCTOS EN ESTA VENTA: {total_ganancia_productos}")
+        # print(f"\nTOTAL GANANCIAS PRODUCTOS EN ESTA VENTA: {total_ganancia_productos}")
 
         ventas_productos_list.append({
             'venta': venta,
@@ -368,8 +369,6 @@ def listar_ventas_manuales(request):
                 'dias_transcurridos': "",  # No aplica para servicios
                 'stock_propio': ""  # No aplica para servicios
             })
-
-        print(f"TOTAL GANANCIA SERVICIOS EN ESTA VENTA: {total_ganancia_servicios}")
 
         ventas_servicios_list.append({
             'venta': venta,

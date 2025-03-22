@@ -74,6 +74,16 @@ class ProductoForm(forms.ModelForm):
         resultado = valor == "True"
         print(f"Clean Consignado - Convertido a booleano: {resultado}")
         return resultado
+    
+    def clean_imagen(self):
+        """
+        Valida que la imagen principal no supere los 3 MB.
+        """
+        imagen = self.cleaned_data.get('imagen')
+        if imagen:
+            if imagen.size > 3 * 1024 * 1024:
+                raise ValidationError("La imagen no puede superar los 3 MB.")
+        return imagen
 
     def clean_porcentaje_consignacion(self):
         """
@@ -144,6 +154,16 @@ class ImagenProductoForm(forms.ModelForm):
         widgets = {
             'imagen': forms.ClearableFileInput(attrs={'class': 'form-control'}),  # Sin `multiple`
         }
+
+    def clean_imagen(self):
+        """
+        Valida que la imagen adicional no supere los 3 MB.
+        """
+        imagen = self.cleaned_data.get('imagen')
+        if imagen:
+            if imagen.size > 3 * 1024 * 1024:  # 3 MB
+                raise ValidationError("La imagen no puede superar los 3 MB.")
+        return imagen
 
 # Formulario para gestionar la creación y actualización de servicios
 class ServicioForm(forms.ModelForm):

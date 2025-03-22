@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Generar Informe de Inspección{% endblock %}
+{% block extra_css %}
+<style>
+/* Estilo base (Escritorio y pantallas grandes) */
+.container .btn {
+    margin-right: 10px;  /* Espaciado entre botones en pantallas grandes */
+    width: auto;  /* Ancho automático en pantallas grandes */
+}
+
+/* Para que los botones "Agregar Ítem", "Generar Presupuesto" y "Volver al menú" sean iguales */
+#agregar-item, .d-flex .btn {
+    white-space: nowrap;  /* Evita que el texto del botón se divida en varias líneas */
+}
+
+/* Tablets y móviles (pantallas medianas y pequeñas) */
+@media (max-width: 991.98px) {
+    .d-flex {
+        flex-wrap: wrap; /* Permite que los botones se apilen */
+    }
+    .container .btn, #agregar-item {
+        display: block;  /* Los botones se apilan verticalmente */
+        width: 100%;  /* Ocupan todo el ancho del contenedor */
+        margin-bottom: 10px;  /* Espaciado entre botones */
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+
+/* Móviles (pantallas pequeñas) */
+@media (max-width: 767.98px) {
+    .container .btn, #agregar-item {
+        display: block;
+        width: 100%;
+        margin-bottom: 15px;  /* Espaciado más amplio para móviles */
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+
+/* Dispositivos muy pequeños (menos de 480px) */
+@media (max-width: 480px) {
+    .container .btn, #agregar-item {
+        width: 100%;
+        margin-bottom: 12px;
+    }
+    .tabla-container {
+        overflow-x: auto; /* Habilita el scroll horizontal */
+        -webkit-overflow-scrolling: touch; /* Mejora la experiencia en dispositivos táctiles */
+    }
+    
+    .tabla-container table {
+        min-width: 900px; /* Asegura que la tabla tenga un ancho mínimo para forzar el scroll */
+    }
+}
+</style>
+{% endblock %}
+{% block content %}
+
+<div class="bg-light py-3">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-12 mb-0">
+                <a href="{% url 'home' %}">Inicio</a> 
+                <span class="mx-2 mb-0">/</span> 
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a> 
+                    <span class="mx-2 mb-0">/</span> 
+                {% endif %}
+                {% if user.empleado and user.empleado.rol == 'Administrador' %}
+                    <strong class="text-black">Generar Formulario de Inspección</strong>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container mt-5">
+    <form method="post" action="{% url 'generar_formulario_inspeccion_pdf' %}">
+        {% csrf_token %}
+
+        <h4 class="mt-4">Datos de la Inspección</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <label>Fecha:</label>
+                <input type="datetime-local" name="fecha" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Nombre del Inspector:</label>
+                <input type="text" name="nombre_inspector" class="form-control" required>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Datos del Cliente</h4>
+        <div class="row">
+            <div class="col-md-4">
+                <label>Nombre Cliente:</label>
+                <input type="text" name="nombre_cliente" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>RUT Cliente:</label>
+                <input type="text" name="rut_cliente" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Email:</label>
+                <input type="email" name="email" class="form-control" required>
+            </div>
+            <div class="col-md-4">
+                <label>Teléfono:</label>
+                <input type="text" name="telefono" class="form-control" required>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Datos del Vehículo</h4>
+        <div class="row">
+            <div class="col-md-3">
+                <label>Patente:</label>
+                <input type="text" name="patente" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label>Año:</label>
+                <input type="number" name="anio" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label>Marca:</label>
+                <input type="text" name="marca" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label>Modelo:</label>
+                <input type="text" name="modelo" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label>Kilometraje:</label>
+                <input type="number" name="kilometraje" class="form-control" required>
+            </div>
+            <div class="col-md-3">
+                <label>Color:</label>
+                <input type="text" name="color" class="form-control" required>
+            </div>
+        </div>
+
+        <h4 class="mt-4">Conclusión de la Inspección</h4>
+        <div class="form-group">
+            <textarea name="conclusion" class="form-control" rows="8" placeholder="Describe los hallazgos..." required></textarea>
+        </div>
+
+        <!-- Contenedor para los botones alineados en la misma línea -->
+        <div class="botones-container mt-4">
+            <button type="submit" class="btn btn-success btn-sm mb-4">Generar Formulario</button>
+
+            {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm mb-4">Volver al menú principal</a>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}

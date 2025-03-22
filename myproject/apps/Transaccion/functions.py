@@ -441,6 +441,153 @@ def exportar_presupuesto_pdf(datos_presupuesto, items):
     buffer.seek(0)
     return buffer
 
+# **Función para generar el PDF usando ReportLab**
+def exportar_formulario_inspeccion_pdf(datos):
+    buffer = BytesIO()
+    pdf = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20)
+    estilos = getSampleStyleSheet()
+    elementos = []
+
+    estilo_titulo = ParagraphStyle(name="Titulo", parent=estilos["Title"], fontSize=14, alignment=TA_CENTER)
+    estilo_dato = ParagraphStyle(name="Dato", fontSize=10)
+    estilo_justificado = ParagraphStyle(name="Justificado", alignment=TA_JUSTIFY, fontSize=10)
+
+    # Logo + Encabezado
+    logo_path = finders.find("images/logo.png")
+    logo = Image(logo_path, width=100, height=100)
+    encabezado_contenido = [
+        ["Urrucar Automotriz"],
+        ["Mantención y Reparación de Vehículos"],
+        ["RUT: 77.602.093-1"],
+        ["Tel: +569 61923925"],
+        ["www.urrucar.cl"]
+    ]
+
+    tabla_encabezado = Table(encabezado_contenido, colWidths=[300])
+    tabla_encabezado.setStyle(TableStyle([
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6),
+    ]))
+
+    contenedor_encabezado = Table([
+        [tabla_encabezado, logo]
+    ], colWidths=[350, 150])
+
+    contenedor_encabezado.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor("#ebebeb")),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('ROUNDEDCORNERS', (0, 0), (-1, -1), 5)
+    ]))
+    elementos.append(contenedor_encabezado)
+    elementos.append(Spacer(1, 12))
+
+    # **Título principal fuera de los cuadros**
+    elementos.append(Paragraph("Formulario de Inspección Urrucar Automotriz", estilo_titulo))
+    elementos.append(Spacer(1, 12))
+
+    # **Datos de la Inspección (antes llamado Formulario de Inspección)**
+    tabla_inspector = Table([
+        [Paragraph("<b>Fecha:</b>", estilo_dato), Paragraph(datetime.strptime(datos["fecha"], "%Y-%m-%dT%H:%M").strftime("%d/%m/%Y %H:%M"), estilo_dato),
+         Paragraph("<b>Inspector:</b>", estilo_dato), Paragraph(datos["nombre_inspector"], estilo_dato)],
+        [Paragraph("<b>Código Interno:</b>", estilo_dato), Paragraph(datos["codigo_interno"], estilo_dato), "", ""]
+    ], colWidths=[80, 150, 80, 150])
+    tabla_inspector.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10)
+    ]))
+
+    contenedor_inspector = Table([
+        [Paragraph("<b>Datos de la Inspección</b>", estilo_titulo)],
+        [tabla_inspector]
+    ], colWidths=[470])
+    contenedor_inspector.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor("#149ddd")),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+    ]))
+    elementos.append(contenedor_inspector)
+    elementos.append(Spacer(1, 12))
+
+    # **Datos del Cliente**
+    tabla_cliente = Table([
+        [Paragraph("<b>Nombre:</b>", estilo_dato), Paragraph(datos["nombre_cliente"], estilo_dato),
+         Paragraph("<b>RUT:</b>", estilo_dato), Paragraph(datos["rut_cliente"], estilo_dato)],
+        [Paragraph("<b>Email:</b>", estilo_dato), Paragraph(datos["email"], estilo_dato),
+         Paragraph("<b>Teléfono:</b>", estilo_dato), Paragraph(datos["telefono"], estilo_dato)]
+    ], colWidths=[80, 150, 80, 150])
+    tabla_cliente.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10)
+    ]))
+
+    contenedor_cliente = Table([
+        [Paragraph("<b>Datos del Cliente</b>", estilo_titulo)],
+        [tabla_cliente]
+    ], colWidths=[470])
+    contenedor_cliente.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor("#149ddd")),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+    ]))
+    elementos.append(contenedor_cliente)
+    elementos.append(Spacer(1, 12))
+
+    # **Datos del Vehículo**
+    tabla_vehiculo = Table([
+        [Paragraph("<b>Patente:</b>", estilo_dato), Paragraph(datos["patente"], estilo_dato),
+         Paragraph("<b>Año:</b>", estilo_dato), Paragraph(datos["anio"], estilo_dato)],
+        [Paragraph("<b>Marca:</b>", estilo_dato), Paragraph(datos["marca"], estilo_dato),
+         Paragraph("<b>Modelo:</b>", estilo_dato), Paragraph(datos["modelo"], estilo_dato)],
+        [Paragraph("<b>Kilometraje:</b>", estilo_dato), Paragraph(f"{datos['kilometraje']} km", estilo_dato),
+         Paragraph("<b>Color:</b>", estilo_dato), Paragraph(datos["color"], estilo_dato)]
+    ], colWidths=[80, 150, 80, 150])
+    tabla_vehiculo.setStyle(TableStyle([
+        ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10)
+    ]))
+
+    contenedor_vehiculo = Table([
+        [Paragraph("<b>Datos del Vehículo</b>", estilo_titulo)],
+        [tabla_vehiculo]
+    ], colWidths=[470])
+    contenedor_vehiculo.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor("#149ddd")),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+    ]))
+    elementos.append(contenedor_vehiculo)
+    elementos.append(Spacer(1, 12))
+
+    # **Conclusión de la Inspección**
+    parrafo_conclusion = Paragraph(datos["conclusion"], estilo_justificado)
+
+    contenedor_conclusion = Table([
+        [Paragraph("<b>Conclusión de la Inspección</b>", estilo_titulo)],
+        [parrafo_conclusion]
+    ], colWidths=[470])
+    contenedor_conclusion.setStyle(TableStyle([
+        ('BOX', (0, 0), (-1, -1), 1.5, colors.HexColor("#149ddd")),
+        ('LEFTPADDING', (0, 0), (-1, -1), 10),
+        ('RIGHTPADDING', (0, 0), (-1, -1), 10),
+        ('TOPPADDING', (0, 0), (-1, -1), 6),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
+    ]))
+    elementos.append(contenedor_conclusion)
+
+    # Generar PDF
+    pdf.build(elementos)
+    buffer.seek(0)
+    return buffer
 
 
 

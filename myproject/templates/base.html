@@ -21,201 +21,338 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css">
     <style>
-    .navbar-top a {
-        color: inherit;
-        text-decoration: none;
-        transition: color 0.3s ease;
-      }
+/* ==== Estilos base y generales ==== */
 
-    .navbar-top a:hover {
-        color: #149ddd;
-      }
+.diagonal-bars {
+  position: relative;
+  background-color: #f8f9fa; /* Fondo claro */
+  overflow: hidden;
+  padding: 5px 0 !important; /* Reduce el espacio interno */
+  min-height: 50px !important; /* Ajusta la altura mínima */
+}
 
-    .navbar-top span {
-        display: inline-block;
-        margin-top: 5px;
-        font-size: 0.9em;
-      }
+/* Ocultar las franjas diagonales por defecto (solo visibles en pantallas grandes) */
+.diagonal-bars::before,
+.diagonal-bars::after {
+  content: none;
+}
 
-    .admin-menu a {
-        color: black;
-        font-weight: bold;
-        text-decoration: none;
-      }
+/* Contador del carrito */
+.site-cart .count {
+  font-size: 0.6em !important;
+  position: absolute;
+  top: -8px;
+  right: -10px;
+  background-color: #007bff;
+  color: white;
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 0;
+  line-height: 1;
+}
 
-    .admin-menu a:hover {
-         color: #149ddd;
-      }
+.navbar-top a {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s ease;
+}
 
-    .site-navbar-top {
-        display: flex;
-        align-items: center;
-      }
+.navbar-top a:hover {
+  color: #149ddd;
+}
 
-    .site-navbar-top .new-site-logo {
-        flex: 1;
-      }
+.navbar-top span {
+  display: inline-block;
+  margin-top: 3px !important;
+  font-size: 0.85em !important;
+}
 
-    .site-navbar-top .site-search-icon {
-        flex: 1;
-      }
+.admin-menu a {
+  color: black;
+  font-weight: bold;
+  text-decoration: none;
+}
 
-    .site-navbar-top .site-top-icons {
-        flex: 1;
-        text-align: right;
-      }
+.admin-menu a:hover {
+  color: #149ddd;
+}
 
-    /* Estilo uniforme para los iconos en la sección de redes sociales */
-    .icon-contact {
-        font-size: 20px; /* Ajusta el tamaño del icono según lo necesario */
-        width: 20px;     /* Ancho uniforme */
-        height: 20px;    /* Altura uniforme */
-        display: inline-block;
-        text-align: center;
-        vertical-align: middle; /* Alinea el icono al centro vertical del texto */
-        margin-right: 8px; /* Espacio entre icono y texto */
-      }
+.site-navbar-top {
+  display: flex;
+  align-items: center;
+  padding: 3px 0 !important;
+  min-height: 50px !important;
+  justify-content: space-between;
+}
 
-    /* Alineación de los elementos de redes sociales */
-    .footer-social-icons ul li {
-        display: flex;
-        align-items: center; /* Alinea los íconos con el texto */
-      }
+.new-site-logo {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  height: 150px !important;
+  overflow: visible !important;
+  flex: none !important;
+  margin-left: -300px !important;
+}
 
-    /* 
-      Evita el desplazamiento horizontal no deseado causado por desbordamientos de contenido.
-      overflow-x: hidden asegura que cualquier elemento fuera del ancho de la pantalla se recorte.
-      max-width: 100% en el footer previene que se extienda más allá del ancho del viewport. 
-    */
-    html, body {
-      overflow-x: hidden;
-      }
+.new-site-logo img {
+  width: 250px !important;
+  height: auto;
+}
 
-    .site-footer {
-      max-width: 100%;
-      }
+.site-top-icons {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  flex: none !important;
+  margin-right: -300px !important;
+}
 
-    /* Estilos específicos para móviles - Solo hasta 767.98px (por debajo de tablets en vertical) */
-    @media (max-width: 767.98px) {
-      .site-navbar-top .new-site-logo,
-      .site-navbar-top .site-search-icon,
-      .site-navbar-top .site-top-icons {
-          flex: 100%;
-          text-align: center;
-          margin-bottom: 1rem;
-        }
+.site-top-icons ul {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+}
 
-    .site-navbar-top .site-top-icons {
-          text-align: center;
-        }
+.site-top-icons ul li {
+  margin-right: 8px !important;
+}
 
-    .site-navigation {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background-color: #fff;
-          z-index: 9999;
-          overflow-y: auto;
-          transform: translateX(100%);
-          transition: transform 0.3s ease-in-out;
-        }
+.icon-person,
+.icon-shopping_cart {
+  font-size: 1.1em !important;
+}
 
-    .site-navigation.active {
-          transform: translateX(0);
-        }
+/* Íconos de redes sociales */
+.icon-contact {
+  font-size: 18px !important;
+  width: 18px;
+  height: 18px;
+  display: inline-block;
+  text-align: center;
+  vertical-align: middle;
+  margin-right: 5px;
+}
 
-    .menu-close-btn {
-          position: absolute;
-          top: 15px;
-          right: 20px;
-          font-size: 30px;
-          cursor: pointer;
-          color: #333;
-          z-index: 10001;
-        }
+.footer-social-icons ul li {
+  display: flex;
+  align-items: center;
+}
 
-    .menu-close-btn:hover {
-          color: #149ddd;
-        }
+html,
+body {
+  overflow-x: hidden;
+}
 
-    .site-navigation ul {
-          padding: 40px 20px 20px;
-          margin: 0;
-          list-style: none;
-        }
+.site-footer {
+  max-width: 100%;
+}
 
-    .site-navigation ul li {
-          margin-bottom: 15px;
-        }
+/* ==== Media queries ordenadas de mayor a menor ==== */
 
-    .site-navigation a {
-          font-size: 1.1em;
-          color: #333;
-          text-decoration: none;
-          display: block;
-          padding: 10px 0;
-        }
+/* Pantallas grandes: >=1281px */
+@media (min-width: 1281px) {
+  .diagonal-bars::before,
+  .diagonal-bars::after {
+    content: '';
+    position: absolute;
+    width: 80px;
+    height: 1000%;
+    transform: rotate(25deg);
+    opacity: 0.9;
+    z-index: 0;
+  }
 
-    .site-mobile-menu {
-          max-height: 100%;
-          overflow-y: auto;
-        }
+  .diagonal-bars::before {
+    left: 35.9%;
+    top: -200%;
+    background: #111;
+  }
 
-    .site-top-icons ul {
-          display: flex;
-          justify-content: center;  /* Centra los elementos horizontalmente */
-          align-items: center;
-          flex-wrap: nowrap;  /* Evita que se rompa en varias líneas */
-        }
+  .diagonal-bars::after {
+    left: 40.9%;
+    top: -200%;
+    background: #ff0000;
+  }
+}
 
-    .navbar-top {
-          margin: 0 10px;  /* Añade margen para evitar que se pegue a los bordes */
-        }
-
-    .site-cart {
-          margin-right: 15px;  /* Alinea el carrito correctamente */
-        }
-
-    .navbar-top span {
-          white-space: nowrap;  /* Evita que se dividan los textos largos */
-        }
-      }
-
-/* Para pantallas entre 768px y 991.98px (Tablets y laptops pequeñas) - Mostrar el menú de escritorio */
+/* Pantallas medianas: 768px a 991.98px (tablets/laptops pequeñas) */
 @media (min-width: 768px) and (max-width: 991.98px) {
-    .site-navbar .site-top-icons {
-          display: flex;
-          justify-content: flex-end;
-        }
+  .site-navbar .site-top-icons {
+    display: flex;
+    justify-content: flex-end;
+  }
 
-    .site-navigation {
-          position: static; /* Se mantiene normal */
-          height: auto;
-          transform: translateX(0); /* Elimina el deslizamiento del menú */
-          background-color: transparent;
-          box-shadow: none;
-        }
+  .site-navigation {
+    position: static;
+    height: auto;
+    transform: translateX(0);
+    background-color: transparent;
+    box-shadow: none;
+  }
 
-    .site-navigation ul {
-          display: flex;
-          justify-content: center;
-          padding: 0;
-        }
+  .site-navigation ul {
+    display: flex;
+    justify-content: center;
+    padding: 0;
+  }
 
-    .site-navigation ul li {
-          margin: 0 15px;
-        }
-      }
-    </style>
-    <!-- Bloque para CSS adicional -->
-    {% block extra_css %}{% endblock %}
+  .site-navigation ul li {
+    margin: 0 15px;
+  }
+}
+
+/* Pantallas hasta 1280px (ajustes especiales para layout proporcional) */
+@media (max-width: 1280px) {
+  .site-navbar-top {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    text-align: center;
+  }
+
+  .new-site-logo {
+    order: 1;
+    flex: 1;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center;
+    margin-left: 0 !important;
+  }
+
+  .site-top-icons {
+    order: 2;
+    flex: 2;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center;
+    margin-right: 0 !important;
+    flex-wrap: nowrap;
+    gap: 15px;
+  }
+
+  .site-top-icons ul {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    gap: 20px;
+  }
+
+  .site-top-icons ul li {
+    list-style: none;
+    margin: 0;
+  }
+
+  .site-menu-toggle {
+    display: inline-block !important;
+    font-size: 1.4em;
+    cursor: pointer;
+  }
+}
+
+/* Móviles: hasta 767.98px */
+@media (max-width: 767.98px) {
+  .site-navbar-top .new-site-logo,
+  .site-navbar-top .site-search-icon,
+  .site-navbar-top .site-top-icons {
+    flex: 100%;
+    text-align: center;
+    margin-bottom: 1rem;
+  }
+
+  .site-navbar-top .site-top-icons {
+    text-align: center;
+  }
+
+  .site-navigation {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #fff;
+    z-index: 9999;
+    overflow-y: auto;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+  }
+
+  .site-navigation.active {
+    transform: translateX(0);
+  }
+
+  .menu-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 30px;
+    cursor: pointer;
+    color: #333;
+    z-index: 10001;
+  }
+
+  .menu-close-btn:hover {
+    color: #149ddd;
+  }
+
+  .site-navigation ul {
+    padding: 40px 20px 20px;
+    margin: 0;
+    list-style: none;
+  }
+
+  .site-navigation ul li {
+    margin-bottom: 15px;
+  }
+
+  .site-navigation a {
+    font-size: 1.1em;
+    color: #333;
+    text-decoration: none;
+    display: block;
+    padding: 10px 0;
+  }
+
+  .site-mobile-menu {
+    max-height: 100%;
+    overflow-y: auto;
+  }
+
+  .site-top-icons ul {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: nowrap;
+  }
+
+  .navbar-top {
+    margin: 0 10px;
+  }
+
+  .site-cart {
+    margin-right: 15px;
+  }
+
+  .navbar-top span {
+    white-space: nowrap;
+  }
+}
+</style>
+<!-- Bloque para CSS adicional -->
+{% block extra_css %}{% endblock %}
 </head>
 <body>
     <div class="site-wrap">
       <header class="site-navbar" role="banner" >
-        <div class="site-navbar-top bg-light">
+        <div class="site-navbar-top diagonal-bars">
           <div class="container">
             <div class="row align-items-center">
         

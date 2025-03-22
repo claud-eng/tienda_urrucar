@@ -9,6 +9,11 @@ from django.db import models  # Importa la biblioteca models de Django para defi
 from django.forms import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.utils.timezone import now # Importa la función now para obtener la hora actual.
 
+# Valida que el tamaño de la imagen no supere los 3 MB.
+def validar_tamano_imagen(image):
+    if image.size > 3 * 1024 * 1024:  # 3 MB
+        raise ValidationError("La imagen no puede superar los 3 MB.")
+    
 # Clase para almacenar información de productos
 class Producto(models.Model):
     # Opciones de categoría para el producto
@@ -32,7 +37,7 @@ class Producto(models.Model):
     precio = models.PositiveIntegerField()  # Precio normal del producto
     precio_reserva = models.PositiveIntegerField(null=True, blank=True)  # Precio de reserva del producto
     cantidad_stock = models.PositiveIntegerField()  # Cantidad disponible en stock
-    imagen = models.ImageField(upload_to='productos/', null=True, blank=True)  # Imagen principal del producto
+    imagen = models.ImageField(upload_to='productos/', null=True, blank=True, validators=[validar_tamano_imagen])  # Imagen principal del producto
     precio_costo = models.PositiveIntegerField(null=True, blank=True, help_text="Precio de costo del producto")
     costo_extra = models.PositiveIntegerField(null=True, blank=True, help_text="Costos adicionales del producto")
     fecha_adquisicion = models.DateField(null=True, blank=True, help_text="Fecha en que se adquirió el producto")
@@ -71,11 +76,6 @@ class Producto(models.Model):
     def __str__(self):
         return self.nombre  # Retorna el nombre del producto como representación en cadena
     
-# Valida que el tamaño de la imagen no supere los 3 MB.
-def validar_tamano_imagen(image):
-    if image.size > 3 * 1024 * 1024:  # 3 MB
-        raise ValidationError("La imagen no puede superar los 3 MB.")
-
 # Clase que representa una imagen adicional asociada a un producto
 class ImagenProducto(models.Model):
     producto = models.ForeignKey(Producto, on_delete=models.CASCADE, related_name='imagenes')
@@ -345,3 +345,21 @@ class Presupuesto(models.Model):
 
     def __str__(self):
         return f"Presupuesto {self.numero_presupuesto}"
+
+# Clase para almacenar el código interno de la inspección
+class FormularioInspeccion(models.Model):
+    codigo_interno = models.CharField(max_length=10, unique=True, editable=False)
+    fecha_creacion = models.DateTimeField(auto_now_add=True)
+
+    def save(self, *args, **kwargs):
+        if not self.codigo_interno:
+            ultimo = FormularioInspeccion.objects.order_by("-id").first()
+            if ultimo:
+                nuevo_codigo = str(int(ultimo.codigo_interno) + 1).zfill(10)
+            else:
+                nuevo_codigo = "0000000001"
+            self.codigo_interno = nuevo_codigo
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f"Inspección {self.codigo_interno}"

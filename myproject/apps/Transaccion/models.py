@@ -347,13 +347,13 @@ class Presupuesto(models.Model):
         return f"Presupuesto {self.numero_presupuesto}"
 
 # Clase para almacenar el código interno de la inspección
-class FormularioInspeccion(models.Model):
+class InformeInspeccion(models.Model):
     codigo_interno = models.CharField(max_length=10, unique=True, editable=False)
     fecha_creacion = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
         if not self.codigo_interno:
-            ultimo = FormularioInspeccion.objects.order_by("-id").first()
+            ultimo = InformeInspeccion.objects.order_by("-id").first()
             if ultimo:
                 nuevo_codigo = str(int(ultimo.codigo_interno) + 1).zfill(10)
             else:

@@ -9,7 +9,7 @@
     width: auto;  /* Ancho automático en pantallas grandes */
 }
 
-/* Para que los botones "Agregar Ítem", "Generar Presupuesto" y "Volver al menú" sean iguales */
+/* Para que los botones "Agregar Ítem", "Generar Informe" y "Volver al menú" sean iguales */
 #agregar-item, .d-flex .btn {
     white-space: nowrap;  /* Evita que el texto del botón se divida en varias líneas */
 }
@@ -81,7 +81,7 @@
                     <span class="mx-2 mb-0">/</span> 
                 {% endif %}
                 {% if user.empleado and user.empleado.rol == 'Administrador' %}
-                    <strong class="text-black">Generar Formulario de Inspección</strong>
+                    <strong class="text-black">Generar Informe de Inspección</strong>
                 {% endif %}
             </div>
         </div>
@@ -89,7 +89,7 @@
 </div>
 
 <div class="container mt-5">
-    <form method="post" action="{% url 'generar_formulario_inspeccion_pdf' %}">
+    <form method="post" enctype="multipart/form-data" action="{% url 'generar_informe_inspeccion_pdf' %}">
         {% csrf_token %}
 
         <h4 class="mt-4">Datos de la Inspección</h4>
@@ -111,17 +111,17 @@
                 <input type="text" name="nombre_cliente" class="form-control" required>
             </div>
             <div class="col-md-4">
-                <label>RUT Cliente:</label>
+                <label>RUT:</label>
                 <input type="text" name="rut_cliente" class="form-control" required>
-            </div>
+            </div>           
             <div class="col-md-4">
                 <label>Email:</label>
                 <input type="email" name="email" class="form-control" required>
             </div>
             <div class="col-md-4">
                 <label>Teléfono:</label>
-                <input type="text" name="telefono" class="form-control" required>
-            </div>
+                <input type="text" name="telefono" class="form-control" id="telefono" value="+569" required>
+            </div>            
         </div>
 
         <h4 class="mt-4">Datos del Vehículo</h4>
@@ -157,9 +157,53 @@
             <textarea name="conclusion" class="form-control" rows="8" placeholder="Describe los hallazgos..." required></textarea>
         </div>
 
+        <div class="form-group mt-4">
+            <label for="imagenes">Fotografías (máximo 3MB por imagen):</label>
+            <input type="file" name="imagenes" id="imagenes" class="form-control" accept="image/*" multiple required>
+        </div>
+        
+        <h4 class="mt-4">Informe Técnico</h4>
+        <div class="table-responsive">
+            <table class="table table-bordered">
+                <thead class="thead-light">
+                    <tr>
+                        <th>#</th>
+                        <th>Ítem</th>
+                        <th>Cumple</th>
+                        <th>No Aplica</th>
+                        <th>No Cumple</th>
+                        <th>Observaciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% comment %} Contador único manual para indexar radio buttons {% endcomment %}
+                    {% with 0 as global_index %}
+                        {% for seccion in secciones_inspeccion %}
+                            <tr>
+                                <td colspan="6"><strong>{{ seccion.titulo }}</strong></td>
+                            </tr>
+                            {% for item in seccion.items %}
+                                <tr>
+                                    <td>{{ forloop.parentloop.counter }}.{{ forloop.counter }}</td>
+                                    <td>
+                                        {{ item }}
+                                        <input type="hidden" name="item_descripcion[]" value="{{ item }}">
+                                    </td>
+                                    <td><input type="radio" name="item_estado_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" value="Cumple" checked></td>
+                                    <td><input type="radio" name="item_estado_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" value="No Aplica"></td>
+                                    <td><input type="radio" name="item_estado_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" value="No Cumple"></td>
+                                    <td><input type="text" name="item_observacion_{{ forloop.parentloop.counter }}_{{ forloop.counter }}" class="form-control"></td>
+                                </tr>
+                            {% endfor %}
+                        {% endfor %}
+                    {% endwith %}
+                </tbody>
+            </table>
+        </div>
+        
         <!-- Contenedor para los botones alineados en la misma línea -->
         <div class="botones-container mt-4">
-            <button type="submit" class="btn btn-success btn-sm mb-4">Generar Formulario</button>
+            <button type="submit" class="btn btn-success btn-sm mb-4">Generar Informe</button>
 
             {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                 <a href="{% url 'gestionar_transacciones' %}" class="btn btn-danger btn-sm mb-4">Volver al menú principal</a>
@@ -167,4 +211,26 @@
         </div>
     </form>
 </div>
+
+<!-- Script para cargar el valor: +569 por defecto en el campo del teléfono -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        let telefonoInput = document.getElementById("telefono");
+
+        if (telefonoInput) {
+            telefonoInput.addEventListener("input", function () {
+                if (!this.value.startsWith("+569")) {
+                    this.value = "+569";
+                }
+            });
+
+            telefonoInput.addEventListener("focus", function () {
+                if (this.value === "") {
+                    this.value = "+569";
+                }
+            });
+        }
+    });
+</script>
+
 {% endblock %}

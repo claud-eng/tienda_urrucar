@@ -1,8 +1,11 @@
+# Ignorar el archivo .env
+.env
+
 # Ignorar la carpeta .vs
 .vs/
 
-# Ignorar el archivo .env
-.env
+# Ignorar la carpeta .vscode
+.vscode/
 
 # Ignorar la carpeta env
 env/
@@ -13,5 +16,5 @@ logs/
 # Ignorar la carpeta media
 media/
 
-# Ignorar la carpeta .vscode
-.vscode/
+# Ignorar el archivo urls.py dentro de la carpeta principal del proyecto
+myproject/urls.py

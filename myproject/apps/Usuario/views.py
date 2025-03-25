@@ -1,13 +1,13 @@
 import logging # Importa 'logging' para crear registro de logs en un archivo.
-from apps.Usuario.models import Cliente, Empleado  # Importa los modelos Cliente y Empleado de la aplicación Usuario
-from django.contrib import messages  # Importa la clase para trabajar con mensajes de Django
-from django.contrib.auth import logout  # Importa la función logout para cerrar la sesión de un usuario
+from apps.Usuario.models import Cliente, Empleado  # Importa los modelos Cliente y Empleado de la aplicación Usuario.
+from django.contrib import messages  # Importa la clase para trabajar con mensajes de Django.
+from django.contrib.auth import logout  # Importa la función logout para cerrar la sesión de un usuario.
 from django.contrib.auth.decorators import login_required, user_passes_test  # Importa 'login_required' y 'user_passes_test' para proteger vistas que requieren autenticación y permisos.
-from django.contrib.auth.hashers import make_password  # Importa la función para crear contraseñas seguras
-from django.contrib.auth.models import User  # Importa el modelo User
-from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator  # Importa clases y funciones para paginación
-from django.shortcuts import redirect, render  # Importa funciones para redirigir y renderizar plantillas HTML
-from .forms import CambiarContraseñaUsuarioForm, ClienteForm, CustomClienteForm, EditarClienteForm, EditarEmpleadoForm, EmpleadoForm  # Importa los formularios definidos en este directorio
+from django.contrib.auth.hashers import make_password  # Importa la función para crear contraseñas seguras.
+from django.contrib.auth.models import User  # Importa el modelo User.
+from django.core.paginator import EmptyPage, PageNotAnInteger, Paginator  # Importa clases y funciones para paginación.
+from django.shortcuts import redirect, render  # Importa funciones para redirigir y renderizar plantillas HTML.
+from .forms import CambiarContraseñaUsuarioForm, ClienteForm, CustomClienteForm, EditarClienteForm, EditarEmpleadoForm, EmpleadoForm  # Importa los formularios definidos en este directorio.
 
 # Validación para que solo el administrador tenga acceso a las plantillas
 def es_administrador(user):

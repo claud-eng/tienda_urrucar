@@ -15,7 +15,7 @@ class ClienteAnonimoForm(forms.ModelForm):
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
     CONSIGNADO_CHOICES = [
-        ('True', "Sí"),   # Ahora "Sí" es la primera opción y será la predeterminada
+        ('True', "Sí"),   # "Sí" es la primera opción predeterminada
         ('False', "No"),
     ]
 

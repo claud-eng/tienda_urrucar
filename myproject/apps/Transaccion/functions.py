@@ -278,7 +278,7 @@ def exportar_presupuesto_pdf(datos_presupuesto, items):
     # **Encabezado con Bordes Redondeados**
     encabezado_contenido = [
         ["Urrucar Automotriz"],
-        ["Mantención y Reparación de Vehículos"],
+        ["Servicio Integral para Vehículos"],
         ["RUT: 77.602.093-1"],
         ["Tel: +569 61923925"],
         ["www.urrucar.cl"]
@@ -322,8 +322,8 @@ def exportar_presupuesto_pdf(datos_presupuesto, items):
     ]))
 
     datos_cliente_contenido = [
-        [Paragraph("<b>Cliente:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['cliente_nombre'], estilo_datos),
-        Paragraph("<b>RUT:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['cliente_rut'], estilo_datos)],
+        [Paragraph("<b>Cliente:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['nombre_cliente'], estilo_datos),
+        Paragraph("<b>RUT:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['rut_cliente'], estilo_datos)],
         [Paragraph("<b>Teléfono:</b>", estilo_etiqueta), Paragraph(datos_presupuesto['telefono'], estilo_datos)],
         [Paragraph("<b>Fecha Presupuesto:</b>", estilo_etiqueta), 
         Paragraph(datetime.strptime(datos_presupuesto['fecha_presupuesto'], "%Y-%m-%d").strftime("%d/%m/%Y"), estilo_datos),
@@ -437,12 +437,13 @@ def exportar_presupuesto_pdf(datos_presupuesto, items):
     # **TOTAL PRESUPUESTO en grande**
     elementos.append(Paragraph("TOTAL PRESUPUESTO: " + formatear_monto(total_final), estilo_titulo))
 
+    # Generar PDF
     pdf.build(elementos)
     buffer.seek(0)
     return buffer
 
 # **Función para generar el PDF usando ReportLab**
-def exportar_formulario_inspeccion_pdf(datos):
+def exportar_informe_inspeccion_pdf(datos, imagenes, items_inspeccion, secciones_inspeccion):
     buffer = BytesIO()
     pdf = SimpleDocTemplate(buffer, pagesize=A4, topMargin=20)
     estilos = getSampleStyleSheet()
@@ -457,7 +458,7 @@ def exportar_formulario_inspeccion_pdf(datos):
     logo = Image(logo_path, width=100, height=100)
     encabezado_contenido = [
         ["Urrucar Automotriz"],
-        ["Mantención y Reparación de Vehículos"],
+        ["Servicio Integral para Vehículos"],
         ["RUT: 77.602.093-1"],
         ["Tel: +569 61923925"],
         ["www.urrucar.cl"]
@@ -486,10 +487,9 @@ def exportar_formulario_inspeccion_pdf(datos):
     elementos.append(Spacer(1, 12))
 
     # **Título principal fuera de los cuadros**
-    elementos.append(Paragraph("Formulario de Inspección Urrucar Automotriz", estilo_titulo))
+    elementos.append(Paragraph("Informe de Inspección Precompra", estilo_titulo))
     elementos.append(Spacer(1, 12))
 
-    # **Datos de la Inspección (antes llamado Formulario de Inspección)**
     tabla_inspector = Table([
         [Paragraph("<b>Fecha:</b>", estilo_dato), Paragraph(datetime.strptime(datos["fecha"], "%Y-%m-%dT%H:%M").strftime("%d/%m/%Y %H:%M"), estilo_dato),
          Paragraph("<b>Inspector:</b>", estilo_dato), Paragraph(datos["nombre_inspector"], estilo_dato)],
@@ -583,6 +583,131 @@ def exportar_formulario_inspeccion_pdf(datos):
         ('BOTTOMPADDING', (0, 0), (-1, -1), 6)
     ]))
     elementos.append(contenedor_conclusion)
+
+    # Si hay imágenes, agregarlas en bloques de 2 por fila
+    if imagenes:
+        bloque_fotografias = []
+        bloque_fotografias.append(Spacer(1, 12))
+        bloque_fotografias.append(Paragraph("<b>Fotografías</b>", estilo_titulo))
+        bloque_fotografias.append(Spacer(1, 6))
+
+        fila_imagenes = []
+        max_ancho = 220  # Tamaño fijo
+        max_alto = 150
+
+        for idx, img in enumerate(imagenes):
+            try:
+                image_obj = Image(img, width=max_ancho, height=max_alto)
+
+                fila_imagenes.append(image_obj)
+
+                if len(fila_imagenes) == 2 or idx == len(imagenes) - 1:
+                    # Rellenar si es impar
+                    if len(fila_imagenes) == 1:
+                        fila_imagenes.append(Spacer(1, max_alto))
+                    tabla_fotos = Table([fila_imagenes], colWidths=[250, 250])
+                    tabla_fotos.setStyle(TableStyle([
+                        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                        ('BOTTOMPADDING', (0, 0), (-1, -1), 10)
+                    ]))
+                    bloque_fotografias.append(tabla_fotos)
+                    fila_imagenes = []
+            except Exception as e:
+                print(f"Error al procesar imagen {idx + 1}: {e}")
+
+        elementos.append(KeepTogether(bloque_fotografias))
+
+    # **Informe Técnico**
+    if items_inspeccion:
+        elementos.append(Spacer(1, 12))
+        elementos.append(Paragraph("<b>Informe Técnico</b>", estilo_titulo))
+        elementos.append(Spacer(1, 6))
+
+        seccion_actual = ""
+        tabla_datos = [
+            ["#", "Ítem", "Cumple", "No Aplica", "No Cumple", "Observaciones"]
+        ]
+
+        tabla_estilos = [
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTNAME', (0, 1), (-1, -1), 'Helvetica'),
+            ('FONTSIZE', (0, 0), (-1, -1), 8),
+            ('BACKGROUND', (0, 0), (-1, 0), colors.lightblue),
+            ('ALIGN', (2, 1), (4, -1), 'CENTER'),
+            ('VALIGN', (0, 1), (-1, -1), 'TOP'),
+        ]
+
+        fila_idx = 1  # empieza después del encabezado
+
+        for item in items_inspeccion:
+            # Sección (por ejemplo: 1 de "1.3")
+            seccion_num = item["numero"].split(".")[0]
+
+            # Insertar título si cambia la sección
+            if seccion_num != seccion_actual:
+                seccion_actual = seccion_num
+                titulo_idx = int(seccion_actual) - 1
+                if 0 <= titulo_idx < len(secciones_inspeccion):
+                    titulo = secciones_inspeccion[titulo_idx]["titulo"]
+                    tabla_datos.append([Paragraph(f"<b>{titulo}</b>", estilo_dato)] + [""] * 5)
+                    tabla_estilos.append(('SPAN', (0, fila_idx), (5, fila_idx)))
+                    tabla_estilos.append(('BACKGROUND', (0, fila_idx), (5, fila_idx), colors.HexColor("#e0e0e0")))
+                    fila_idx += 1
+
+            cumple = "X" if item["estado"] == "Cumple" else ""
+            no_aplica = "X" if item["estado"] == "No Aplica" else ""
+            no_cumple = "X" if item["estado"] == "No Cumple" else ""
+
+            descripcion = Paragraph(item["descripcion"], estilo_dato)
+            observacion = Paragraph(item["observacion"], estilo_dato)
+
+            tabla_datos.append([
+                item["numero"],
+                descripcion,
+                cumple,
+                no_aplica,
+                no_cumple,
+                observacion
+            ])
+            fila_idx += 1
+
+        tabla_inspeccion = Table(tabla_datos, colWidths=[25, 210, 50, 50, 60, 100])
+        tabla_inspeccion.setStyle(TableStyle(tabla_estilos))
+        elementos.append(tabla_inspeccion)
+
+        # INSPECCIONADO con subrayado justo debajo y texto centrado abajo
+        estilo_inspeccionado = ParagraphStyle(
+            name="Inspeccionado",
+            alignment=TA_CENTER,
+            fontSize=16,
+            textColor=colors.HexColor("#66bb6a"),
+            fontName="Helvetica-Bold",
+        )
+
+        estilo_footer = ParagraphStyle(
+            name="Footer",
+            alignment=TA_CENTER,
+            fontSize=12,
+            fontName="Helvetica-Bold"
+        )
+
+        # Tabla de 2 filas: INSPECCIONADO y Urrucar Automotriz
+        tabla_inspeccionado = Table([
+            [Paragraph("INSPECCIONADO", estilo_inspeccionado)],
+            [Paragraph("Urrucar Automotriz", estilo_footer)]
+        ], colWidths=[200])
+
+        tabla_inspeccionado.setStyle(TableStyle([
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('TOPPADDING', (0, 0), (-1, -1), 6),
+            ('LINEBELOW', (0, 0), (-1, 0), 1, colors.HexColor("#149ddd")),  # solo en fila 0
+        ]))
+
+        # Añadir a los elementos
+        elementos.append(Spacer(1, 16))
+        elementos.append(tabla_inspeccionado)
 
     # Generar PDF
     pdf.build(elementos)

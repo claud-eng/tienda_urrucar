@@ -1,7 +1,7 @@
-from django.db import models  # Importa modelos de Django para definir estructuras de base de datos
-from django.db.models.signals import post_delete  # Importa la señal para acciones después de eliminar un registro
-from django.contrib.auth.models import User  # Importa el modelo User para la relación con Cliente y Empleado
-from django.dispatch import receiver  # Importa el receptor de señales para realizar acciones al recibir una señal
+from django.db import models  # Importa modelos de Django para definir estructuras de base de datos.
+from django.db.models.signals import post_delete  # Importa la señal para acciones después de eliminar un registro.
+from django.contrib.auth.models import User  # Importa el modelo User para la relación con Cliente y Empleado.
+from django.dispatch import receiver  # Importa el receptor de señales para realizar acciones al recibir una señal.
 
 # Modelo para almacenar información del cliente
 class Cliente(models.Model):

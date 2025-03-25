@@ -1,16 +1,22 @@
-from . import views  # Importación de las vistas de la aplicación actual
-from .views import index  # Importa la vista index desde views.py
-from apps.Usuario.forms import ResetPasswordForm, CustomPasswordResetForm, NewPasswordForm  # Formularios personalizados para restablecimiento de contraseña
-from django.conf import settings  # Configuraciones del proyecto
-from django.conf.urls.static import static  # Función para servir archivos estáticos durante el desarrollo
-from django.contrib import admin  # Herramientas de administración de Django
-from django.contrib.auth import views as auth_views  # Vistas de autenticación predeterminadas de Django
-from django.shortcuts import render  # Función para renderizar plantillas HTML
-from django.urls import include, path  # Funciones para incluir y definir rutas de URL
+from . import views  # Importación de las vistas de la aplicación actual.
+from .views import index  # Importa la vista index desde views.py.
+from apps.Usuario.forms import ResetPasswordForm, CustomPasswordResetForm, NewPasswordForm  # Formularios personalizados para restablecimiento de contraseña.
+from django.conf import settings  # Configuraciones del proyecto.
+from django.conf.urls.static import static  # Función para servir archivos estáticos durante el desarrollo.
+from django.contrib import admin  # Herramientas de administración de Django.
+from django.contrib.auth import views as auth_views  # Vistas de autenticación predeterminadas de Django.
+from django.http import HttpResponseNotFound, HttpResponseRedirect # Respuestas HTTP para redireccionar o mostrar errores.
+from django.shortcuts import render  # Función para renderizar plantillas HTML.
+from django.urls import include, path  # Funciones para incluir y definir rutas de URL.
+
+# Devuelve un error 404 al intentar acceder a /admin, ocultando la existencia del panel de administración real.
+def bloquear_admin(request):
+    return HttpResponseNotFound()
 
 urlpatterns = [
     path('', index, name='home'),  # Página principal
-    path('admin/', admin.site.urls),  # Panel de administración de Django
+    path('admin/', bloquear_admin),  # Bloquear ruta por defecto
+    path('admin-portal-2000/', admin.site.urls),  # Ruta real
     path('contactanos/', views.contactanos, name='contactanos'),  # Contacto
     path('enviar-correo/', views.enviar_correo_formulario, name='enviar_correo_formulario'),  # Enviar correo desde formulario
     path('login/', auth_views.LoginView.as_view(template_name='Usuario/login.html'), name='login'),  # Inicio de sesión

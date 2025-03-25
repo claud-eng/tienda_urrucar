@@ -1,8 +1,8 @@
-from apps.Transaccion.context_processors import formato_precio # Importa la función formato_precio de la aplicación Transacción
-from apps.Transaccion.models import Producto # Importa la clase Producto de la aplicación Transacción
-from django.conf import settings  # Configuración del proyecto, incluyendo parámetros de correo electrónico
-from django.core.mail import send_mail  # Función para enviar correos electrónicos
-from django.shortcuts import render, redirect  # Funciones para renderizar plantillas y redirigir URLs
+from apps.Transaccion.context_processors import formato_precio # Importa la función formato_precio de la aplicación Transacción.
+from apps.Transaccion.models import Producto # Importa la clase Producto de la aplicación Transacción.
+from django.conf import settings  # Configuración del proyecto, incluyendo parámetros de correo electrónico.
+from django.core.mail import send_mail  # Función para enviar correos electrónicos.
+from django.shortcuts import render, redirect  # Funciones para renderizar plantillas y redirigir URLs.
 
 # Vista para la página de inicio
 def home(request):

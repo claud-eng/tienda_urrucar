@@ -3,11 +3,11 @@ from . import views  # Importa las vistas definidas en el directorio actual.
 from . import views_productos  # Importa el módulo que gestiona operaciones de productos.
 from . import views_servicios  # Importa el módulo que gestiona operaciones de servicios.
 from . import views_ventas  # Importa el módulo que maneja las ventas.
-from .reports import *
 from .carrito import *  # Importa todas las funciones relacionadas con la gestión del carrito de compras.
 from .functions import descargar_comprobante_pago  # Importa una función para descargar un comprobante de venta en formato PDF.
+from .reports import * # Importa todas las funciones del archivo reports.
+from .views import obtener_precio_producto # Importa una función para obtener el precio del producto.
 from .webpay import iniciar_transaccion, transaccion_finalizada  # Importa funciones para iniciar y finalizar transacciones con Webpay.
-from .views import obtener_precio_producto
 
 urlpatterns = [
     path('agregar_al_carrito/producto/<int:id>/', agregar_al_carrito, {'tipo': 'producto'}, name='agregar_producto_al_carrito'),  # Agregar un producto al carrito
@@ -32,7 +32,7 @@ urlpatterns = [
     path('editar_venta_manual_servicio/<int:venta_id>/', views_ventas.editar_venta_manual_servicio, name='editar_venta_manual_servicio'), # Editar una venta manual de un servicio
     path('editar-venta-online/<int:venta_id>/', views_ventas.editar_venta_online, name='editar_venta_online'), # Editar una venta online
     path('eliminar_del_carrito/<int:item_id>/', eliminar_del_carrito, name='eliminar_del_carrito'),  # Eliminar ítem del carrito
-    path('generar_formulario_inspeccion_pdf/', views.generar_formulario_inspeccion_pdf, name='generar_formulario_inspeccion_pdf'),  # Generar formulario de inspección en formato PDF
+    path('generar_informe_inspeccion_pdf/', views.generar_informe_inspeccion_pdf, name='generar_informe_inspeccion_pdf'),  # Generar informe de inspección en formato PDF
     path('generar_presupuesto_pdf/', views.generar_presupuesto_pdf, name='generar_presupuesto_pdf'),  # Generar presupuesto en formato PDF
     path('gestionar_inventario', views.gestionar_inventario, name='gestionar_inventario'),  # Gestionar inventario (administrador)
     path('gestionar_transacciones', views.gestionar_transacciones, name='gestionar_transacciones'),  # Gestionar transacciones

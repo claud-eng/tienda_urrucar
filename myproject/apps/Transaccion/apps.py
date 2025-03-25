@@ -1,4 +1,4 @@
-from django.apps import AppConfig  # Importación para la configuración de la aplicación
+from django.apps import AppConfig  # Importación para la configuración de la aplicación.
 
 class TransaccionConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'

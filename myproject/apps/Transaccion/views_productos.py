@@ -1,4 +1,4 @@
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal, InvalidOperation # Para operaciones con números decimales (ej. precios, cálculos precisos).
 from .shared_imports import *  # Importa todas las funciones y módulos compartidos en la aplicación.
 
 # Validación para que solo el administrador tenga acceso a las plantillas

@@ -1,7 +1,7 @@
-from django.contrib.auth.signals import user_logged_out  # Señal para detectar cierre de sesión
-from django.contrib.sessions.models import Session  # Modelo para manejar sesiones
-from django.dispatch import receiver  # Decorador para conectar señales
-from .models import Carrito, Cliente  # Modelos personalizados
+from django.contrib.auth.signals import user_logged_out  # Señal para detectar cierre de sesión.
+from django.contrib.sessions.models import Session  # Modelo para manejar sesiones.
+from django.dispatch import receiver  # Decorador para conectar señales.
+from .models import Carrito, Cliente  # Modelos personalizados.
 
 @receiver(user_logged_out)
 def limpiar_carrito_al_deslogearse(sender, request, user, **kwargs):

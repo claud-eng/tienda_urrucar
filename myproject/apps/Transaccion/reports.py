@@ -1,5 +1,5 @@
 from .shared_imports import *  # Importa todas las funciones y módulos compartidos en la aplicación.
-from datetime import datetime  # Importa solo la clase datetime
+from datetime import datetime  # Importa solo la clase datetime.
 
 # Validación para que solo el administrador tenga acceso a las plantillas
 def es_administrador(user):

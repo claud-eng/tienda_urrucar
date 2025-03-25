@@ -31,7 +31,7 @@ from reportlab.lib import colors  # Importa colores de ReportLab para crear grá
 from reportlab.lib.pagesizes import A4, letter  # Importa tamaños de página 'A4' y 'letter' de ReportLab.
 from reportlab.lib.utils import ImageReader  # Importa ImageReader de ReportLab para manejar imágenes en PDFs.
 from reportlab.pdfgen import canvas  # Importa canvas de ReportLab para generar documentos PDF.
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer  # Importa elementos de ReportLab para la generación de PDFs, incluyendo tablas, imágenes, párrafos y espaciadores.
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Image, Paragraph, Spacer, KeepTogether  # Importa elementos de ReportLab para la generación de PDFs, incluyendo tablas, imágenes, párrafos y espaciadores.
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle # Importa estilos predefinidos y personalizados para texto en PDFs.
 from .context_processors import formato_precio  # Importa 'formato_precio' para formatear precios en contextos de plantilla.
 from .forms import * # Importa todas las funciones definidas en 'forms' del directorio actual.

@@ -179,6 +179,28 @@
     </div>
         <button type="button" class="btn btn-primary btn-sm" id="agregar-item">Agregar Ítem</button>
 
+    <!-- Totales del Presupuesto en una fila -->
+    <div class="row mt-3">
+        <div class="col-12">
+            <table class="table table-bordered text-end">
+                <thead class="table-light">
+                    <tr>
+                        <th class="text-end">Base Imponible</th>
+                        <th class="text-end">IVA (19%)</th>
+                        <th class="text-end">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><input type="text" id="base-imponible" class="form-control text-end" readonly></td>
+                        <td><input type="text" id="iva" class="form-control text-end" readonly></td>
+                        <td><input type="text" id="total-final" class="form-control text-end fw-bold" readonly></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
         <!-- Contenedor para los botones alineados en la misma línea -->
         <div class="botones-container mt-4">
             <button type="submit" class="btn btn-success btn-sm mb-4">Generar Presupuesto</button>
@@ -245,16 +267,33 @@ document.addEventListener("DOMContentLoaded", function () {
     });
 
     function actualizarTotales() {
-        let filas = document.querySelectorAll("#tabla-items tbody tr");
-        filas.forEach(fila => {
-            let cantidad = parseFloat(fila.querySelector(".cantidad").value) || 0;
-            let precio = parseFloat(fila.querySelector(".precio_unitario").value) || 0;
-            let descuento = parseFloat(fila.querySelector(".descuento").value) || 0;
+    let filas = document.querySelectorAll("#tabla-items tbody tr");
+    let baseImponible = 0;
 
-            let total = (cantidad * precio) * ((100 - descuento) / 100);
-            fila.querySelector(".total").value = total.toFixed(0);
-        });
+    filas.forEach(fila => {
+        let cantidad = parseFloat(fila.querySelector(".cantidad").value) || 0;
+        let precio = parseFloat(fila.querySelector(".precio_unitario").value) || 0;
+        let descuento = parseFloat(fila.querySelector(".descuento").value) || 0;
+
+        let total = (cantidad * precio) * ((100 - descuento) / 100);
+        fila.querySelector(".total").value = Math.round(total);
+
+        baseImponible += total;
+    });
+
+    let iva = baseImponible * 0.19;
+    let totalFinal = baseImponible + iva;
+
+    // Formatear como moneda chilena
+    function formatearCLP(valor) {
+        return "$" + Math.round(valor).toLocaleString("es-CL");
     }
+
+    document.getElementById("base-imponible").value = formatearCLP(baseImponible);
+    document.getElementById("iva").value = formatearCLP(iva);
+    document.getElementById("total-final").value = formatearCLP(totalFinal);
+}
+
 });
 </script>
 

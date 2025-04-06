@@ -173,6 +173,9 @@ class DetalleVentaOnline(models.Model):
     fecha_estado_final = models.DateTimeField(null=True, blank=True)  # Fecha en la que se actualizó el estado final
     dias_desde_adquisicion = models.PositiveIntegerField(null=True, blank=True, help_text="Días transcurridos desde la adquisición del producto") # Días transcurridos entre la fecha de adquisición del producto y actualización de estado de reserva en la venta
     calculo_tiempo_transcurrido = models.PositiveIntegerField(null=True, blank=True)  # Días transcurridos entre la fecha de la transacción y actualización de estado de reserva en la venta
+    marca_vehiculo = models.CharField(max_length=100, blank=True, null=True) # Marca del vehículo
+    modelo_vehiculo = models.CharField(max_length=100, blank=True, null=True) # Modelo del vehículo
+    patente_vehiculo = models.CharField(max_length=20, blank=True, null=True) # Patente del vehículo
 
     def save(self, *args, **kwargs):
         # Si el estado cambia a 'Vendida', actualiza la fecha_estado_final
@@ -270,13 +273,6 @@ class VentaManual(models.Model):
             self.fecha_pago_final = None
             print("Pago incompleto, fecha de pago final reseteada a None")
 
-        # Garantizar que la fecha de creación se conserve
-        if self.pk:
-            original = VentaManual.objects.filter(pk=self.pk).first()
-            if original:
-                self.fecha_creacion = original.fecha_creacion
-                print("Fecha creación preservada del objeto original:", self.fecha_creacion)
-
         print(f"Fecha creación final: {self.fecha_creacion}")
         print(f"Fecha pago final final: {self.fecha_pago_final}")
 
@@ -296,7 +292,10 @@ class DetalleVentaManual(models.Model):
     cantidad = models.PositiveIntegerField(default=1)
     precio_costo = models.PositiveIntegerField(null=True, blank=True, help_text="Costo asociado a este detalle")
     subtotal = models.PositiveIntegerField(default=0)
-
+    marca_vehiculo = models.CharField(max_length=100, blank=True, null=True) # Marca del vehículo
+    modelo_vehiculo = models.CharField(max_length=100, blank=True, null=True) # Modelo del vehículo
+    patente_vehiculo = models.CharField(max_length=20, blank=True, null=True) # Patente del vehículo
+    
     def obtener_subtotal(self):
         """
         Calcula el subtotal basado en la cantidad y precio del producto o servicio.

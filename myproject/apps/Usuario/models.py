@@ -19,6 +19,7 @@ class ClienteAnonimo(models.Model):
     apellido = models.CharField(max_length=150) # Apellido del cliente anónimo
     email = models.EmailField() # Correo del cliente anónimo
     numero_telefono = models.CharField(max_length=15, blank=True, null=True) # Número de teléfono del cliente anónimo
+    rut = models.CharField(max_length=12, blank=True, null=True) # RUT del cliente anónimo
     session_key = models.CharField(max_length=255, unique=True)  # Identificador único basado en la sesión
 
     def __str__(self):

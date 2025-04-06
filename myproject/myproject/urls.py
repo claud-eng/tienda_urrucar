@@ -16,7 +16,7 @@ def bloquear_admin(request):
 urlpatterns = [
     path('', index, name='home'),  # Página principal
     path('admin/', bloquear_admin),  # Bloquear ruta por defecto
-    path('admin-portal-2000/', admin.site.urls),  # Ruta real
+    path('admin-portal-7914/', admin.site.urls),  # Ruta real
     path('contactanos/', views.contactanos, name='contactanos'),  # Contacto
     path('enviar-correo/', views.enviar_correo_formulario, name='enviar_correo_formulario'),  # Enviar correo desde formulario
     path('login/', auth_views.LoginView.as_view(template_name='Usuario/login.html'), name='login'),  # Inicio de sesión

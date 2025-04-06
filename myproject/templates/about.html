@@ -1,86 +1,99 @@
 {% extends 'base.html' %}
 {% load static %}
+
 {% block extra_css %}
 <style>
-    /* Estilos generales */
+    .about-section {
+        background: #fff;
+        padding: 60px 0;
+    }
+
+    .about-card {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .about-title {
+        font-size: 2rem;
+        color: #149ddd;
+        font-weight: bold;
+        font-family: 'Arial', sans-serif;
+        position: relative;
+        display: inline-block;
+        margin-bottom: 30px;
+    }
+
+    .founder-img {
+        width: 140px;
+        height: 140px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 4px solid #149ddd;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        margin-bottom: 15px;
+    }
+
+    .quote {
+        font-style: italic;
+        font-size: 1rem;
+        color: #555;
+    }
+
     .block-38-body {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        text-align: center;
+        margin-top: 10px;
     }
 
-    .responsive-text {
-        margin: 0;
-        text-align: center; /* Centra el texto */
+    .about-highlight {
+        color: #149ddd;
+        font-weight: bold;
     }
 
-    .line-1,
-    .line-2 {
-        display: block; /* Fuerza cada línea a ocupar su propio bloque */
-        margin: 0; /* Elimina espacio entre las líneas */
-    }
-
-    /* Pantallas pequeñas (tablet y móviles) */
-    @media (max-width: 767.98px) {
-        .responsive-text {
-            white-space: normal; /* Permite saltos de línea en dispositivos pequeños */
-            text-align: justify; /* Cambia el texto a justificado */
+    @media (max-width: 768px) {
+        .about-title {
+            font-size: 2rem;
         }
     }
 </style>
 {% endblock %}
+
 {% block content %}
 
-    <div class="bg-light py-3">
-      <div class="container">
-        <div class="row">
-          <div class="col-md-12 mb-0"><a href="{% url 'home' %}">Inicio</a> <span class="mx-2 mb-0">/</span> <strong class="text-black">Sobre Nosotros</strong></div>
-        </div>
-      </div>
-    </div>  
-
-    <div class="site-section border-bottom pb-3" data-aos="fade">
-      <div class="container">
-        <div class="row mb-3">
-          <div class="col-md-12">
-            <div class="site-section-heading pt-3 mb-3 text-center">
-              <h2 class="text-black" style="font-size: 2rem; font-weight: bold; color: #ed913f; font-family: 'Arial', sans-serif;">
-                Así empezó todo
-            </h2>            
-            </div>          
-            <p style="text-align: justify;">Somos una empresa fundada en el año 2022, innovadora y enfocada en el servicio, dedicada al rubro automotriz, en primera instancia dentro de Santiago, 
-              Región Metropolitana. Nuestra misión es ofrecer soluciones integrales y eficientes para todas tus necesidades automotrices.</p>
-            <p style="text-align: justify;">Es clave trabajar con transparencia y honestidad, nos esforzamos por ofrecer soluciones rápidas y efectivas, comunícate con nosotros y buscamos la solución que 
-              más te acomode.</p>
-          </div>
-        </div>
+<div class="bg-light py-3">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-12 mb-0">
+        <a href="{% url 'home' %}">Inicio</a>
+        <span class="mx-2 mb-0">/</span>
+        <strong class="text-black">Sobre Nosotros</strong>
       </div>
     </div>
+  </div>
+</div>
 
-    <div class="site-section pt-0" data-aos="fade">
-      <div class="container">
-        <div class="row justify-content-center">
-          <div class="col-md-6 col-lg-4">
-            <div class="block-38 text-center">
-              <div class="block-38-img">
-                <div class="block-38-header mt-3">
-                  <img src="{% static 'images/person_1.jpg' %}" alt="Cristian Urrutia" class="mb-4">
-                  <h3 class="block-38-heading h4">Cristian Urrutia</h3>
-                  <p class="block-38-subheading">Fundador</p>
-                </div>
-                <div class="block-38-body">
-                  <p class="responsive-text">
-                      <span class="line-1" style="display: block; margin: 0;">Comprometido con transparencia y excelencia</span>
-                      <span class="line-2" style="display: block; margin: 0;">en cada detalle del servicio automotriz.</span>
-                  </p>
-              </div>
-              </div>
-            </div>
-          </div>
-        </div>
+<div class="about-section" data-aos="fade-up">
+  <div class="container">
+    <div class="about-card text-center">
+      <h2 class="about-title">Así empezó todo</h2>
+      <p style="text-align: justify;">
+        Somos una empresa fundada en el año <span class="about-highlight">2022</span>, innovadora y enfocada en el servicio, dedicada al rubro automotriz dentro de Santiago, Región Metropolitana.
+        Nuestra misión es ofrecer <span class="about-highlight">soluciones integrales y eficientes</span> para todas tus necesidades automotrices.
+      </p>
+      <p style="text-align: justify;">
+        Trabajamos con <span class="about-highlight">transparencia y honestidad</span>, esforzándonos en entregar soluciones rápidas y efectivas. ¡Contáctanos y buscaremos la mejor solución para ti!
+      </p>
+    </div>
+
+    <div class="row justify-content-center mt-5" data-aos="fade-up">
+      <div class="col-md-6 col-lg-4 text-center">
+        <img src="{% static 'images/person_1.jpg' %}" alt="Cristian Urrutia" class="founder-img">
+        <h3 class="mt-3">Cristian Urrutia</h3>
+        <p class="text-muted">Fundador</p>
+        <p class="quote">"Comprometido con transparencia y excelencia en cada detalle del servicio automotriz."</p>
       </div>
     </div>
+  </div>
+</div>
 
 {% endblock %}
-

@@ -99,7 +99,6 @@
                     <th>Fecha Modificación Estado de la Reserva</th>
                     <th>Estado de la Reserva</th>
                     {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                    <th>Acciones</th>
                     <th>Días Transcurridos entre la Adquisición y Venta</th>
                     {% endif %}
                     <th>Días Transcurridos entre la Reserva y Venta</th>
@@ -113,6 +112,7 @@
                     <th>Resultado del Negocio</th>
                     {% endif %}
                     <th>Emitir Comprobante</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -161,19 +161,6 @@
                             {% endif %}
                         {% endfor %}
                     </td>
-                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                    <td>
-                        {% with show_button=False %}
-                            {% for detalle in venta_info.venta.detalleventaonline_set.all %}
-                                {% if detalle.producto and detalle.producto.categoria == "Vehículo" and not show_button %}
-                                    <a href="{% url 'editar_venta_online' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
-                                    {% with True as show_button %}
-                                    {% endwith %}
-                                {% endif %}
-                            {% endfor %}
-                        {% endwith %}
-                    </td>
-                    {% endif %}
                     {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <td>
                         {% for detalle in venta_info.venta.detalleventaonline_set.all %}
@@ -232,6 +219,19 @@
                     <td>
                         <a href="{% url 'descargar_comprobante_pago' 'online' venta_info.venta.numero_orden %}" class="btn btn-success btn-sm">Descargar</a>
                     </td>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>
+                        {% with show_button=False %}
+                            {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                                {% if detalle.producto and detalle.producto.categoria == "Vehículo" and not show_button %}
+                                    <a href="{% url 'editar_venta_online' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
+                                    {% with True as show_button %}
+                                    {% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                        {% endwith %}
+                    </td>
+                    {% endif %}
                 </tr>
                 {% endfor %}
             </tbody>
@@ -279,6 +279,8 @@
                     {% endif %}
                     <th>Fecha de la Transacción</th>
                     <th>Detalle</th>
+                    <th>Vehículo</th>
+                    <th>Patente</th>                    
                     <th>Tipo de Pago</th>
                     <th>Monto de Cuotas</th>
                     <th>Número de Cuotas</th>
@@ -326,6 +328,22 @@
                             {{ servicio.nombre }}
                         {% endfor %}
                     </td>
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.servicio %}
+                                {% if detalle.marca_vehiculo or detalle.modelo_vehiculo %}
+                                    {{ detalle.marca_vehiculo }} {{ detalle.modelo_vehiculo }}
+                                {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
+                            {% if detalle.servicio and detalle.patente_vehiculo %}
+                                {{ detalle.patente_vehiculo }}
+                            {% endif %}
+                        {% endfor %}
+                    </td>                    
                     <td>
                         {% if venta_info.venta.tipo_pago %}
                             {% if venta_info.venta.tipo_pago == 'VD' %}

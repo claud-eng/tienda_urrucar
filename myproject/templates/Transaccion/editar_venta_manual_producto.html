@@ -63,20 +63,36 @@
         </div>
         {% endif %}
 
-        <!-- Precio de Costo -->
-        <h3>Actualizar Precio de Costo</h3>
+        <!-- Formulario para Cliente Anónimo -->
+        <h3>Datos del Cliente</h3>
         <div class="form-group">
-            {{ detalle_producto_form.precio_costo.label_tag }}
-            {{ detalle_producto_form.precio_costo|add_class:"form-control" }}
-            {% if detalle_producto_form.precio_costo.errors %}
-            <div class="alert alert-danger">
-                {{ detalle_producto_form.precio_costo.errors.as_text }}
-            </div>
-            {% endif %}
+            {{ cliente_anonimo_form.nombre.label_tag }}
+            {{ cliente_anonimo_form.nombre|add_class:"form-control" }}
         </div>
 
-        <!-- ID del Producto -->
-        <h3>ID del Producto</h3>
+        <div class="form-group">
+            {{ cliente_anonimo_form.apellido.label_tag }}
+            {{ cliente_anonimo_form.apellido|add_class:"form-control" }}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.email.label_tag }}
+            {{ cliente_anonimo_form.email|add_class:"form-control" }}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.numero_telefono.label_tag }}
+            {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.rut.label_tag }}
+            {{ cliente_anonimo_form.rut|add_class:"form-control" }}
+        </div>
+
+        <h3>Detalles del Producto</h3>
+
+        <!-- Producto -->
         <div class="form-group">
             {{ detalle_producto_form.producto.label_tag }}
             {{ detalle_producto_form.producto|add_class:"form-control" }}
@@ -86,31 +102,42 @@
             </div>
             {% endif %}
         </div>
+
         <a href="{% url 'listar_productos' %}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
 
-        <!-- Monto Total (Solo lectura) -->
-        <h3>Monto Total de la Venta (IVA incluido)</h3>
+        <!-- Fecha de la Transacción -->
         <div class="form-group">
-            <label for="monto_total">Total (IVA incluido)</label>
-            <input type="text" id="monto_total" class="form-control" value="${{ orden_compra_form.instance.total|default:'0' }}" readonly>
-        </div>
+            {{ orden_compra_form.fecha_creacion.label_tag }}
+            <input type="datetime-local" name="fecha_creacion" class="form-control"
+                   value="{{ orden_compra_form.instance.fecha_creacion|date:'Y-m-d\\TH:i' }}">
+            {% if orden_compra_form.fecha_creacion.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_creacion.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>   
 
-        <!-- Pago del cliente -->
-        <h3>Actualizar Pago</h3>
+        <!-- Total e Ingreso del Cliente -->
+        <h3>Resumen de Pago</h3>
+        <div class="form-group">
+            {{ orden_compra_form.precio_personalizado.label_tag }}
+            <input type="text" 
+                   class="form-control" 
+                   id="id_precio_personalizado" 
+                   name="precio_personalizado" 
+                   value="{{ orden_compra_form.initial.precio_personalizado }}" 
+                   readonly>
+        </div>        
         <div class="form-group">
             {{ orden_compra_form.pago_cliente.label_tag }}
             {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
-            {% if orden_compra_form.pago_cliente.errors %}
-            <div class="alert alert-danger">
-                {{ orden_compra_form.pago_cliente.errors.as_text }}
-            </div>
-            {% endif %}
         </div>
 
         <!-- Fecha Pago Completo -->
         <div class="form-group">
             {{ orden_compra_form.fecha_pago_final.label_tag }}
-            <input type="datetime-local" name="fecha_pago_final" class="form-control" value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
+                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
             {% if orden_compra_form.fecha_pago_final.errors %}
             <div class="alert alert-danger">
                 {{ orden_compra_form.fecha_pago_final.errors.as_text }}
@@ -118,12 +145,48 @@
             {% endif %}
         </div>
 
-        <!-- Botones de acción -->
+        <!-- Botones -->
         <div class="form-group mt-4">
             <button type="submit" class="btn btn-primary btn-sm">Guardar Cambios</button>
             <a href="{% url 'listar_ventas_manuales' %}" class="btn btn-secondary btn-sm">Volver atrás</a>
         </div>
     </form>
 </div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    function cargarPrecioProducto(productoID) {
+        if (productoID) {
+            $.ajax({
+                url: "{% url 'obtener_precio_producto' %}",
+                data: { 'producto_id': productoID },
+                dataType: "json",
+                success: function(data) {
+                    if (data.precio) {
+                        $("#id_precio_personalizado").val(data.precio);
+                    }
+                },
+                error: function() {
+                    $("#id_precio_personalizado").val("");
+                    alert("No se encontró un producto con este ID.");
+                }
+            });
+        } else {
+            $("#id_precio_personalizado").val("");
+        }
+    }
+
+    $(document).ready(function() {
+        const productoID = $("#id_producto").val();
+
+        // Ejecutar al cargar si ya hay un producto seleccionado (para prellenar el campo en modo edición)
+        cargarPrecioProducto(productoID);
+
+        // Ejecutar también cuando el usuario cambie el producto
+        $("#id_producto").on("change", function() {
+            cargarPrecioProducto($(this).val());
+        });
+    });
+</script>
 
 {% endblock %}

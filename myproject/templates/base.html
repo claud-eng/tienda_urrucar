@@ -260,6 +260,10 @@ body {
 
 /* Móviles: hasta 767.98px */
 @media (max-width: 767.98px) {
+  .site-wrap {
+    margin-bottom: 0.5rem; /* equivalente a mb-2 en Bootstrap */
+  }
+
   .site-navbar-top .new-site-logo,
   .site-navbar-top .site-search-icon,
   .site-navbar-top .site-top-icons {
@@ -343,6 +347,84 @@ body {
 
   .navbar-top span {
     white-space: nowrap;
+  }
+}
+
+/* Ajustes específicos para pantallas entre 1024px y 1366px */
+@media (min-width: 1024px) and (max-width: 1366px) {
+  .new-site-logo {
+    justify-content: flex-start !important;
+    margin-left: 0 !important;
+    flex: 1;
+  }
+
+  .site-top-icons {
+    justify-content: flex-end !important;
+    margin-right: 0 !important;
+    flex: 1;
+  }
+
+  .site-navbar-top {
+    justify-content: space-between !important;
+    flex-wrap: wrap;
+  }
+}
+
+/* Ajuste solo para laptops de 1366px de ancho */
+@media (min-width: 1340px) and (max-width: 1370px) {
+  .new-site-logo {
+    margin-left: -120px !important;
+  }
+
+  .site-top-icons {
+    margin-right: -120px !important;
+  }
+
+  .diagonal-bars::before,
+  .diagonal-bars::after {
+    content: '';
+    position: absolute;
+    width: 80px;
+    height: 1000%;
+    transform: rotate(25deg);
+    opacity: 0.9;
+    z-index: 0;
+  }
+
+  .diagonal-bars::before {
+    left: 30.3%;
+    top: -200%;
+    background: #111;
+  }
+
+  .diagonal-bars::after {
+    left: 37.3%;
+    top: -200%;
+    background: #ff0000;
+  }
+}
+
+/* Ajustes específicos para MacBook o pantallas de 1311px */
+@media (min-width: 1300px) and (max-width: 1325px) {
+  .diagonal-bars::before,
+  .diagonal-bars::after {
+    content: none !important;
+  }
+}
+
+/* Ajustes específicos para MacBook o pantallas de 1440px */
+@media (min-width: 1430px) and (max-width: 1450px) {
+  .new-site-logo {
+    margin-left: -150px !important;
+  }
+
+  .site-top-icons {
+    margin-right: -150px !important;
+  }
+
+  .diagonal-bars::before,
+  .diagonal-bars::after {
+    content: none !important;
   }
 }
 </style>

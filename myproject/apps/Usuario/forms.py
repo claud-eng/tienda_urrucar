@@ -19,7 +19,7 @@ from django.template.loader import render_to_string  # Función para renderizar 
 from django.utils.encoding import force_bytes  # Codifica datos en bytes (usado para generar tokens seguros).
 from django.utils.html import strip_tags  # Elimina etiquetas HTML de una cadena, dejando solo el texto plano.
 from django.utils.http import urlsafe_base64_encode  # Codifica datos en base64 de forma segura para URLs.
-from apps.Usuario.models import Cliente, Empleado  # Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
+from apps.Usuario.models import Cliente, ClienteAnonimo, Empleado  # Importar los modelos 'Cliente' y 'Empleado' desde la aplicación 'Usuario'.
 
 def validate_username(value):
     """
@@ -317,6 +317,21 @@ class CambiarContraseñaUsuarioForm(PasswordChangeForm):
         model = User  # Utiliza el modelo User de Django
         fields = ('old_password', 'new_password1', 'new_password2')  # Campos para cambiar la contraseña
 
+# Formulario para cliente anónimo
+class ClienteAnonimoForm(forms.ModelForm):
+    class Meta:
+        model = ClienteAnonimo
+        fields = ['nombre', 'apellido', 'email', 'numero_telefono', 'rut']
+        labels = {
+            'rut': 'RUT',
+        }
+        widgets = {
+            'rut': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Ingresar con puntos y guión: XX.XXX.XXX-X'
+            }),
+        }
+
 class EmpleadoForm(forms.ModelForm):
     # Definición de un formulario para crear empleados.
 
@@ -435,7 +450,6 @@ class EmpleadoForm(forms.ModelForm):
 
         return empleado
 
-    
 class EditarEmpleadoForm(forms.ModelForm):
     # Campos y configuraciones para el formulario de edición de empleados
     # Excluye el campo de contraseña y otras configuraciones relacionadas con la contraseña

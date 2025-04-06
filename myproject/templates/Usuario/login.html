@@ -4,6 +4,33 @@ Iniciar sesión
 {% endblock %}
 {% block extra_css %}
 <style>
+    /* Estilo para el lado derecho */
+    .register-box {
+        background: #f9f9f9;
+        padding: 30px;
+        border-radius: 12px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.05);
+        text-align: center;
+    }
+
+    .register-box h1 {
+        font-size: 1.8rem;
+        color: #149ddd;
+        font-weight: bold;
+        margin-bottom: 15px;
+    }
+
+    .register-box p {
+        font-size: 1rem;
+        color: #333;
+        margin-bottom: 20px;
+    }
+
+    .register-box .btn-success {
+        padding: 10px 20px;
+        border-radius: 8px;
+    }
+
     /* Ajuste para pantallas medianas (tablets) */
     @media (max-width: 991.98px) {
         .form-group .btn {
@@ -41,7 +68,7 @@ Iniciar sesión
     </div>
   </div>  
 
-<div class="container mt-5">
+<div class="container mt-5 mb-5">
     <div class="row">
         <!-- Parte izquierda con opciones mejoradas -->
         <div class="col-md-6">
@@ -93,9 +120,11 @@ Iniciar sesión
 
         <!-- Parte derecha con la opción de Registrarse -->
         <div class="col-md-6">
-            <h1 class="display">Registrarse</h1><br>
-            <p>¡Regístrate y conviértete en cliente!</p>
-            <a href="{% url 'agregar_cliente' %}" class="btn btn-success btn-sm">Registrarse</a>
+            <div class="register-box" data-aos="fade-left">
+                <h1>¡Regístrate!</h1>
+                <p>Conviértete en cliente y accede a todos nuestros servicios exclusivos.</p>
+                <a href="{% url 'agregar_cliente' %}" class="btn btn-success btn-sm">Registrarse</a>
+            </div>
         </div>
     </div>
 </div>

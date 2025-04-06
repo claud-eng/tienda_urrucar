@@ -440,7 +440,9 @@ def exportar_presupuesto_pdf(datos_presupuesto, items):
     # Generar PDF
     pdf.build(elementos)
     buffer.seek(0)
-    return buffer
+    output = buffer.getvalue()
+    buffer.close()
+    return output
 
 # **Función para generar el PDF usando ReportLab**
 def exportar_informe_inspeccion_pdf(datos, imagenes, items_inspeccion, secciones_inspeccion):
@@ -712,7 +714,10 @@ def exportar_informe_inspeccion_pdf(datos, imagenes, items_inspeccion, secciones
     # Generar PDF
     pdf.build(elementos)
     buffer.seek(0)
-    return buffer
+    output = buffer.getvalue()
+    buffer.close()
+    return output
+
 
 
 

@@ -316,7 +316,10 @@ def transaccion_finalizada(request):
                         orden_compra=orden,
                         servicio=item.item,
                         precio=item.obtener_precio_total(),
-                        cantidad=item.cantidad
+                        cantidad=item.cantidad,
+                        marca_vehiculo=datos_formulario.get('marca'),
+                        modelo_vehiculo=datos_formulario.get('modelo'),
+                        patente_vehiculo=datos_formulario.get('patente'),
                     )
 
             carrito_items.update(carrito=0)

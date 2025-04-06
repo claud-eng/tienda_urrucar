@@ -63,8 +63,118 @@
         </div>
         {% endif %}
 
+        <!-- Formulario para Cliente Anónimo -->
+        <h3>Datos del Cliente</h3>
+        
+        <div class="form-group">
+            {{ cliente_anonimo_form.nombre.label_tag }}
+            {{ cliente_anonimo_form.nombre|add_class:"form-control" }}
+            {% if cliente_anonimo_form.nombre.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.nombre.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.apellido.label_tag }}
+            {{ cliente_anonimo_form.apellido|add_class:"form-control" }}
+            {% if cliente_anonimo_form.apellido.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.apellido.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.email.label_tag }}
+            {{ cliente_anonimo_form.email|add_class:"form-control" }}
+            {% if cliente_anonimo_form.email.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.email.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            {{ cliente_anonimo_form.numero_telefono.label_tag }}
+            {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
+            {% if cliente_anonimo_form.numero_telefono.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.numero_telefono.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="form-group">
+            {{ cliente_anonimo_form.rut.label_tag }}
+            {{ cliente_anonimo_form.rut|add_class:"form-control" }}
+            {% if cliente_anonimo_form.rut.errors %}
+            <div class="alert alert-danger">
+                {{ cliente_anonimo_form.rut.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>        
+
+        <h3>Detalles del Servicio</h3>
+
+        <div class="form-group">
+            {{ orden_compra_form.fecha_creacion.label_tag }}
+            <input type="datetime-local" name="fecha_creacion" class="form-control"
+                value="{{ orden_compra_form.instance.fecha_creacion|date:'Y-m-d\\TH:i' }}">
+            {% if orden_compra_form.fecha_creacion.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.fecha_creacion.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>        
+
+        <!-- Servicio -->
+        <div class="form-group">
+            {{ detalle_servicio_form.servicio.label_tag }}
+            {{ detalle_servicio_form.servicio|add_class:"form-control" }}
+            {% if detalle_servicio_form.servicio.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_servicio_form.servicio.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'listar_servicios' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de servicios</a>
+
+        <h3>Datos del Vehículo</h3>
+
+        <!-- Marca -->
+        <div class="form-group">
+            {{ detalle_servicio_form.marca_vehiculo.label_tag }}
+            {{ detalle_servicio_form.marca_vehiculo|add_class:"form-control" }}
+        </div>
+
+        <!-- Modelo -->
+
+        <div class="form-group">
+            {{ detalle_servicio_form.modelo_vehiculo.label_tag }}
+            {{ detalle_servicio_form.modelo_vehiculo|add_class:"form-control" }}
+        </div>
+        
+        <!-- Patente -->
+        <div class="form-group">
+            {{ detalle_servicio_form.patente_vehiculo.label_tag }}
+            {{ detalle_servicio_form.patente_vehiculo|add_class:"form-control" }}
+        </div>
+
+        <!-- Precio Personalizado -->
+        <div class="form-group">
+            {{ orden_compra_form.precio_personalizado.label_tag }}
+            {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
+            {% if orden_compra_form.precio_personalizado.errors %}
+            <div class="alert alert-danger">
+                {{ orden_compra_form.precio_personalizado.errors.as_text }}
+            </div>
+            {% endif %}
+        </div>
+
         <!-- Precio de Costo -->
-        <h3>Actualizar Precio de Costo</h3>
         <div class="form-group">
             {{ detalle_servicio_form.precio_costo.label_tag }}
             {{ detalle_servicio_form.precio_costo|add_class:"form-control" }}
@@ -75,15 +185,7 @@
             {% endif %}
         </div>
 
-        <!-- Monto Total (Solo lectura) -->
-        <h3>Monto Total de la Venta (IVA incluido)</h3>
-        <div class="form-group">
-            <label for="monto_total">Total (IVA incluido)</label>
-            <input type="text" id="monto_total" class="form-control" value="${{ orden_compra_form.instance.total|default:'0' }}" readonly>
-        </div>
-
-        <!-- Pago del cliente -->
-        <h3>Actualizar Pago</h3>
+        <!-- Pago del Cliente -->
         <div class="form-group">
             {{ orden_compra_form.pago_cliente.label_tag }}
             {{ orden_compra_form.pago_cliente|add_class:"form-control" }}

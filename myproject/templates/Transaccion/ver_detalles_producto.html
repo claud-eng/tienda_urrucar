@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load custom_filters %}
 {% load static %}
 {% block title %}Detalles del Producto{% endblock %}
 {% block extra_css %}
@@ -159,12 +160,14 @@
         <h2 class="text-black" style="font-size: 2rem; font-weight: bold; color: #ea741b; font-family: 'Arial', sans-serif;">
           {{ producto.nombre }}
       </h2>      
-        {% if producto.categoria == 'Vehículo' and producto.anio %}
-        <p class="mb-0">Año: {{ producto.anio }}</p>
-        {% else %}
-        <p class="mb-0">&nbsp;</p>  <!-- Espacio en blanco si no hay año -->
-        {% endif %}
-        <p style="text-align: justify;">{{ producto.descripcion }}</p>
+        {% with producto.descripcion|split:" - " as partes %}
+        <p><strong>{{ partes.0 }}</strong></p>  {# El primer texto va como párrafo, fuera de la lista #}
+        <ul style="text-align: left; padding-left: 1.2rem;">
+          {% for item in partes|slice:"1:" %}
+            <li>{{ item }}</li>
+          {% endfor %}
+        </ul>
+      {% endwith %}          
         <p><strong class="text-primary h4">${{ producto.precio_formateado }}</strong></p>
         {% if producto.cantidad_stock > 0 and producto.precio_reserva_formateado %}
         <p>Precio de Reserva: <strong class="text-primary">${{ producto.precio_reserva_formateado }}</strong></p>

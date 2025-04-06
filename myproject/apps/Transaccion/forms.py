@@ -1,4 +1,5 @@
 import datetime # Importa 'datetime' para trabajar con fechas y horas.
+from apps.Usuario.forms import ClienteAnonimoForm  # Importa el formulario para clientes anónimos desde la app Usuario.
 from django import forms  # Importa el módulo forms de Django para crear formularios.
 from django.core.exceptions import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.forms import DateTimeInput  # Importa DateTimeInput para widgets de entrada de fecha y hora.
@@ -6,12 +7,6 @@ from django.forms import inlineformset_factory  # Importa inlineformset_factory 
 from django.forms.widgets import DateInput  # Importa DateInput para widgets de entrada de fecha.
 from .models import Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto, Servicio  # Importa los modelos Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto y Servicio de la aplicación actual.
 
-# Formulario para cliente anónimo
-class ClienteAnonimoForm(forms.ModelForm):
-    class Meta:
-        model = ClienteAnonimo
-        fields = ['nombre', 'apellido', 'email', 'numero_telefono']
-        
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
     CONSIGNADO_CHOICES = [
@@ -218,7 +213,7 @@ class VentaManualForm(forms.ModelForm):
         fields = ['pago_cliente', 'precio_personalizado', 'fecha_creacion']
         labels = {
             'pago_cliente': 'Monto Pagado por el Cliente',
-            'precio_personalizado': 'Total (IVA incluido)',
+            'precio_personalizado': 'Valor Total del Vehículo (IVA incluido)',
             'fecha_creacion': 'Fecha de la Venta',
             'fecha_pago_final': 'Fecha Pago Completo'
         }
@@ -291,15 +286,32 @@ class DetalleVentaManualServicioForm(forms.ModelForm):
     )
     precio_costo = forms.DecimalField(
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label='Valor de Compra',
+        label='Valor Costo',
         required=True,
         min_value=0,
-        help_text="Valor de Compra asociado a este servicio en esta venta."
+        help_text="Valor de Compra asociado a este servicio en esta venta.",
+        initial=0
+    )
+
+    marca_vehiculo = forms.CharField(
+        required=False,
+        label="Marca",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    modelo_vehiculo = forms.CharField(
+        required=False,
+        label="Modelo",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
+    )
+    patente_vehiculo = forms.CharField(
+        required=False,
+        label="Patente",
+        widget=forms.TextInput(attrs={'class': 'form-control'})
     )
 
     class Meta:
         model = DetalleVentaManual
-        fields = ['servicio', 'precio_costo']
+        fields = ['servicio', 'precio_costo', 'marca_vehiculo', 'modelo_vehiculo', 'patente_vehiculo']
 
     def clean_servicio(self):
         id_servicio = self.cleaned_data.get('servicio')

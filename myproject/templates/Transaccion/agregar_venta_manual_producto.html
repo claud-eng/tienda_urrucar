@@ -2,7 +2,6 @@
 {% load static %}
 {% load widget_tweaks %}
 {% block title %}Agregar Venta Manual{% endblock %}
-
 {% block extra_css %}
 <style>
     /* Estilos personalizados para botones en pantallas pequeñas */
@@ -81,13 +80,19 @@
             {{ cliente_anonimo_form.numero_telefono.label_tag }}
             {{ cliente_anonimo_form.numero_telefono|add_class:"form-control" }}
         </div>
+        <div class="form-group">
+            {{ cliente_anonimo_form.rut.label_tag }}
+            {{ cliente_anonimo_form.rut|add_class:"form-control" }}
+        </div>        
 
-        <!-- Formulario para Producto -->
         <h3>Detalles del Producto</h3>
+
+        <!-- Producto -->
         <div class="form-group">
             {{ detalle_producto_form.producto.label_tag }}
             {{ detalle_producto_form.producto|add_class:"form-control" }}
         </div>
+
         <a href="{% url 'listar_productos' %}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
 
         <!-- Fecha de la Transacción -->
@@ -100,8 +105,13 @@
         <h3>Resumen de Pago</h3>
         <div class="form-group">
             {{ orden_compra_form.precio_personalizado.label_tag }}
-            {{ orden_compra_form.precio_personalizado|add_class:"form-control" }}
-        </div>
+            <input type="text" 
+                   class="form-control" 
+                   id="id_precio_personalizado" 
+                   name="precio_personalizado" 
+                   value="{{ orden_compra_form.initial.precio_personalizado }}" 
+                   readonly>
+        </div>        
         <div class="form-group">
             {{ orden_compra_form.pago_cliente.label_tag }}
             {{ orden_compra_form.pago_cliente|add_class:"form-control" }}
@@ -130,29 +140,34 @@
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
     $(document).ready(function() {
-        // Detectar cambios en el campo del ID del Producto
-        $("#id_producto").on("change", function() {
-            var productoID = $(this).val();  // Obtener el ID ingresado
+        function actualizarPrecioDesdeProductoID() {
+            var productoID = $("#id_producto").val();
             
-            if (productoID) {  // Solo hacer la petición si hay un ID válido
+            if (productoID) {
                 $.ajax({
-                    url: "{% url 'obtener_precio_producto' %}",  // URL de la vista en Django
-                    data: { 'producto_id': productoID },  // Enviar ID al backend
+                    url: "{% url 'obtener_precio_producto' %}",
+                    data: { 'producto_id': productoID },
                     dataType: "json",
                     success: function(data) {
                         if (data.precio) {
-                            $("#id_precio_personalizado").val(data.precio);  // Actualizar el campo Total
+                            $("#id_precio_personalizado").val(data.precio);
                         }
                     },
                     error: function() {
-                        $("#id_precio_personalizado").val("");  // Limpiar el campo si hay error
+                        $("#id_precio_personalizado").val("");
                         alert("No se encontró un producto con este ID.");
                     }
                 });
-            } else {
-                $("#id_precio_personalizado").val("");  // Limpiar si el campo está vacío
             }
+        }
+
+        // Ejecutar al cambiar el ID del producto
+        $("#id_producto").on("change", function() {
+            actualizarPrecioDesdeProductoID();
         });
+
+        // Ejecutar automáticamente al cargar la página (para mantener el valor si ya hay uno seleccionado)
+        actualizarPrecioDesdeProductoID();
     });
 </script>
 

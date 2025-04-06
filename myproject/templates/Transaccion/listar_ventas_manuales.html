@@ -19,7 +19,7 @@
         /* Asegurar que ambos botones tengan el mismo ancho en pantallas grandes */
     @media (min-width: 992px) {  /* Se aplica solo en escritorio */
         .w-lg-25 {
-        width: 25% !important;
+        width: 35% !important;
         }
         .btn-group-equal {
             display: flex;
@@ -85,8 +85,8 @@
     <div class="d-flex flex-column mb-3">
         {% if user.empleado and user.empleado.rol == 'Administrador' %}
         <div class="btn-group-equal">
-            <a href="{% url 'agregar_venta_manual_producto' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Producto en Venta</a>
-            <a href="{% url 'agregar_venta_manual_servicio' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Servicio en Venta</a>
+            <a href="{% url 'agregar_venta_manual_producto' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Venta Manual de Productos</a>
+            <a href="{% url 'agregar_venta_manual_servicio' %}?{{ request.GET.urlencode }}" class="btn btn-success btn-sm mb-2 w-lg-25">Agregar Venta Manual de Servicios</a>
         </div>         
         {% endif %}
     </div>
@@ -118,17 +118,18 @@
                     <th>Cliente</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
+                    <th>RUT</th>
                     <th>Fecha de la Venta</th>
                     <th>Fecha Pago Completo</th>
-                    <th>Acciones</th>
                     <th>Días Transcurridos entre la Adquisición y Venta</th>
                     <th>Detalle</th>
                     <th>Stock Propio</th>
                     <th>Valor de Venta</th>
                     <th>Valor de Compra</th>
                     <th>Costo Extra</th>
-                    <th>Monto Pagado</th>
+                    <th>Estatus de Pago</th>
                     <th>Resultado del Negocio</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -157,12 +158,15 @@
                         {% elif venta_info.venta.cliente %}
                             {{ venta_info.venta.cliente.numero_telefono }}
                         {% endif %}
-                    </td>                  
+                    </td>
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.rut %}
+                            {{ venta_info.venta.cliente_anonimo.rut }}
+                        {% else %}
+                        {% endif %}
+                    </td>                                      
                     <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
-                    <td>
-                        <a href="{% url 'editar_venta_manual_producto' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
-                    </td>
                     <td>
                         {% if venta_info.productos.0.dias_transcurridos %}
                             {{ venta_info.productos.0.dias_transcurridos }} 
@@ -178,8 +182,17 @@
                     <td>${{ venta_info.venta.total_formateado }}</td>
                     <td>${{ venta_info.productos.0.precio_costo|default:"0" }}</td>
                     <td>${{ venta_info.productos.0.costo_extra|default:"0" }}</td>
-                    <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
+                    <td>
+                        {% if venta_info.estado_pago == "Cancelado" %}
+                            <span class="text-success font-weight-bold">{{ venta_info.estado_pago }}</span>
+                        {% else %}
+                            <span class="text-danger font-weight-bold">{{ venta_info.estado_pago }}</span>
+                        {% endif %}
+                    </td>                    
                     <td>${{ venta_info.ganancia_perdida }}</td>
+                    <td>
+                        <a href="{% url 'editar_venta_manual_producto' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -217,14 +230,17 @@
                     <th>Cliente</th>
                     <th>Correo</th>
                     <th>Teléfono</th>
+                    <th>RUT</th>
                     <th>Fecha de la Venta</th>
                     <th>Fecha Pago Completo</th>
-                    <th>Acciones</th>
                     <th>Detalle</th>
-                    <th>Valor de Venta</th>
-                    <th>Valor de Compra</th>
-                    <th>Monto Pagado</th>
+                    <th>Vehículo</th>
+                    <th>Patente</th>
+                    <th>Valor de Servicio</th>
+                    <th>Valor Costo</th>
+                    <th>Estatus de Pago</th>
                     <th>Resultado del Negocio</th>
+                    <th>Acciones</th>
                 </tr>
             </thead>
             <tbody>
@@ -254,16 +270,37 @@
                             {{ venta_info.venta.cliente.numero_telefono }}
                         {% endif %}
                     </td>
+                    <td>
+                        {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.rut %}
+                            {{ venta_info.venta.cliente_anonimo.rut }}
+                        {% else %}
+                        {% endif %}
+                    </td>
                     <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
                     <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
+                    <td>{{ venta_info.servicios.0.nombre }}</td>
+                    <td>
+                        {% if venta_info.servicios.0.marca_vehiculo or venta_info.servicios.0.modelo_vehiculo %}
+                            {{ venta_info.servicios.0.marca_vehiculo }} {{ venta_info.servicios.0.modelo_vehiculo }}
+                        {% else %}
+                        {% endif %}
+                    </td>
+                    <td>
+                        {{ venta_info.servicios.0.patente_vehiculo|default:"" }}
+                    </td>
+                    <td>${{ venta_info.venta.total_formateado }}</td>
+                    <td>${{ venta_info.servicios.0.precio_costo|default:"0" }}</td>
+                    <td>
+                        {% if venta_info.estado_pago == "Cancelado" %}
+                            <span class="text-success font-weight-bold">{{ venta_info.estado_pago }}</span>
+                        {% else %}
+                            <span class="text-danger font-weight-bold">{{ venta_info.estado_pago }}</span>
+                        {% endif %}
+                    </td>                                       
+                    <td>${{ venta_info.ganancia_perdida }}</td>
                     <td>
                         <a href="{% url 'editar_venta_manual_servicio' venta_info.venta.id %}" class="btn btn-primary btn-sm">Editar</a>
                     </td>
-                    <td>{{ venta_info.servicios.0.nombre }}</td>
-                    <td>${{ venta_info.venta.total_formateado }}</td>
-                    <td>${{ venta_info.servicios.0.precio_costo|default:"0" }}</td>
-                    <td>${{ venta_info.venta.pago_cliente_formateado }}</td>
-                    <td>${{ venta_info.ganancia_perdida }}</td>
                 </tr>
                 {% endfor %}
             </tbody>

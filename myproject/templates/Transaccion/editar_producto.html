@@ -91,6 +91,11 @@
         </div>
 
         <div class="form-group">
+          <label for="{{ form.patente.id_for_label }}">Patente</label>
+          <input type="text" class="form-control" id="{{ form.patente.id_for_label }}" name="{{ form.patente.name }}" value="{{ form.patente.value|default:'' }}">
+        </div>
+
+        <div class="form-group">
           <label for="{{ form.categoria.id_for_label }}">Categoría</label>
           {{ form.categoria }}
           {% if form.categoria.errors %}
@@ -214,6 +219,7 @@
     
 </div>
 
+<!-- Script para marcar imágenes (principal y adicionales) como eliminadas antes de enviar el formulario -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       const imagenesAEliminar = [];
@@ -246,6 +252,7 @@
 
 </script>
 
+<!-- Script que desactiva el campo de porcentaje si el producto tiene stock propio -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       let consignadoField = document.getElementById("id_consignado");
@@ -256,21 +263,21 @@
 
           if (consignadoField.value === "True") { 
               porcentajeField.setAttribute("readonly", "readonly"); 
-              porcentajeField.value = "0";  // ✅ Siempre enviar 0 en lugar de un valor vacío
+              porcentajeField.value = "0";  // Siempre enviar 0 en lugar de un valor vacío
           } else { 
               porcentajeField.removeAttribute("readonly"); 
           }
       }
 
-      // ⚡ Ejecutar cuando la página carga para corregir estado inicial
+      // Ejecutar cuando la página carga para corregir estado inicial
       setTimeout(togglePorcentajeField, 50);  // Espera breve para evitar errores de carga
       
-      // ✅ Escuchar cambios cuando el usuario selecciona otra opción
+      // Escuchar cambios cuando el usuario selecciona otra opción
       consignadoField.addEventListener("change", togglePorcentajeField);
   });
 </script>
 
-<!-- Script para la Calculadora -->
+<!-- Script que muestra/oculta la calculadora y calcula el precio y porcentaje de consignación -->
 <script>
   function toggleCalculadora() {
     document.getElementById("calculadora").style.display = "block";
@@ -304,6 +311,7 @@
   }
 </script>
 
+<!-- Script que concatena marca, modelo y versión para actualizar automáticamente el nombre del producto -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       let marcaField = document.getElementById("{{ form.marca.id_for_label }}");

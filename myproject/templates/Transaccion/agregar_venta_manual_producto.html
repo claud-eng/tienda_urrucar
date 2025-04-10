@@ -4,6 +4,23 @@
 {% block title %}Agregar Venta Manual{% endblock %}
 {% block extra_css %}
 <style>
+    .autocomplete-results {
+        position: absolute;
+        background: white;
+        border: 1px solid #dcdcdc;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+    .autocomplete-item {
+        padding: 8px;
+        cursor: pointer;
+    }
+    .autocomplete-item:hover {
+        background-color: #e8e8e8;
+    }
+
     /* Estilos personalizados para botones en pantallas pequeñas */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -88,12 +105,16 @@
         <h3>Detalles del Producto</h3>
 
         <!-- Producto -->
-        <div class="form-group">
-            {{ detalle_producto_form.producto.label_tag }}
-            {{ detalle_producto_form.producto|add_class:"form-control" }}
+        <div class="form-group position-relative">
+            {{ detalle_producto_form.nombre_producto.label_tag }}
+            {{ detalle_producto_form.nombre_producto }}
+            {% if detalle_producto_form.nombre_producto.errors %}
+            <div class="alert alert-danger">
+                {{ detalle_producto_form.nombre_producto.errors.as_text }}
+            </div>
+            {% endif %}
+            <div id="producto-suggestions" class="autocomplete-results"></div>
         </div>
-
-        <a href="{% url 'listar_productos' %}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
 
         <!-- Fecha de la Transacción -->
         <div class="form-group">
@@ -120,14 +141,13 @@
         <!-- Fecha Pago Completo -->
         <div class="form-group">
             {{ orden_compra_form.fecha_pago_final.label_tag }}
-            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
-                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            {{ orden_compra_form.fecha_pago_final }}
             {% if orden_compra_form.fecha_pago_final.errors %}
             <div class="alert alert-danger">
                 {{ orden_compra_form.fecha_pago_final.errors.as_text }}
             </div>
             {% endif %}
-        </div>
+        </div>        
 
         <!-- Botones de acción -->
         <div class="form-group">
@@ -137,37 +157,89 @@
     </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Script para llamar a los productos según su nombre y/o patente -->
 <script>
-    $(document).ready(function() {
-        function actualizarPrecioDesdeProductoID() {
-            var productoID = $("#id_producto").val();
-            
-            if (productoID) {
-                $.ajax({
-                    url: "{% url 'obtener_precio_producto' %}",
-                    data: { 'producto_id': productoID },
-                    dataType: "json",
-                    success: function(data) {
-                        if (data.precio) {
-                            $("#id_precio_personalizado").val(data.precio);
-                        }
-                    },
-                    error: function() {
-                        $("#id_precio_personalizado").val("");
-                        alert("No se encontró un producto con este ID.");
-                    }
-                });
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.querySelector('input[name="nombre_producto"]');
+        const resultsContainer = document.getElementById('producto-suggestions');
+    
+        input.addEventListener('input', function () {
+            const query = this.value;
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
             }
-        }
+    
+            fetch('/transaccion/api/buscar-productos/?term=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    data.forEach(producto => {
+                        const item = document.createElement('div');
+                        item.textContent = producto.label;
+                        item.classList.add('autocomplete-item');
+                        item.addEventListener('click', () => {
+                            input.value = producto.value;
+                            resultsContainer.innerHTML = '';
+                        });
+                        resultsContainer.appendChild(item);
+                    });
+                });
+        });
+    
+        document.addEventListener('click', function (e) {
+            if (!resultsContainer.contains(e.target) && e.target !== input) {
+                resultsContainer.innerHTML = '';
+            }
+        });
+    });
+    </script>
 
-        // Ejecutar al cambiar el ID del producto
-        $("#id_producto").on("change", function() {
-            actualizarPrecioDesdeProductoID();
+<!-- Script para actualizar el precio al seleccionar el producto -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.querySelector('input[name="nombre_producto"]');
+        const resultsContainer = document.getElementById('producto-suggestions');
+        const precioInput = document.getElementById('id_precio_personalizado');
+
+        input.addEventListener('input', function () {
+            const query = this.value;
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+
+            fetch('/transaccion/api/buscar-productos/?term=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    data.forEach(producto => {
+                        const item = document.createElement('div');
+                        item.textContent = producto.label;
+                        item.classList.add('autocomplete-item');
+                        item.addEventListener('click', () => {
+                            input.value = producto.value;
+                            resultsContainer.innerHTML = '';
+
+                            // Actualizar el precio al seleccionar el producto
+                            fetch('{% url "obtener_precio_producto" %}?producto_id=' + producto.id)
+                                .then(res => res.json())
+                                .then(data => {
+                                    if (data.precio) {
+                                        precioInput.value = data.precio;
+                                    }
+                                });
+                        });
+                        resultsContainer.appendChild(item);
+                    });
+                });
         });
 
-        // Ejecutar automáticamente al cargar la página (para mantener el valor si ya hay uno seleccionado)
-        actualizarPrecioDesdeProductoID();
+        document.addEventListener('click', function (e) {
+            if (!resultsContainer.contains(e.target) && e.target !== input) {
+                resultsContainer.innerHTML = '';
+            }
+        });
     });
 </script>
 

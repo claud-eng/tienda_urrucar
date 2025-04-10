@@ -101,9 +101,13 @@
                     {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <th>Días Transcurridos entre la Adquisición y Venta</th>
                     {% endif %}
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <th>Días Transcurridos entre la Reserva y Venta</th>
+                    {% endif %}
                     <th>Detalle</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <th>Stock Propio</th>
+                    {% endif %}
                     <th>Tipo de Pago</th>
                     <th>Monto de Cuotas</th>
                     <th>Número de Cuotas</th>
@@ -112,7 +116,9 @@
                     <th>Resultado del Negocio</th>
                     {% endif %}
                     <th>Emitir Comprobante</th>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <th>Acciones</th>
+                    {% endif %}
                 </tr>
             </thead>
             <tbody>
@@ -148,12 +154,12 @@
                     </td>                    
                     <td>{{ venta_info.venta.fecha|date:"d/m/Y H:i" }}</td>
                     <td>
-                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
-                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.fecha_estado_final %}
-                                {{ detalle.fecha_estado_final|date:"d/m/Y H:i" }}
-                            {% endif %}
-                        {% endfor %}
-                    </td>
+                        {% if venta_info.fecha_estado_final %}
+                            {{ venta_info.fecha_estado_final|date:"d/m/Y H:i" }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </td>                    
                     <td>
                         {% for detalle in venta_info.venta.detalleventaonline_set.all %}
                             {% if detalle.producto and detalle.producto.categoria == "Vehículo" %}
@@ -162,31 +168,24 @@
                         {% endfor %}
                     </td>
                     {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-                    <td>
-                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
-                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.dias_desde_adquisicion %}
-                                {{ detalle.dias_desde_adquisicion }} días
-                            {% endif %}
-                        {% endfor %}
-                    </td>
-                    {% endif %}
-                    <td>
-                        {% for detalle in venta_info.venta.detalleventaonline_set.all %}
-                            {% if detalle.producto and detalle.producto.categoria == "Vehículo" and detalle.calculo_tiempo_transcurrido %}
-                                {{ detalle.calculo_tiempo_transcurrido }} días
-                            {% endif %}
-                        {% endfor %}
-                    </td>
+                    <td>{{ venta_info.dias_desde_adquisicion }}</td>
+                {% endif %}
+                
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                    <td>{{ venta_info.calculo_tiempo_transcurrido }}</td>
+                {% endif %}                
                     <td>
                         {% for producto in venta_info.productos %}
                             {{ producto.nombre }}
                         {% endfor %}
                     </td>
+                    {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
                     <td>
                         {% for producto in venta_info.productos %}
                             {{ producto.stock_propio }}{% if not forloop.last %}, {% endif %}
                         {% endfor %}
                     </td>
+                    {% endif %}
                     <td>
                         {% if venta_info.venta.tipo_pago %}
                             {% if venta_info.venta.tipo_pago == 'VD' %}

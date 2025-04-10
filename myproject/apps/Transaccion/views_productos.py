@@ -114,6 +114,7 @@ def agregar_producto(request):
         form = ProductoForm(request.POST, request.FILES)
         if form.is_valid():
             producto = form.save()
+            print(f"Producto guardado: {producto}")
 
             # Procesar imágenes adicionales con validación de tamaño
             imagenes_adicionales = []
@@ -131,7 +132,7 @@ def agregar_producto(request):
             logger.info(f"Nuevo producto agregado por: {usuario.first_name} {usuario.last_name} ({usuario.email})")
             logger.info(
                 f"Detalles:\n"
-                f"ID={producto.id}, Nombre={producto.nombre}, Marca={producto.marca}, Modelo={producto.modelo}, "
+                f"ID={producto.id}, Nombre={producto.nombre}, Marca={producto.marca}, Modelo={producto.modelo}, Patente={producto.patente}, "
                 f"Versión={producto.version}, Año={producto.anio}, Categoría={producto.categoria}, "
                 f"Descripción={producto.descripcion}, Valor de Reserva={producto.precio_reserva}, Valor de Venta={producto.precio}, "
                 f"Valor de Compra={producto.precio_costo}, Costo Extra={producto.costo_extra}, "

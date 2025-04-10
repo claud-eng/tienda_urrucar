@@ -6,6 +6,12 @@ from django.shortcuts import resolve_url  # Importa resolve_url para obtener la 
 from urllib.parse import quote  # Importa quote para codificar cadenas de texto en URLs de manera segura.
 from .models import *  # Importa todos los modelos definidos en el módulo models de la aplicación actual.
 
+# Devuelve la hora de inicio de sesión (si existe) para que esté disponible en el template
+def session_start_time(request):
+    return {
+        'session_start_time': request.session.get('session_start_time', '')
+    }
+
 # Devuelve el conteo de elementos en el carrito del cliente autenticado.
 def carrito_count(request):
     """

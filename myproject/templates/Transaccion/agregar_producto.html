@@ -92,6 +92,11 @@
     </div>
 
     <div class="form-group">
+      <label for="{{ form.patente.id_for_label }}">Patente</label>
+      <input type="text" class="form-control" id="{{ form.patente.id_for_label }}" name="{{ form.patente.name }}" value="{{ form.patente.value|default:'' }}">
+    </div>
+
+    <div class="form-group">
       <label for="{{ form.categoria.id_for_label }}">Categoría</label>
       {{ form.categoria }}
       {% if form.categoria.errors %}
@@ -254,6 +259,7 @@
   }
 </script>
 
+<!-- Script para concatenar el nombre -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       let marcaField = document.getElementById("{{ form.marca.id_for_label }}");

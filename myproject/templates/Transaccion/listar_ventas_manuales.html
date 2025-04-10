@@ -122,7 +122,8 @@
                     <th>Fecha de la Venta</th>
                     <th>Fecha Pago Completo</th>
                     <th>Días Transcurridos entre la Adquisición y Venta</th>
-                    <th>Detalle</th>
+                    <th>Vehículo</th>
+                    <th>Patente</th>
                     <th>Stock Propio</th>
                     <th>Valor de Venta</th>
                     <th>Valor de Compra</th>
@@ -155,18 +156,27 @@
                     <td>
                         {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.numero_telefono %}
                             {{ venta_info.venta.cliente_anonimo.numero_telefono }}
-                        {% elif venta_info.venta.cliente %}
+                        {% elif venta_info.venta.cliente and venta_info.venta.cliente.numero_telefono %}
                             {{ venta_info.venta.cliente.numero_telefono }}
+                        {% else %}
+                            ---
                         {% endif %}
-                    </td>
+                    </td>                    
                     <td>
                         {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.rut %}
                             {{ venta_info.venta.cliente_anonimo.rut }}
                         {% else %}
+                        ---
                         {% endif %}
                     </td>                                      
-                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                    <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
+                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if venta_info.venta.fecha_pago_final %}
+                            {{ venta_info.venta.fecha_pago_final|date:"d/m/Y" }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </td>                    
                     <td>
                         {% if venta_info.productos.0.dias_transcurridos %}
                             {{ venta_info.productos.0.dias_transcurridos }} 
@@ -175,9 +185,18 @@
                             {% else %}
                                 días
                             {% endif %}
+                        {% else %}
+                            ---
                         {% endif %}
-                    </td>                    
+                    </td>                                  
                     <td>{{ venta_info.productos.0.nombre }}</td>
+                    <td>
+                        {% if venta_info.productos.0.patente %}
+                          {{ venta_info.productos.0.patente }}
+                        {% else %}
+                          Sin patente
+                        {% endif %}
+                      </td>                      
                     <td>{{ venta_info.productos.0.stock_propio }}</td>
                     <td>${{ venta_info.venta.total_formateado }}</td>
                     <td>${{ venta_info.productos.0.precio_costo|default:"0" }}</td>
@@ -266,18 +285,26 @@
                     <td>
                         {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.numero_telefono %}
                             {{ venta_info.venta.cliente_anonimo.numero_telefono }}
-                        {% elif venta_info.venta.cliente %}
+                        {% elif venta_info.venta.cliente and venta_info.venta.cliente.numero_telefono %}
                             {{ venta_info.venta.cliente.numero_telefono }}
+                        {% else %}
+                            ---
                         {% endif %}
-                    </td>
+                    </td>                    
                     <td>
                         {% if venta_info.venta.cliente_anonimo and venta_info.venta.cliente_anonimo.rut %}
                             {{ venta_info.venta.cliente_anonimo.rut }}
                         {% else %}
                         {% endif %}
                     </td>
-                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                    <td>{{ venta_info.venta.fecha_pago_final|date:"d/m/Y H:i" }}</td>
+                    <td>{{ venta_info.venta.fecha_creacion|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if venta_info.venta.fecha_pago_final %}
+                            {{ venta_info.venta.fecha_pago_final|date:"d/m/Y" }}
+                        {% else %}
+                            ---
+                        {% endif %}
+                    </td>                                      
                     <td>{{ venta_info.servicios.0.nombre }}</td>
                     <td>
                         {% if venta_info.servicios.0.marca_vehiculo or venta_info.servicios.0.modelo_vehiculo %}

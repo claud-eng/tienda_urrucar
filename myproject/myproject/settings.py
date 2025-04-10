@@ -55,6 +55,7 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    'apps.Transaccion.middleware.EmpleadoSessionTimeoutMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
@@ -76,6 +77,7 @@ TEMPLATES = [
                 'apps.Transaccion.context_processors.agregar_formato_precio',
                 'apps.Transaccion.context_processors.carrito_count',
                 'apps.Transaccion.context_processors.mensaje_whatsapp',
+                'apps.Transaccion.context_processors.session_start_time',
             ],
         },
     },

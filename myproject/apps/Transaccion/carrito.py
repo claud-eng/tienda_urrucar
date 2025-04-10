@@ -114,7 +114,11 @@ def ver_detalles_producto(request, producto_id):
         'imagen_index': imagen_index,  # Pasamos el índice de la imagen activa
     })
 
+
 def carrusel_completo(request, producto_id, imagen_id=None):
+    """
+    Muestra un carrusel de imágenes en tamaño completo.
+    """
     producto = get_object_or_404(Producto, id=producto_id)
     
     # Obtener todas las imágenes adicionales del producto

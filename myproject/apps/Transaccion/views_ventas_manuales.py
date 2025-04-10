@@ -5,6 +5,22 @@ from datetime import datetime
 def es_administrador(user):
     return user.is_authenticated and hasattr(user, 'empleado') and user.empleado.rol == 'Administrador'
 
+# Retorna productos filtrados por nombre y/o patente en formato JSON para autocompletado (máx. 10).
+def buscar_productos(request):
+    term = request.GET.get('term', '')
+    productos = Producto.objects.filter(
+        Q(nombre__icontains=term) | Q(patente__icontains=term)
+    )[:10]
+
+    resultados = [{
+        'id': p.id,
+        'label': f'{p.nombre} - {p.patente or "Sin patente"}',
+        'value': f'{p.nombre} - {p.patente or "Sin patente"}'
+    } for p in productos]
+
+    return JsonResponse(resultados, safe=False)
+
+# Lista ventas manuales de productos y servicios.
 @user_passes_test(es_administrador, login_url='home')
 def listar_ventas_manuales(request):
     cliente_query = request.GET.get('cliente', '')
@@ -21,7 +37,7 @@ def listar_ventas_manuales(request):
     else:
         return redirect('home')
 
-    ventas_filtradas = VentaManual.objects.filter(query).order_by('-fecha_creacion')
+    ventas_filtradas = VentaManual.objects.filter(query).order_by('-id')
 
     # Separar productos y servicios
     productos_ventas = ventas_filtradas.filter(detalleventamanual_set__producto__isnull=False).distinct()
@@ -91,6 +107,7 @@ def listar_ventas_manuales(request):
 
             productos_formateados.append({
                 'nombre': producto.nombre,
+                'patente': producto.patente or "", 
                 'cantidad': detalle.cantidad,
                 'precio_formateado': formato_precio(producto.precio),
                 'precio_costo': formato_precio(producto.precio_costo),
@@ -250,6 +267,7 @@ def agregar_venta_manual_producto(request):
                 # Guardar el detalle del producto
                 detalle = detalle_producto_form.save(commit=False)
                 detalle.orden_compra = orden_compra
+                detalle.producto = producto
                 detalle.precio_costo = precio_costo
                 detalle.subtotal = precio_venta
                 detalle.cantidad = 1  # Cantidad siempre es 1
@@ -267,8 +285,11 @@ def agregar_venta_manual_producto(request):
                     f"Teléfono: {cliente_anonimo.numero_telefono or 'No especificado'}\n"
                     f"RUT: {cliente_anonimo.rut or 'No especificado'}\n"
                     f"ID del Producto: {producto.id}\n"
-                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M')}\n"
-                    f"Total (IVA incluido): ${orden_compra.total}\n"
+                    f"Marca: {producto.marca}\n"
+                    f"Modelo: {producto.modelo or 'No especificado'}\n"
+                    f"Patente: {producto.patente or 'Sin Patente'}\n"
+                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M') if fecha_venta else 'No especificada'}\n"
+                    f"Valor Total del Vehículo (IVA incluido): ${orden_compra.total}\n"
                     f"Monto Pagado por el Cliente: ${pago_cliente}\n"
                     f"Fecha Pago Completo: {fecha_pago_final.strftime('%d-%m-%Y %H:%M') if fecha_pago_final else 'No especificada'}"
                 )
@@ -315,10 +336,14 @@ def editar_venta_manual_producto(request, venta_id):
         "email": venta.cliente_anonimo.email,
         "numero_telefono": venta.cliente_anonimo.numero_telefono or 'No especificado',
         "rut": venta.cliente_anonimo.rut or 'No especificado',
+        "marca": detalle_producto.producto.marca,
+        "modelo": detalle_producto.producto.modelo or "No especificado",
+        "patente": detalle_producto.producto.patente or "Sin Patente",
+        "fecha_creacion": venta.fecha_creacion.strftime('%d-%m-%Y %H:%M') if venta.fecha_creacion else 'No especificada',
+        "subtotal": detalle_producto.subtotal,
         "pago_cliente": venta.pago_cliente,
         "fecha_pago_final": venta.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta.fecha_pago_final else 'No especificada',
         "precio_costo": detalle_producto.precio_costo,
-        "subtotal": detalle_producto.subtotal,
     }
 
     orden_compra_form = VentaManualForm(request.POST or None, instance=venta)
@@ -329,14 +354,26 @@ def editar_venta_manual_producto(request, venta_id):
         print("POST recibido:", request.POST)
 
         if orden_compra_form.is_valid() and detalle_producto_form.is_valid():
+            producto_seleccionado = detalle_producto_form.cleaned_data.get('producto')
+            
+            # Usar el precio del producto seleccionado como total de la venta
+            total_venta = producto_seleccionado.precio if producto_seleccionado else venta.total
             pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
-            total_venta = venta.total
 
             # Validar consistencia entre monto pagado y fecha de pago final
             fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
 
             if pago_cliente < total_venta and fecha_pago_final:
                 messages.error(request, 'No puedes ingresar una fecha de pago completo si el monto pagado no cubre el total del vehículo.')
+                return render(request, 'Transaccion/editar_venta_manual_producto.html', {
+                    'orden_compra_form': orden_compra_form,
+                    'detalle_producto_form': detalle_producto_form,
+                    'cliente_anonimo_form': cliente_anonimo_form,
+                    'venta': venta,
+                })
+
+            if pago_cliente == total_venta and not fecha_pago_final:
+                messages.error(request, 'Debes ingresar la fecha de pago completo si el monto pagado cubre el total del vehículo.')
                 return render(request, 'Transaccion/editar_venta_manual_producto.html', {
                     'orden_compra_form': orden_compra_form,
                     'detalle_producto_form': detalle_producto_form,
@@ -355,22 +392,40 @@ def editar_venta_manual_producto(request, venta_id):
             with transaction.atomic():
                 # Guardar cambios en el detalle del producto
                 detalle_actualizado = detalle_producto_form.save(commit=False)
+                detalle_actualizado.producto = producto_seleccionado
                 detalle_actualizado.save()
 
+                print("Producto asignado:", producto_seleccionado)
+                print("Precio producto:", producto_seleccionado.precio)
+
+                # Guardar cliente
                 cliente_anonimo_actualizado = cliente_anonimo_form.save()
 
-                # Guardar cambios en la venta
+                # Guardar cambios de la venta
                 venta_actualizada = orden_compra_form.save(commit=False)
-
-                # Asignar fecha de la venta desde el formulario (no se guarda por defecto en .save(commit=False))
+                venta_actualizada.precio_personalizado = producto_seleccionado.precio
                 venta_actualizada.fecha_creacion = orden_compra_form.cleaned_data.get('fecha_creacion')
+                venta_actualizada.pago_cliente = pago_cliente
 
-                if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):
-                    venta_actualizada.fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
+                print("Precio personalizado actualizado:", venta_actualizada.precio_personalizado)
+                print("Total estimado antes de guardar:", venta_actualizada.precio_personalizado)
+                print("Pago del cliente:", pago_cliente)
+
+                # Guardar venta inicialmente
+                venta_actualizada.save()
+
+                # Asignar fecha de pago final si corresponde y volver a guardar
+                if pago_cliente >= (venta_actualizada.precio_personalizado or 0):
+                    venta_actualizada.fecha_pago_final = fecha_pago_final
                 else:
                     venta_actualizada.fecha_pago_final = None
 
+                print("Fecha de pago final a guardar:", venta_actualizada.fecha_pago_final)
+
                 venta_actualizada.save()
+
+                # Refrescar la venta original desde la BD
+                venta.refresh_from_db()
 
                 # Guardar valores nuevos después de la edición
                 valores_nuevos = {
@@ -379,10 +434,14 @@ def editar_venta_manual_producto(request, venta_id):
                     "email": cliente_anonimo_actualizado.email,
                     "numero_telefono": cliente_anonimo_actualizado.numero_telefono or 'No especificado',
                     "rut": cliente_anonimo_actualizado.rut or 'No especificado',
+                    "marca": detalle_actualizado.producto.marca,
+                    "modelo": detalle_actualizado.producto.modelo or "No especificado",
+                    "patente": detalle_actualizado.producto.patente or "Sin Patente",
+                    "fecha_creacion": venta_actualizada.fecha_creacion.strftime('%d-%m-%Y %H:%M') if venta_actualizada.fecha_creacion else 'No especificada',
+                    "subtotal": detalle_actualizado.subtotal,
                     "pago_cliente": venta_actualizada.pago_cliente,
                     "fecha_pago_final": venta_actualizada.fecha_pago_final.strftime('%d-%m-%Y %H:%M') if venta_actualizada.fecha_pago_final else 'No especificada',
                     "precio_costo": detalle_actualizado.precio_costo,
-                    "subtotal": detalle_actualizado.subtotal,
                 }
 
                 # Detectar cambios en los datos
@@ -414,6 +473,13 @@ def editar_venta_manual_producto(request, venta_id):
         'cliente_anonimo_form': cliente_anonimo_form,
         'venta': venta,
     })
+
+# Retorna servicios filtrados por nombre en formato JSON para autocompletado (máx. 10).
+def buscar_servicios(request):
+    term = request.GET.get('term', '')
+    servicios = Servicio.objects.filter(nombre__icontains=term)[:10]  # máximo 10 resultados
+    resultados = [{'id': s.id, 'label': s.nombre, 'value': s.nombre} for s in servicios]
+    return JsonResponse(resultados, safe=False)
 
 @user_passes_test(es_administrador, login_url='home')
 def agregar_venta_manual_servicio(request):
@@ -491,6 +557,7 @@ def agregar_venta_manual_servicio(request):
 
                 # Guardar el detalle del servicio
                 detalle = detalle_servicio_form.save(commit=False)
+                detalle.servicio = detalle_servicio_form.cleaned_data['servicio']
                 detalle.orden_compra = orden_compra
                 detalle.cantidad = 1  # Siempre será 1 para servicios
                 detalle.save()
@@ -506,13 +573,13 @@ def agregar_venta_manual_servicio(request):
                     f"Correo: {cliente_anonimo.email}\n"
                     f"Teléfono: {cliente_anonimo.numero_telefono or 'No especificado'}\n"
                     f"RUT: {cliente_anonimo.rut or 'No especificado'}\n"
-                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M')}\n"
+                    f"Fecha de la Venta: {fecha_venta.strftime('%d-%m-%Y %H:%M') if fecha_venta else 'No especificada'}\n"
                     f"ID del Servicio: {servicio.id if servicio else 'No especificado'}\n"
                     f"Marca del Vehículo: {detalle.marca_vehiculo or 'No especificada'}\n"
                     f"Modelo del Vehículo: {detalle.modelo_vehiculo or 'No especificado'}\n"
                     f"Patente del Vehículo: {detalle.patente_vehiculo or 'No especificada'}\n"
-                    f"Valor Costo: ${precio_costo}\n"
                     f"Valor de Servicio: ${orden_compra.total}\n"
+                    f"Valor Costo: ${precio_costo}\n"
                     f"Monto Pagado por el Cliente: ${pago_cliente}\n"
                     f"Fecha Pago Completo: {fecha_pago_final.strftime('%d-%m-%Y %H:%M') if fecha_pago_final else 'No especificada'}"
                 )
@@ -560,6 +627,7 @@ def editar_venta_manual_servicio(request, venta_id):
         "email": venta.cliente_anonimo.email,
         "numero_telefono": venta.cliente_anonimo.numero_telefono or 'No especificado',
         "rut": venta.cliente_anonimo.rut or 'No especificado',
+        "valor_servicio": venta.total,
         "pago_cliente": venta.pago_cliente,
         "fecha_creacion": venta.fecha_creacion,
         "fecha_pago_final": venta.fecha_pago_final,
@@ -583,8 +651,10 @@ def editar_venta_manual_servicio(request, venta_id):
         # Validar los formularios
         if orden_compra_form.is_valid() and detalle_servicio_form.is_valid() and cliente_anonimo_form.is_valid():
             pago_cliente = orden_compra_form.cleaned_data.get('pago_cliente', 0)
-            total_venta = venta.total
+            precio_personalizado = orden_compra_form.cleaned_data.get('precio_personalizado', 0)
+            total_venta = precio_personalizado
 
+            # Validar consistencia entre monto pagado y total
             if pago_cliente > total_venta:
                 messages.error(request, 'El monto del pago no puede ser mayor al total.')
                 return render(request, 'Transaccion/editar_venta_manual_servicio.html', {
@@ -600,11 +670,13 @@ def editar_venta_manual_servicio(request, venta_id):
 
                 # Guardar cambios en el detalle del servicio
                 detalle_actualizado = detalle_servicio_form.save(commit=False)
+                detalle_actualizado.servicio = detalle_servicio_form.cleaned_data['servicio']  # Asignar el servicio desde el autocompletado
                 detalle_actualizado.save()
 
                 # Guardar cambios en la venta
                 venta_actualizada = orden_compra_form.save(commit=False)
                 venta_actualizada.cliente_anonimo = cliente_anonimo_actualizado
+                venta_actualizada.total = total_venta
 
                 # Obtener fecha desde el formulario
                 fecha_pago_final = orden_compra_form.cleaned_data.get('fecha_pago_final', None)
@@ -623,8 +695,12 @@ def editar_venta_manual_servicio(request, venta_id):
                 if fecha_pago_final and timezone.is_naive(fecha_pago_final):
                     fecha_pago_final = timezone.make_aware(fecha_pago_final, timezone.get_current_timezone())
 
+                print("Precio personalizado actual:", venta_actualizada.precio_personalizado)
+                print("Pago cliente actual:", venta_actualizada.pago_cliente)
+                print("¿Pago completo?", venta_actualizada.pago_cliente >= (venta_actualizada.precio_personalizado or 0))
+
                 # Asignar la fecha solo si corresponde
-                if venta_actualizada.pago_cliente >= (venta_actualizada.total or 0):
+                if venta_actualizada.pago_cliente >= (venta_actualizada.precio_personalizado or 0):
                     venta_actualizada.fecha_pago_final = fecha_pago_final
                 else:
                     venta_actualizada.fecha_pago_final = None
@@ -638,6 +714,7 @@ def editar_venta_manual_servicio(request, venta_id):
                     "email": cliente_anonimo_actualizado.email,
                     "numero_telefono": cliente_anonimo_actualizado.numero_telefono or 'No especificado',
                     "rut": cliente_anonimo_actualizado.rut or 'No especificado',
+                    "valor_servicio": venta_actualizada.total,
                     "pago_cliente": venta_actualizada.pago_cliente,
                     "fecha_creacion": venta.fecha_creacion,
                     "fecha_pago_final": venta_actualizada.fecha_pago_final,

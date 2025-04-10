@@ -135,6 +135,7 @@
                 <th>Modelo</th>
                 <th>Versión</th>
                 <th>Año</th>
+                <th>Patente</th>
                 <th>Categoría</th>
                 <th>Descripción</th>
                 <th>Stock Propio</th>
@@ -162,6 +163,7 @@
                     <td>{% if producto.modelo %}{{ producto.modelo }}{% endif %}</td>
                     <td>{% if producto.version %}{{ producto.version }}{% endif %}</td>
                     <td>{% if producto.anio %}{{ producto.anio }}{% endif %}</td>
+                    <td>{{ producto.patente|default:"---" }}</td>
                     <td>{{ producto.categoria }}</td>
                     <td style="text-align: justify;">
                         {% if producto.descripcion|length > 10 %}
@@ -180,9 +182,10 @@
                     <td>
                         {% if producto.porcentaje_consignacion %}
                             {{ producto.porcentaje_consignacion|floatformat:2 }}%
+                        {% else %}
+                            ---
                         {% endif %}
-                    </td>
-                                   
+                    </td>                                     
                     <td>
                         {% if producto.fecha_adquisicion %}
                             {{ producto.fecha_adquisicion|date:"d/m/Y" }} <!-- Mostrar fecha en formato dd/mm/yyyy -->
@@ -194,13 +197,17 @@
                     <td>
                         {% if producto.precio_costo_formateado %}
                             ${{ producto.precio_costo_formateado }}
+                        {% else %}
+                            $0
                         {% endif %}
                     </td>
                     <td>
                         {% if producto.costo_extra_formateado %}
                             ${{ producto.costo_extra_formateado }}
+                        {% else %}
+                            $0
                         {% endif %}
-                    </td>
+                    </td>                    
                     <td>
                         {% if producto.ganancia_formateada %}
                             ${{ producto.ganancia_formateada }}

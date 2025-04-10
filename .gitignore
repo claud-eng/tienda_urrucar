@@ -17,4 +17,4 @@ logs/
 media/
 
 # Ignorar el archivo urls.py dentro de la carpeta principal del proyecto
-myproject/urls.py
+myproject/myproject/urls.py

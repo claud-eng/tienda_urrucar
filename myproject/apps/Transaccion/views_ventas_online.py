@@ -121,10 +121,43 @@ def listar_ventas_online(request):
 
         # print(f"\nTOTAL GANANCIAS PRODUCTOS EN ESTA VENTA (Orden {venta.id}): {ganancia_total}")
 
+        # Buscar la primera fecha_estado_final válida (para mostrar en la tabla)
+        fecha_estado_final = next(
+            (
+                d.fecha_estado_final
+                for d in venta.detalleventaonline_set.all()
+                if d.producto and d.producto.categoria == "Vehículo" and d.fecha_estado_final
+            ),
+            None
+        )
+
+        # Buscar el primer valor de días desde adquisición
+        dias_desde_adquisicion = next(
+            (
+                d.dias_desde_adquisicion
+                for d in venta.detalleventaonline_set.all()
+                if d.producto and d.producto.categoria == "Vehículo" and d.dias_desde_adquisicion is not None
+            ),
+            None
+        )
+
+        # Buscar el primer valor de cálculo de tiempo transcurrido
+        calculo_tiempo_transcurrido = next(
+            (
+                d.calculo_tiempo_transcurrido
+                for d in venta.detalleventaonline_set.all()
+                if d.producto and d.producto.categoria == "Vehículo" and d.calculo_tiempo_transcurrido is not None
+            ),
+            None
+        )
+
         ventas_productos_list.append({
             'venta': venta,
             'productos': productos_formateados,
             'ganancia_formateada': formato_precio(ganancia_total),
+            'fecha_estado_final': fecha_estado_final,
+            'dias_desde_adquisicion': f"{dias_desde_adquisicion} días" if dias_desde_adquisicion is not None else "---",
+            'calculo_tiempo_transcurrido': f"{calculo_tiempo_transcurrido} días" if calculo_tiempo_transcurrido is not None else "---",
         })
 
     for venta in ventas_servicios_paginadas:

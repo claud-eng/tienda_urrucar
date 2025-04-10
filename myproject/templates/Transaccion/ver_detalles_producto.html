@@ -216,6 +216,7 @@
 <!-- Lightbox2 JavaScript -->
 <script src="{% static 'js/lightbox.min.js' %}"></script>
 
+<!-- Script para configurar opciones del plugin Lightbox2 -->
 <script>
   lightbox.option({
     'resizeDuration': 200,
@@ -223,6 +224,7 @@
   });
 </script>
 
+<!-- Script para activar la imagen correspondiente en el carrusel según el parámetro imagen_id de la URL -->
 <script>
   document.addEventListener("DOMContentLoaded", function () {
       let urlParams = new URLSearchParams(window.location.search);

@@ -28,6 +28,7 @@ class Producto(models.Model):
     modelo = models.CharField(max_length=100, null=True, blank=True)  # Modelo del producto
     version = models.CharField(max_length=50, null=True, blank=True)  # Versión del producto
     anio = models.PositiveIntegerField(null=True, blank=True)  # Año del producto
+    patente = models.CharField(max_length=20, null=True, blank=True) # Patente del vehículo
     categoria = models.CharField(
         max_length=100,
         choices=CATEGORIA_CHOICES,
@@ -256,22 +257,25 @@ class VentaManual(models.Model):
         return max(self.pago_cliente - self.total, 0)
 
     def save(self, *args, **kwargs):
+        from django.utils import timezone  # Importación local, solo dentro del método
+
         print("Guardando instancia de VentaManual...")
         print(f"Fecha creación inicial: {self.fecha_creacion}")
         print(f"Fecha pago final inicial: {self.fecha_pago_final}")
 
-        # Lógica para total, cambio y fecha de pago final
-        if not self.total:
-            self.total = self.calcular_total()
+        # Siempre recalcular total y cambio
+        self.total = self.calcular_total()
         self.cambio = self.calcular_cambio()
 
+        # Validación de fecha de pago final
         if self.pago_cliente >= self.total:
             if not self.fecha_pago_final:
-                self.fecha_pago_final = timezone.localtime()  # Corregimos naive datetime
+                self.fecha_pago_final = timezone.localtime()
                 print("Fecha de pago final actualizada a:", self.fecha_pago_final)
         else:
+            if self.fecha_pago_final:
+                print("Reset de fecha_pago_final porque el pago ya no es suficiente")
             self.fecha_pago_final = None
-            print("Pago incompleto, fecha de pago final reseteada a None")
 
         print(f"Fecha creación final: {self.fecha_creacion}")
         print(f"Fecha pago final final: {self.fecha_pago_final}")

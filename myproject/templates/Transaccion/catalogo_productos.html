@@ -22,7 +22,7 @@
         width: 100%;
     }
 
-    /* 📌 Ajuste para PC: Imágenes de 350x200 */
+    /* Ajuste para PC: Imágenes de 350x200 */
     @media (min-width: 992px) { /* Detecta pantallas más grandes que 992px (PC) */
         .block-4-image img {
             width: 350px !important;
@@ -189,6 +189,7 @@
   </div>
 </div>
 
+<!-- Script para actualizar dinámicamente el filtro de marcas según la selección actual -->
 <script>
 document.addEventListener("DOMContentLoaded", function () {
   const productosRelacionados = JSON.parse('{{ productos_json|safe }}');

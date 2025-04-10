@@ -3,6 +3,23 @@
 {% block title %}Editar Venta Manual de Producto{% endblock %}
 {% block extra_css %}
 <style>
+    .autocomplete-results {
+        position: absolute;
+        background: white;
+        border: 1px solid #dcdcdc;
+        width: 100%;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+    .autocomplete-item {
+        padding: 8px;
+        cursor: pointer;
+    }
+    .autocomplete-item:hover {
+        background-color: #e8e8e8;
+    }
+
     /* Tablets (pantallas medianas) */
     @media (max-width: 991.98px) {
         .container .btn {
@@ -93,29 +110,30 @@
         <h3>Detalles del Producto</h3>
 
         <!-- Producto -->
-        <div class="form-group">
-            {{ detalle_producto_form.producto.label_tag }}
-            {{ detalle_producto_form.producto|add_class:"form-control" }}
-            {% if detalle_producto_form.producto.errors %}
+        <div class="form-group position-relative">
+            {{ detalle_producto_form.nombre_producto.label_tag }}
+            {{ detalle_producto_form.nombre_producto }}
+            {% if detalle_producto_form.nombre_producto.errors %}
             <div class="alert alert-danger">
-                {{ detalle_producto_form.producto.errors.as_text }}
+                {{ detalle_producto_form.nombre_producto.errors.as_text }}
             </div>
             {% endif %}
+            <div id="producto-suggestions" class="autocomplete-results"></div>
         </div>
 
-        <a href="{% url 'listar_productos' %}" class="btn btn-success btn-sm mb-3" target="_blank">Ver listado de productos</a>
+        <!-- Campo oculto para guardar el ID del producto seleccionado -->
+        <input type="hidden" id="id_producto" name="producto" value="{{ detalle_producto_form.initial.producto.id }}">
 
         <!-- Fecha de la Transacción -->
         <div class="form-group">
             {{ orden_compra_form.fecha_creacion.label_tag }}
-            <input type="datetime-local" name="fecha_creacion" class="form-control"
-                   value="{{ orden_compra_form.instance.fecha_creacion|date:'Y-m-d\\TH:i' }}">
+            {{ orden_compra_form.fecha_creacion }}
             {% if orden_compra_form.fecha_creacion.errors %}
             <div class="alert alert-danger">
                 {{ orden_compra_form.fecha_creacion.errors.as_text }}
             </div>
             {% endif %}
-        </div>   
+        </div>
 
         <!-- Total e Ingreso del Cliente -->
         <h3>Resumen de Pago</h3>
@@ -136,8 +154,7 @@
         <!-- Fecha Pago Completo -->
         <div class="form-group">
             {{ orden_compra_form.fecha_pago_final.label_tag }}
-            <input type="datetime-local" name="fecha_pago_final" class="form-control" 
-                value="{{ orden_compra_form.instance.fecha_pago_final|date:'Y-m-d\TH:i' }}">
+            {{ orden_compra_form.fecha_pago_final }}
             {% if orden_compra_form.fecha_pago_final.errors %}
             <div class="alert alert-danger">
                 {{ orden_compra_form.fecha_pago_final.errors.as_text }}
@@ -153,7 +170,48 @@
     </form>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Script para autocompletar el nombre del producto y actualizar el campo oculto con su ID -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.querySelector('input[name="nombre_producto"]');
+        const resultsContainer = document.getElementById('producto-suggestions');
+    
+        input.addEventListener('input', function () {
+            const query = this.value;
+            if (query.length < 2) {
+                resultsContainer.innerHTML = '';
+                return;
+            }
+    
+            fetch('/transaccion/api/buscar-productos/?term=' + encodeURIComponent(query))
+                .then(res => res.json())
+                .then(data => {
+                    resultsContainer.innerHTML = '';
+                    data.forEach(producto => {
+                        const item = document.createElement('div');
+                        item.textContent = producto.label;
+                        item.classList.add('autocomplete-item');
+                        item.setAttribute('data-id', producto.id);  // <-- importante
+
+                        item.addEventListener('click', () => {
+                            input.value = producto.value;
+                            document.getElementById("id_producto").value = producto.id; // actualizar campo oculto
+                            resultsContainer.innerHTML = '';
+                        });
+                        resultsContainer.appendChild(item);
+                    });
+                });
+        });
+    
+        document.addEventListener('click', function (e) {
+            if (!resultsContainer.contains(e.target) && e.target !== input) {
+                resultsContainer.innerHTML = '';
+            }
+        });
+    });
+    </script>
+
+<!-- Script para obtener y cargar el precio del producto seleccionado mediante AJAX -->
 <script>
     function cargarPrecioProducto(productoID) {
         if (productoID) {
@@ -179,12 +237,27 @@
     $(document).ready(function() {
         const productoID = $("#id_producto").val();
 
-        // Ejecutar al cargar si ya hay un producto seleccionado (para prellenar el campo en modo edición)
-        cargarPrecioProducto(productoID);
+        // Ejecutar al cargar si ya hay un producto seleccionado (modo edición)
+        if (productoID) {
+            cargarPrecioProducto(productoID);
+        }
 
-        // Ejecutar también cuando el usuario cambie el producto
-        $("#id_producto").on("change", function() {
-            cargarPrecioProducto($(this).val());
+        // Ejecutar cuando cambia el valor del ID del producto (ya sea a mano o por autocompletado)
+        $("#id_producto").on("change", function () {
+            const nuevoID = $(this).val();
+            cargarPrecioProducto(nuevoID);
+        });
+
+        // También ejecutarlo cuando se hace click sobre una sugerencia del autocompletado
+        $(document).on('click', '.autocomplete-item', function () {
+            const labelSeleccionado = $(this).text();
+            const productoID = $(this).data("id");
+
+            // Si estás usando `data-id` en tu HTML, úsalo aquí
+            if (productoID) {
+                $("#id_producto").val(productoID);
+                cargarPrecioProducto(productoID);
+            }
         });
     });
 </script>

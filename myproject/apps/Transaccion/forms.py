@@ -1,11 +1,14 @@
 import datetime # Importa 'datetime' para trabajar con fechas y horas.
+import pytz  # Para manejar zonas horarias y excepciones como cambios de horario (DST)
 from apps.Usuario.forms import ClienteAnonimoForm  # Importa el formulario para clientes anónimos desde la app Usuario.
 from django import forms  # Importa el módulo forms de Django para crear formularios.
 from django.core.exceptions import ValidationError  # Importa ValidationError para manejar errores de validación en formularios.
 from django.forms import DateTimeInput  # Importa DateTimeInput para widgets de entrada de fecha y hora.
 from django.forms import inlineformset_factory  # Importa inlineformset_factory para crear formularios en línea para modelos relacionados.
 from django.forms.widgets import DateInput  # Importa DateInput para widgets de entrada de fecha.
+from django.utils.timezone import get_current_timezone, make_aware  # Para trabajar correctamente con fechas en zonas horarias conscientes (timezone-aware)
 from .models import Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto, Servicio  # Importa los modelos Cliente, ClienteAnonimo, DetalleVentaOnline, VentaOnline, DetalleVentaManual, VentaManual, Producto, ImagenProducto y Servicio de la aplicación actual.
+from datetime import datetime  # Para manejar y parsear fechas en formato estándar
 
 # Formulario para gestionar la creación y actualización de productos
 class ProductoForm(forms.ModelForm):
@@ -23,7 +26,7 @@ class ProductoForm(forms.ModelForm):
     class Meta:
         model = Producto
         fields = [
-            'nombre', 'marca', 'modelo', 'version', 'anio',
+            'nombre', 'marca', 'modelo', 'version', 'anio', 'patente',
             'categoria', 'descripcion', 'precio_reserva', 'precio',
             'precio_costo', 'costo_extra', 'fecha_adquisicion', 'cantidad_stock',
             'imagen', 'consignado', 'porcentaje_consignacion'
@@ -117,8 +120,10 @@ class ProductoForm(forms.ModelForm):
         """
         Valida que la fecha de adquisición no sea futura.
         """
+        from datetime import date  # Importación local, solo dentro del método
+
         fecha_adquisicion = self.cleaned_data.get('fecha_adquisicion')
-        if fecha_adquisicion and fecha_adquisicion > datetime.date.today():
+        if fecha_adquisicion and fecha_adquisicion > date.today():
             raise forms.ValidationError("La fecha de adquisición no puede estar en el futuro.")
         return fecha_adquisicion
 
@@ -126,6 +131,8 @@ class ProductoForm(forms.ModelForm):
         """
         Limpia y formatea los datos ingresados.
         """
+        from datetime import date  # Importación local, solo dentro del método
+        
         cleaned_data = super().clean()  # Llama a la limpieza predeterminada del formulario
         
         # Obtener datos
@@ -136,12 +143,19 @@ class ProductoForm(forms.ModelForm):
         anio = cleaned_data.get('anio')
         descripcion = cleaned_data.get('descripcion')
 
+        # Si el nombre está vacío, lo construimos automáticamente
+        if not nombre:
+            nombre_generado = ' '.join(filter(None, [marca, modelo, version]))
+            cleaned_data['nombre'] = nombre_generado
+            print(f"Nombre generado automáticamente en clean(): {nombre_generado}")
+
         # Validar que el año sea razonable
-        if anio and (anio < 1900 or anio > datetime.date.today().year + 1):
+        if anio and (anio < 1900 or anio > date.today().year + 1):
             self.add_error('anio', "El año debe estar entre 1900 y el próximo año.")
 
         return cleaned_data  # Retorna los datos limpios y formateados
 
+# Imagen del producto en el Formulario
 class ImagenProductoForm(forms.ModelForm):
     class Meta:
         model = ImagenProducto
@@ -201,16 +215,27 @@ class DetalleVentaOnlineForm(forms.ModelForm):
 
 # Formulario para ventas manuales (cliente anónimo)
 class VentaManualForm(forms.ModelForm):
+    fecha_creacion = forms.DateField(
+        required=True,
+        widget=forms.DateInput(
+            attrs={'class': 'form-control', 'type': 'date'},
+            format='%Y-%m-%d'
+        ),
+        label="Fecha de la Venta"
+    )
 
-    fecha_pago_final = forms.DateTimeField(
+    fecha_pago_final = forms.DateField(
         required=False,
-        widget=forms.DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
+        widget=forms.DateInput(
+            attrs={'class': 'form-control', 'type': 'date'},
+            format='%Y-%m-%d'
+        ),
         label="Fecha Pago Completo"
     )
 
     class Meta:
         model = VentaManual
-        fields = ['pago_cliente', 'precio_personalizado', 'fecha_creacion']
+        fields = ['pago_cliente', 'precio_personalizado', 'fecha_creacion', 'fecha_pago_final']
         labels = {
             'pago_cliente': 'Monto Pagado por el Cliente',
             'precio_personalizado': 'Valor Total del Vehículo (IVA incluido)',
@@ -220,12 +245,44 @@ class VentaManualForm(forms.ModelForm):
         widgets = {
             'pago_cliente': forms.NumberInput(attrs={'class': 'form-control'}),
             'precio_personalizado': forms.NumberInput(attrs={'class': 'form-control'}),
-            'fecha_creacion': DateTimeInput(attrs={
-                'class': 'form-control',
-                'type': 'datetime-local',
-            }),
-            'fecha_pago_final': DateTimeInput(attrs={'class': 'form-control', 'type': 'datetime-local'}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        if not self.is_bound:
+            if self.instance and self.instance.fecha_pago_final:
+                fecha_pago_str = self.instance.fecha_pago_final.strftime('%Y-%m-%d')
+                self.fields['fecha_pago_final'].initial = fecha_pago_str
+
+            if self.instance and self.instance.fecha_creacion:
+                fecha_creacion_str = self.instance.fecha_creacion.strftime('%Y-%m-%d')
+                self.fields['fecha_creacion'].initial = fecha_creacion_str
+
+    def clean(self):
+        cleaned_data = super().clean()
+        pago_cliente = cleaned_data.get('pago_cliente') or 0
+        precio_total = cleaned_data.get('precio_personalizado') or 0
+        fecha_str = self.data.get('fecha_pago_final')
+
+        fecha_final = None
+
+        if fecha_str:
+            try:
+                naive_fecha = datetime.strptime(fecha_str, '%Y-%m-%d')
+                fecha_final = make_aware(datetime.combine(naive_fecha.date(), datetime.min.time()))
+                print(f"Fecha interpretada correctamente: {fecha_final}")
+            except ValueError:
+                print("Error al interpretar la fecha.")
+                self.add_error('fecha_pago_final', 'La fecha ingresada no tiene un formato válido.')
+
+        # Validación personalizada: pago completo pero fecha no ingresada
+        if pago_cliente == precio_total and not fecha_final:
+            print("Error: pago cubre total, pero no se ingresó fecha de pago completo.")
+            self.add_error('fecha_pago_final', 'Debes ingresar la fecha de pago completo si el monto pagado cubre el total del servicio.')
+
+        cleaned_data['fecha_pago_final'] = fecha_final
+        return cleaned_data
 
     def save(self, commit=True):
         venta = super().save(commit=False)
@@ -243,13 +300,20 @@ class VentaManualForm(forms.ModelForm):
         venta.precio_personalizado = self.cleaned_data.get('precio_personalizado', 0) or 0
         venta.pago_cliente = self.cleaned_data.get('pago_cliente', 0) or 0
 
-        # Verificar si el pago cubre el total antes de asignar la fecha
+        print("Guardando instancia de VentaManual...")
+        print("Fecha creación inicial:", venta.fecha_creacion)
+        print("Fecha pago final inicial:", venta.fecha_pago_final)
+
+        # Asignar fecha de pago final solo si corresponde
         if venta.pago_cliente >= venta.precio_personalizado:
-            venta.fecha_pago_final = self.cleaned_data.get('fecha_pago_final', None)
+            venta.fecha_pago_final = self.cleaned_data.get('fecha_pago_final')
             print("Fecha de pago final editada:", venta.fecha_pago_final)
         else:
-            venta.fecha_pago_final = None  # Resetear si no se ha pagado completamente
+            venta.fecha_pago_final = None
             print("Pago incompleto, fecha de pago final reseteada a None")
+
+        print("Fecha creación final:", venta.fecha_creacion)
+        print("Fecha pago final final:", venta.fecha_pago_final)
 
         if commit:
             venta.save()
@@ -257,33 +321,71 @@ class VentaManualForm(forms.ModelForm):
 
 # Formulario de detalle de productos en venta manual
 class DetalleVentaManualProductoForm(forms.ModelForm):
-    producto = forms.IntegerField(
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label='ID del Producto',
-        required=True
+    nombre_producto = forms.CharField(
+        label='Producto',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Escribe el nombre o patente...',
+            'autocomplete': 'off'
+        })
     )
 
     class Meta:
         model = DetalleVentaManual
-        fields = ['producto']
+        fields = []  # No incluir 'producto' directamente, lo asignamos en clean()
 
-    def clean_producto(self):
-        """
-        Valida que el producto ingresado exista en la base de datos.
-        """
-        id_producto = self.cleaned_data.get('producto')
-        try:
-            return Producto.objects.get(id=id_producto)
-        except Producto.DoesNotExist:
-            raise forms.ValidationError("No se encontró un producto con ese ID.")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Mostrar el nombre completo del producto seleccionado en edición
+        if self.instance and self.instance.producto:
+            producto = self.instance.producto
+            patente = producto.patente or "Sin patente"
+            self.fields['nombre_producto'].initial = f"{producto.nombre} - {patente}"
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nombre_producto = cleaned_data.get('nombre_producto')
+        print(f"Nombre recibido en clean(): {nombre_producto}")
+
+        if nombre_producto:
+            partes = nombre_producto.split(" - ")
+            nombre = partes[0].strip()
+            patente = partes[1].strip() if len(partes) > 1 else None
+
+            print(f"Nombre: {nombre}, Patente: {patente}")
+
+            try:
+                if patente and patente.lower() != "sin patente":
+                    producto = Producto.objects.get(nombre__iexact=nombre, patente__iexact=patente)
+                else:
+                    producto = Producto.objects.get(nombre__iexact=nombre, patente__isnull=True)
+                cleaned_data['producto'] = producto
+                print("Producto encontrado:", producto)
+            except Producto.DoesNotExist:
+                print("Producto no encontrado.")
+                raise forms.ValidationError("El producto ingresado no existe o no coincide con la patente.")
+        elif self.instance and self.instance.producto:
+            print("Usando producto de instancia previa.")
+            cleaned_data['producto'] = self.instance.producto
+        else:
+            print("No se ingresó un producto.")
+            raise forms.ValidationError("Debe seleccionar un producto válido.")
+
+        return cleaned_data
         
-# Formulario de detalle de servicios en venta manual
 class DetalleVentaManualServicioForm(forms.ModelForm):
-    servicio = forms.IntegerField(
-        widget=forms.NumberInput(attrs={'class': 'form-control'}),
-        label='ID del Servicio',
-        required=False  # Permitir que sea opcional al editar
+    nombre_servicio = forms.CharField(
+        label='Servicio',
+        required=False,
+        widget=forms.TextInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Escribe el nombre del servicio...',
+            'autocomplete': 'off'
+        })
     )
+
     precio_costo = forms.DecimalField(
         widget=forms.NumberInput(attrs={'class': 'form-control'}),
         label='Valor Costo',
@@ -311,19 +413,32 @@ class DetalleVentaManualServicioForm(forms.ModelForm):
 
     class Meta:
         model = DetalleVentaManual
-        fields = ['servicio', 'precio_costo', 'marca_vehiculo', 'modelo_vehiculo', 'patente_vehiculo']
+        fields = ['precio_costo', 'marca_vehiculo', 'modelo_vehiculo', 'patente_vehiculo']
 
-    def clean_servicio(self):
-        id_servicio = self.cleaned_data.get('servicio')
-        if id_servicio:  # Si se proporciona un nuevo ID de servicio
-            try:
-                return Servicio.objects.get(id=id_servicio)
-            except Servicio.DoesNotExist:
-                raise ValidationError("Servicio no encontrado.")
-        # Si no se proporciona un nuevo servicio, devuelve el existente
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # Si estamos editando y hay un servicio asociado, mostrar su nombre por defecto
         if self.instance and self.instance.servicio:
-            return self.instance.servicio
-        raise ValidationError("Debe seleccionarse un servicio válido.")
+            self.fields['nombre_servicio'].initial = self.instance.servicio.nombre
+
+    def clean(self):
+        cleaned_data = super().clean()
+        nombre = cleaned_data.get('nombre_servicio')
+
+        if nombre:
+            try:
+                servicio = Servicio.objects.get(nombre__iexact=nombre)
+                cleaned_data['servicio'] = servicio
+            except Servicio.DoesNotExist:
+                raise ValidationError("El servicio ingresado no existe.")
+        elif self.instance and self.instance.servicio:
+            # Si no se ingresó uno nuevo, pero existe ya uno asociado (modo edición)
+            cleaned_data['servicio'] = self.instance.servicio
+        else:
+            raise ValidationError("Debe seleccionar un servicio válido.")
+
+        return cleaned_data
 
 # Formset para gestionar múltiples detalles en una venta online
 DetalleVentaOnlineFormset = inlineformset_factory(

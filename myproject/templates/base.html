@@ -23,6 +23,22 @@
     <style>
 /* ==== Estilos base y generales ==== */
 
+  .session-timer-responsive {
+    font-weight: bold;
+    color: #ff0000;
+    text-align: center;
+    margin-top: 10px;
+    font-size: 0.9rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .session-timer-responsive {
+      font-size: 1rem;
+      margin-top: 15px;
+      padding: 5px 10px;
+    }
+  }
+
 .diagonal-bars {
   position: relative;
   background-color: #f8f9fa; /* Fondo claro */
@@ -471,7 +487,12 @@ body {
                       <div style="font-size: 1.5em;">
                         <span class="icon icon-person"></span>
                       </div>
-                      <span>¡Bienvenido, {{ user.first_name }}! | <a href="{% url 'logout' %}">Cerrar sesión</a></span>
+                      <span>
+                        ¡Bienvenido, {{ user.first_name }}! |
+                        <a href="{% url 'logout' %}" onclick="sessionStorage.removeItem('sessionEndTime')">Cerrar sesión</a>
+                      </span>
+                        <!-- Temporizador para móviles -->
+                        <div id="session-timer-container-mobile" class="session-timer-responsive d-block d-md-none"></div>                      
                     </li>
                     {% else %}
                     <!-- Opción de inicio de sesión/registro para usuarios no autenticados -->
@@ -524,41 +545,24 @@ body {
                 </nav>
                 {% endif %}
 
-        <!-- Menú especial para administradores -->
-        {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
-        <nav class="site-navigation text-right text-md-center" role="navigation">
-          <div class="container">
-            <ul class="site-menu js-clone-nav d-none d-md-block">
-              <li class="admin-menu">
-                <a href="{% url 'gestionar_inventario' %}">
-                    Gestionar Productos & Servicios
-                </a>
-              </li>
-              <li class="admin-menu">
-                <a href="{% url 'gestionar_transacciones' %}">
-                    Gestionar Transacciones
-                </a>
-              </li>
-              <li class="admin-menu">
-                <a href="{% url 'gestionar_cuentas' %}">
-                    Gestionar Cuentas
-                </a>
-              </li>
-              <li class="admin-menu">
-                <a href="{% url 'ver_reportes' %}">
-                    Reportes
-                </a>
-              </li>
-              <li class="admin-menu">
-                <a href="{% url 'cambiar_contraseña_usuario' %}">
-                    Cambiar Contraseña
-                </a>
-              </li>
-            </ul>
-          </div>
-        </nav>
-        {% endif %}
+                <!-- Menú especial para administradores -->
+                {% if user.is_authenticated and user.empleado and user.empleado.rol == 'Administrador' %}
+                <nav class="site-navigation text-right text-md-center" role="navigation">
+                  <div class="container">
+                    <ul class="site-menu js-clone-nav d-none d-md-block">
+                      <li class="admin-menu"><a href="{% url 'gestionar_inventario' %}">Gestionar Productos & Servicios</a></li>
+                      <li class="admin-menu"><a href="{% url 'gestionar_transacciones' %}">Gestionar Transacciones</a></li>
+                      <li class="admin-menu"><a href="{% url 'gestionar_cuentas' %}">Gestionar Cuentas</a></li>
+                      <li class="admin-menu"><a href="{% url 'ver_reportes' %}">Reportes</a></li>
+                      <li class="admin-menu"><a href="{% url 'cambiar_contraseña_usuario' %}">Cambiar Contraseña</a></li>
+                    </ul>
 
+                    <!-- Temporizador para escritorio -->
+                    <div id="session-timer-container-desktop" class="session-timer-responsive d-none d-md-block"></div>
+                  </div>
+                </nav>
+                {% endif %}
+           
         <nav class="site-navigation text-right text-md-center" role="navigation">
           <div class="container">
             <ul class="site-menu js-clone-nav d-none d-md-block">
@@ -629,5 +633,67 @@ body {
   <script src="{% static 'js/jquery.magnific-popup.min.js' %}"></script>
   <script src="{% static 'js/aos.js' %}"></script>
   <script src="{% static 'js/main.js' %}"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      let container;
+
+      if (window.innerWidth < 768) {
+        container = document.getElementById("session-timer-container-mobile");
+      } else {
+        container = document.getElementById("session-timer-container-desktop");
+      }
+      
+      const startTime = "{{ session_start_time }}";
+      if (!startTime || !container) return;
+    
+      // Crear el contenedor visual
+      const timerDiv = document.createElement("div");
+      timerDiv.style.marginTop = "10px";
+      timerDiv.style.fontWeight = "bold";
+      timerDiv.style.color = "#ff0000";
+      timerDiv.style.visibility = "hidden"; // Oculto visualmente pero mantiene espacio
+    
+      const label = document.createElement("span");
+      label.textContent = "Tiempo restante de sesión: ";
+    
+      const countdown = document.createElement("span");
+      countdown.id = "countdown";
+      countdown.textContent = "--:--";
+    
+      timerDiv.appendChild(label);
+      timerDiv.appendChild(countdown);
+      container.appendChild(timerDiv);
+    
+      // Calcular el tiempo de expiración o usarlo desde sessionStorage
+      let sessionEndTime;
+      if (sessionStorage.getItem("sessionEndTime")) {
+        sessionEndTime = parseInt(sessionStorage.getItem("sessionEndTime"));
+      } else {
+        const startDate = new Date(startTime);
+        sessionEndTime = startDate.getTime() + 1200 * 1000; // 20 min en ms
+        sessionStorage.setItem("sessionEndTime", sessionEndTime);
+      }
+    
+      function actualizarCuentaRegresiva() {
+        const now = new Date().getTime();
+        const tiempoRestante = Math.max(0, Math.floor((sessionEndTime - now) / 1000));
+    
+        const minutos = Math.floor(tiempoRestante / 60);
+        const segundos = tiempoRestante % 60;
+        countdown.textContent = `${minutos.toString().padStart(2, '0')}:${segundos.toString().padStart(2, '0')}`;
+    
+        if (tiempoRestante <= 0) {
+          sessionStorage.removeItem("sessionEndTime");
+          timerDiv.textContent = "Sesión expirada. Redirigiendo...";
+          setTimeout(() => location.reload(), 3000);
+        }
+      }
+    
+      // Mostrar y empezar el contador
+      timerDiv.style.visibility = "visible";
+      actualizarCuentaRegresiva();
+      setInterval(actualizarCuentaRegresiva, 1000);
+    });
+    </script>            
 </body>
 </html>
